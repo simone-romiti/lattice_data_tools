@@ -47,7 +47,7 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None) -> np.ndarray:
 
     Args:
         C (np.ndarray): correlator C(t)
-        strategy (str): computation strategy. Supported: ["log"]
+        strategy (str): computation strategy. Supported: ["log","cosh","sinh"]
 
     Raises:
         ValueError: if strategy is not in the list of supported types

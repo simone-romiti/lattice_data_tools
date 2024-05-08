@@ -46,15 +46,20 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
     - If outfile is passed, is used as path for the output plot
     
     """
+    verbose = kwargs["verbose"] if "verbose" in kwargs.keys() else True
     N_bts = C_bts.shape[0]
-    print("## Finding the effective mass")
+    if verbose:
+        print("## Finding the effective mass")
+    ####
     M_eff = np.array([ec.get_m_eff(C_bts[ib,:], strategy=strategy, T=T) for ib in range(N_bts)])
     T_ext = M_eff.shape[1] ## time extent of the effective mass curve
     #times_eff = np.array([t for t in range(T-1)])
     M_eff_plat = M_eff[:,t1:(t2+1)]
     dM_eff_plat = np.std(M_eff_plat, axis=0, ddof=1)
-    print("## Fitting the effective mass")
-    print("T=",T, "t1=", t1, "t2=", t2)
+    if verbose:
+        print("## Fitting the effective mass")
+        print("T=",T, "t1=", t1, "t2=", t2)
+    ####
     M_eff_fit = np.array([ec.fit_eff_mass(M_eff_plat[ib,:], dM_eff_plat) for ib in range(N_bts)])
     dM_eff_fit = np.std(M_eff_fit, axis=0, ddof=1)
     if plot:
