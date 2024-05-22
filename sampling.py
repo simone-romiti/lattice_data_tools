@@ -55,7 +55,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
         np.ndarray: Bootstrap samples
     """
     N = x.shape[0]
-    return x[np.random.randint(0,high=N,size=N_bts,dtype=int)]
+    return np.array([np.average(x[np.random.randint(0,high=N,size=N,dtype=int)]) for i in range(N_bts)])
 ####
 
 def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, block_size=2, seed=12345, output_file=None) -> np.ndarray:
