@@ -42,9 +42,13 @@ def correlated_confs_to_jkf(Cg: np.ndarray, N_jkf: int, output_file=None) -> np.
 def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     """Bootstrap samples from array of data
     
-    - generates N_b = N_bts/block_size averages
-      y[i] = \sum_{j=1}^{block_size} x[i*block_size+j] / N_b
-    - samples N_bts values z[i] (with repetition) from the y[i] and returns z
+    generates Nb bootstrap samples from N configurations,
+    It assumes x.shape[0] == N.
+    
+    Steps:
+    - Draw N samples with replacements among the x values
+    - Compute the mean. This is a bootstrap sample.
+    - Repeat Nb times. The resulting array has standard deviation of the mean (approximately) equal to the one of the original sample.
     
     Args:
         x (np.ndarray): time series. Bootstrapping is done on 1st index
@@ -55,6 +59,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
         np.ndarray: Bootstrap samples
     """
     N = x.shape[0]
+    np.random.seed(seed=seed)
     return np.array([np.average(x[np.random.randint(0,high=N,size=N,dtype=int)]) for i in range(N_bts)])
 ####
 

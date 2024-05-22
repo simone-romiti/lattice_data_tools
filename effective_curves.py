@@ -24,16 +24,13 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
     see eq. 6.57 of Gattringer & Lang
     
     """
-    if T==None:
+    if T == None:
         raise ValueError("You need to pass T explicitly as an argument!")
     ####
-    if p==+1:
+    if p == +1:
         form = lambda x: np.cosh(x)
-    elif p==-1:
+    elif p == -1:
         form = lambda x: np.sinh(x)
-    ####        
-    def func(m, r, t, T_half):
-        return r - form(m*(t-T_half))/form(m*(t+1-T_half))
     ####
     T_ext = C.shape[0] ## temporal extent
     T_half = int(T/2)
@@ -41,11 +38,15 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
     m_eff = np.zeros(shape=(T_ext-1))
     for t in t_eff:
         r = C[t]/C[t+1]
+        def func(m_t):
+            r_th = form(m_t*(T_half-t))/form(m_t*(T_half-t-1))
+            return (r - r_th)
+        ####
         m_guess = np.log(r)
         if t>=T_half:
             m_guess *= -1
         ####
-        m_eff[t] = root(func, m_guess, args=(r, t, T_half)).x[0]
+        m_eff[t] = root(fun=func, x0=m_guess).x[0]
     ####
     return m_eff
 ####
