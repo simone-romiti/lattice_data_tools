@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.optimize import root
+from scipy.optimize import root, fsolve
 
 def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     """Effective mass curve
@@ -40,13 +40,13 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
         r = C[t]/C[t+1]
         def func(m_t):
             r_th = form(m_t*(T_half-t))/form(m_t*(T_half-t-1))
-            return (r - r_th)
+            return (r_th - r)
         ####
         m_guess = np.log(r)
-        if t>=T_half:
+        if t >= T_half:
             m_guess *= -1
         ####
-        m_eff[t] = root(fun=func, x0=m_guess).x[0]
+        m_eff[t] = fsolve(func=func, x0=m_guess)[0]
     ####
     return m_eff
 ####
