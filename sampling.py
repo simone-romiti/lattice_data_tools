@@ -4,7 +4,6 @@ import numpy as np
 
 from lattice_data_tools import uwerr
 
-
 def uncorrelated_confs_to_jkf(x, N_jkf):
     Ng = x.shape[0] ## number of configurations
     b = int(Ng/N_jkf)
