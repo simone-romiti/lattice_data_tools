@@ -74,7 +74,7 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
             )
         plt.plot(
             np.arange(t1, t2+1, 1), np.full(shape=(t2-t1+1), fill_value=M_eff_fit_avg), 
-            linestyle="--")
+            linestyle="--", label="fit")
         ## plotting the data
         tmin_plot, tmax_plot = 0, T_ext
         if "tmin_plot" in kwargs.keys():
@@ -99,8 +99,10 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
             )
         if outfile != None:
             print("output:", outfile) 
+            plt.xlabel("$t$")
             plt.ylabel("$M_{\mathrm{eff}}(t)$")
             plt.legend()
+            plt.tight_layout()
             plt.savefig(outfile)
             plt.close()
     ####
