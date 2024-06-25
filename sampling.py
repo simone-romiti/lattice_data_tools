@@ -62,7 +62,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     return np.array([np.average(x[np.random.randint(0,high=N,size=N,dtype=int)]) for i in range(N_bts)])
 ####
 
-def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, block_size=2, seed=12345, output_file=None) -> np.ndarray:
+def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
     """Bootstrap samples from array of correlated configurations
 
     - The configurations are sampled every tau_int, (integrated autocorrelation time)
