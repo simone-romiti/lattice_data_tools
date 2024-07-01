@@ -42,7 +42,10 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
             r_th = form(m_t*(T_half-t))/form(m_t*(T_half-t-1))
             return (r_th - r)
         ####
-        m_guess = np.log(r)
+        if r>=0:
+            m_guess = np.log(r)
+        else:
+            m_guess = 0.0 ## the statistical noise doesn't allow for a better guess
         if t >= T_half:
             m_guess *= -1
         ####
@@ -76,7 +79,7 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None) -> np.ndarray:
 ####
 
 def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
-    """Effective mass corection assuming C(t) = A*exp(-M*t)
+    """Effective mass correction assuming C(t) = A*exp(-M*t)
 
     Args:
         C0 (np.ndarray): Correlator C(t)
