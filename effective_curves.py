@@ -17,16 +17,17 @@ def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
 ####
 
-def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
+def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
     """ 
     
     Effective mass including the backward signal 
     see eq. 6.57 of Gattringer & Lang
     
+    avoid_instability: 
+        flag relative to the case C(t)/C(t+1) <= 1 (statistical fluctuation)
+        if True, when t>=1, M_eff(t) is replaced with the previous value M_eff(t-1)
+    
     """
-    if T == None:
-        raise ValueError("You need to pass T explicitly as an argument!")
-    ####
     if p == +1:
         form = lambda x: np.cosh(x)
     elif p == -1:
@@ -42,19 +43,24 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int):
             r_th = form(m_t*(T_half-t))/form(m_t*(T_half-t-1))
             return (r_th - r)
         ####
-        if r>=0:
-            m_guess = np.log(r)
+        if ((t<T_half and r<=1) or (t>=T_half and r>=1)) and (avoid_instability):
+            if t==0:
+                m_eff[t] = 0.0 ## t=0 contains no information --> contact divergence 
+            else:
+                m_eff[t] = m_eff[t-1]
+            #---
         else:
-            m_guess = 0.0 ## the statistical noise doesn't allow for a better guess
-        if t >= T_half:
-            m_guess *= -1
+            m_guess = np.log(r)
+            if t >= T_half:
+                m_guess *= -1
+            ####
+            m_eff[t] = fsolve(func=func, x0=m_guess)[0]
         ####
-        m_eff[t] = fsolve(func=func, x0=m_guess)[0]
     ####
     return m_eff
 ####
 
-def get_m_eff(C: np.ndarray, strategy: str, T=None) -> np.ndarray:
+def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
 
     Args:
@@ -70,9 +76,9 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None) -> np.ndarray:
     if strategy == "log":
         return get_m_eff_log(C)
     elif strategy == "cosh":
-        return get_m_eff_bkw(C=C, T=T, p=+1)
+        return get_m_eff_bkw(C=C, T=T, p=+1, avoid_instability=avoid_instability)
     elif strategy == "sinh":
-        return get_m_eff_bkw(C=C, T=T, p=-1)
+        return get_m_eff_bkw(C=C, T=T, p=-1, avoid_instability=avoid_instability)
     else:
         raise ValueError("Illegal strategy for calculation of effective mass: {strategy}".format(strategy=strategy))
     ####
