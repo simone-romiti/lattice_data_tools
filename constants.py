@@ -2,17 +2,18 @@
 
 import numpy as np
 
-## masses
-
+## masses in units of MeV
 masses_MeV = {
-    "e" : 0.5109989461,# electron
+    "e" : 0.5109989461, # electron
     "mu": 105.6583745, # \mu lepton
     "tau": 1776.86, # \tau lepton
     "pi": {
+        "isoQCD": {"Edinburgh": 135.0},
         "+": 139.57061, # \pi^+
         "0": 134.9770   # \pi^0
     },
     "K": {
+        "isoQCD": {"Edinburgh": 494.6},
         "+": 493.664, # K^+
         "0": 497.611  # K^0
     }
