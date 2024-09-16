@@ -80,14 +80,16 @@ def M_eff_t0_Tail(M_eff: np.ndarray, V: np.ndarray, K: np.ndarray, Z_ren: float,
     """
     T_ext = V.shape[0]
     ti = np.arange(0, T_ext)
-    res = get_amu_precomp_K(ti=ti[1:t0], Vi=V[1:t0], K=K[1:t0], Z_ren=Z_ren, strategy=strategy)
-    if t0 < T_ext-1:
-        ## NOTE: for t0=T_ext-1 the effective mass may be not defined
-        E_tail = M_eff[t0]
-        A0 = V[t0]*np.exp(E_tail*t0)
-        V_tail = np.array([A0*np.exp(-E_tail*t) for t in ti[t0:T_ext]]) 
-        res += get_amu_precomp_K(ti=ti[t0:T_ext], Vi=V_tail, K=K[t0:T_ext], Z_ren=Z_ren, strategy=strategy)
-    ####
+    res = 0.0
+    if t0 > 0:
+        res = get_amu_precomp_K(ti=ti[1:t0], Vi=V[1:t0], K=K[1:t0], Z_ren=Z_ren, strategy=strategy)
+        if t0 < T_ext-1:
+            ## NOTE: for t0=T_ext-1 the effective mass may be not defined
+            E_tail = M_eff[t0]
+            A0 = V[t0]*np.exp(E_tail*t0)
+            V_tail = np.array([A0*np.exp(-E_tail*t) for t in ti[t0:T_ext]]) 
+            res += get_amu_precomp_K(ti=ti[t0:T_ext], Vi=V_tail, K=K[t0:T_ext], Z_ren=Z_ren, strategy=strategy)
+    #-------
     return res
 ####
 
