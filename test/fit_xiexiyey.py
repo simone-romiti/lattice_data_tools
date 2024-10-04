@@ -2,8 +2,10 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
-from fit_xiexiyey import fit_xiexiyey
+sys.path.append('../../')
+from lattice_data_tools.fit.xiexiyey import fit_xiexiyey
 
 # Define the function y = mx + c
 def ansatz(x, params):
@@ -79,5 +81,5 @@ xd = np.arange(min(xi), max(xi),  step=0.01)
 yd = np.array([ansatz([xd_i], fitted_params) for xd_i in xd])
 plt.scatter(xd, yd, s=0.01)
 
-plt.savefig("./plot.pdf")
+plt.savefig("./fit_xiexiyey.pdf")
 

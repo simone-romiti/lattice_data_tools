@@ -1,6 +1,6 @@
 # Load necessary libraries
 library(stats) # For optim function
-source("fit_xiexiyey.R")
+source("../fit/xiexiyey.R")
 
 pdf("cosh.pdf")
 # Define the function y = mx + c

@@ -2,7 +2,7 @@ import numpy as np
 
 import sys
 
-sys.path.append('/home/simone/Documents/')
+sys.path.append('../../')
 
 from lattice_data_tools import sampling
 

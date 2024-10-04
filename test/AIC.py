@@ -2,9 +2,12 @@
 
 import numpy as np
 # from scipy.stats import norm
-
-import model_averaging.AIC as AIC
+import sys
 import matplotlib.pyplot as plt
+
+sys.path.append('../../')
+
+import lattice_data_tools.model_averaging.AIC as AIC
 
 np.random.seed(13754)
 
