@@ -16,7 +16,7 @@ def interpolate_x0(y0, ansatz, par, x0_guess):
         raise ValueError("Root not found. Try a different initial_guess.")
 #-------
 
-def xyey(
+def x0_from_xyey(
         ansatz, guess: np.ndarray, 
         y0: np.float64, 
         x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
@@ -24,6 +24,9 @@ def xyey(
     """ Interpolate y(x) to x0 """
     mini = fit_xyey(ansatz, x=x, y=y, ey=ey, guess=guess, maxiter = maxiter, method = method)
     par_fit = mini["par"]
-    return interpolate_x0(y0=y0, ansatz=ansatz, par=par_fit, x0_guess=np.average(x))
+    x0 = interpolate_x0(y0=y0, ansatz=ansatz, par=par_fit, x0_guess=np.average(x))
+    ansatz_th = lambda z: ansatz(z, par_fit)
+    res = {"x0": x0, "theory": ansatz_th}
+    return res
 #---
 
