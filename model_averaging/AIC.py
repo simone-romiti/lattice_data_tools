@@ -48,16 +48,31 @@ def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: n
 #---
 
 
-def get_sigma2_tot(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
-    """ 
-    Returns sigma_tot as in eq. 164 of https://arxiv.org/pdf/2002.12347
-    
-    The y values are in the range [-R, R], with resolution epsilon
-    """
+def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
+    """ Returns percentile values y16, y50 (the median) and y84 """
     y = np.arange(ymin, ymax, eps)
     P = get_P(y=y, w=w, m=m, sigma=sigma, lam=lam)
-    y16 = y[np.where(P < 0.16)[0][-1]]
-    y84 = y[np.where(P < 0.84)[0][-1]]
-    sigma2_tot = ((y84-y16)/2.0)**2.0
-    return sigma2_tot
+    y16 = y[np.where(P <= 0.16)[0][-1]]
+    y50 = y[np.where(P <= 0.50)[0][-1]]
+    y84 = y[np.where(P <= 0.84)[0][-1]]
+    return (y16, y50, y84)
 #---
+
+def get_mean_and_sigma2(y16, y50, y84):
+    """ Returns mean and variance from the percentiles """
+    y_mean = y50
+    sigma2_tot = ((y84-y16)/2.0)**2.0
+    return (y_mean, sigma2_tot)
+#---
+
+def get_sigma2_contributions(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
+    y16, y50, y84 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=1.0, ymin=ymin, ymax=ymax, eps=eps)
+    y_mean, sigma2_tot = get_mean_and_sigma2(y16=y16, y50=y50, y84=y84)
+
+    y16_l2, y50_l2, y84_l2 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=2.0, ymin=ymin, ymax=ymax, eps=eps)
+    y_mean_l2, sigma2_tot_l2 = get_mean_and_sigma2(y16=y16_l2, y50=y50_l2, y84=y84_l2)
+    sigma2_stat = sigma2_tot_l2 - sigma2_tot
+    sigma2_syst = sigma2_tot - sigma2_stat
+    return {"stat": sigma2_stat, "syst": sigma2_syst}
+#---
+
