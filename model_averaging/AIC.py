@@ -7,6 +7,7 @@ Reference: Section 21 of https://arxiv.org/pdf/2002.12347
 
 import numpy as np
 from scipy.stats import norm
+import matplotlib.pyplot as plt
 
 def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """ 
@@ -15,6 +16,7 @@ def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """
     A = ch2 + 2*n_par - n_data
     w_i = np.exp(-A/2)
+    w_i /= np.sum(w_i)
     return w_i
 #---
 
@@ -54,7 +56,8 @@ def get_sigma2_tot(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.floa
     """
     y = np.arange(ymin, ymax, eps)
     P = get_P(y=y, w=w, m=m, sigma=sigma, lam=lam)
-    y16, y84 = np.percentile(P, [16.0, 84.0])
+    y16 = y[np.where(P < 0.16)[0][-1]]
+    y84 = y[np.where(P < 0.84)[0][-1]]
     sigma2_tot = ((y84-y16)/2.0)**2.0
     return sigma2_tot
 #---
