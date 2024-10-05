@@ -4,12 +4,12 @@ from scipy.optimize import root, fsolve
 
 def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     """Effective mass curve
-
+    
     log: log(C[t]/C[t+1])
-
+    
     Args:
         C (np.ndarray): Correlator C(t)
-
+    
     Returns:
         np.ndarray: M_eff(t) = log(C(t)/C(t+1))
     """
@@ -64,7 +64,7 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
 
 def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
-
+    
     Args:
         C (np.ndarray): correlator C(t)
         strategy (str): computation strategy. Supported: ["log","cosh","sinh"]
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     C = np.random.normal(1.0, 0.001, T)*np.exp(-m*t)
 
     m_eff = get_m_eff(C, strategy="log")[4:16]
-
+    
     plt.plot(m_eff)
     plt.show()
 
