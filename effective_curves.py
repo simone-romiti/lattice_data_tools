@@ -13,6 +13,7 @@ def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: M_eff(t) = log(C(t)/C(t+1))
     """
+
     T = C.shape[0] ## temporal extent
     return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
 ####
@@ -28,6 +29,7 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
         if True, when t>=1, M_eff(t) is replaced with the previous value M_eff(t-1)
     
     """
+    
     if p == +1:
         form = lambda x: np.cosh(x)
     elif p == -1:
@@ -73,6 +75,7 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> 
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
     """
+    
     if strategy == "log":
         return get_m_eff_log(C)
     elif strategy == "cosh":
@@ -94,7 +97,7 @@ def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: dM_eff(t) = - [R(t+1) - R(t)], where R(t) = dC(t)/C0(t)
     """
-    # T = C.shape[0] ## temporal extent
+    
     R = dC/C0
     return np.diff(R)
 ####
@@ -113,6 +116,7 @@ def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p
               the user may want to fix it for all "t". 
               In this case, pass M0_eff as a constant array
     """
+
     if T==None:
         raise ValueError("You need to pass T explicitly as an argument!")
     ####
@@ -147,6 +151,7 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
     """
+    
     if strategy == "log":
         return get_dm_eff_log(C0=C0, dC=dC)
     elif strategy == "tanh":
@@ -171,6 +176,7 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
     Returns:
         float: best fit value of y_eff
     """
+    
     T = y_eff.shape[0]
     t = [i for i in range(T)] ## dummy variables, fitting to a constant
     ansatz = lambda x, m0: m0
@@ -181,6 +187,7 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
 
 def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> float:
     """ alias for the fit to a generic effective curve """
+    
     return fit_eff_curve(y_eff=m_eff, dy_eff=dm_eff)
 ####
 

@@ -1,5 +1,22 @@
+
+
 *__pycache__*
 *.pyc
 *.pdf
 *.png
+
+# documentation
+*.pickle
+*.html
+*.doctree
+*.buildinfo
+*.css
+*.js
+*.rst
+*.rst.*
+*.bat
+*.inv
+doc/Makefile
+
+
 
