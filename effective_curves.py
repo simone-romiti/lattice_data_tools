@@ -192,7 +192,7 @@ def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> float:
 ####
 
 
-## example code
+# example code
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     T = 24
