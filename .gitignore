@@ -6,11 +6,11 @@
 *.png
 
 # documentation
+doc/build/
 *.pickle
 *.html
 *.doctree
 *.buildinfo
-*.css
 *.js
 *.rst.*
 *.inv
