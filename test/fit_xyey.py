@@ -5,8 +5,8 @@ import numpy as np
 import sys
 
 sys.path.append('../../')
+from lattice_data_tools.fit.legacy.xyey import fit_xyey as old_fit_xyey
 from lattice_data_tools.fit.xyey import fit_xyey
-from lattice_data_tools.fit.trajectory import fit_xyey as traj_fit_xyey
 
 
 N_pts = 100
@@ -28,10 +28,10 @@ def ansatz(x, params):
 ####
 
 guess = np.array([0.0])
-fit1 = fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
+fit1 = old_fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
 
-fit2 = traj_fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
+fit2 = fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
 print("Compare the 2 fit routines (should give the same result)")
 for fit in [fit1, fit2]:

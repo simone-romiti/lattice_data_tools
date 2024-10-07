@@ -1,44 +1,37 @@
+"""Fit of a 1d function of 1 variable """
+
 
 import numpy as np
-import scipy.optimize as opt
+from lattice_data_tools.fit.trajectory import fit_trajectory
 
+def fit_xyey(
+    ansatz, 
+    x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+    guess: np.ndarray, 
+    maxiter = 10000, method = "BFGS"
+    ):
+    """Fit of y=f(x), there f: \mathbb{R}^1 \to \mathbb{R}^1
 
-#' fit a function f(x) with errors on y (and not on x)
-#' N_pts = number of points
-#' x = np.array of shape (N_pts)
-#' y, dy = list of length N_pts
-#' guess = list of N_par guesses (for the ansatz)
-#' maxiter = maximum number of iterations for the minimizer
-def fit_xyey(ansatz, x: np.ndarray, y: np.ndarray, ey: np.ndarray, guess: np.ndarray, maxiter = 10000, method = "BFGS"):
-    assert (x.shape == y.shape and y.shape == ey.shape)
-    N_pts = y.shape[0] # number of data points
-
-    N_par = guess.shape[0] # number of parameters of the fit
-    N_dof = N_pts - N_par # number of degrees of freedom
-
-    # chi square residual function
-    # NOTE: "p" is the array of the external parameters of the function
-    def ch2(p):
-        y_th = np.array([ansatz(x[i], p) for i in range(N_pts)])
-        res = np.sum(((y - y_th)/ey)**2) # np.array([(y[i] - ansatz(x[i], p)) / ey[i] for i in range(N_pts)])
-        return res # np.sum(res**2)
-    ####
-
-    guess = list(guess)
-    mini = opt.minimize(fun = ch2, x0 = guess, method = method)
-
-    ch2_value = ch2(mini.x)
-
-    res = dict({})
-
-    res["ansatz"] = ansatz
-    res["N_par"] = N_par
-    res["par"] = mini.x
-    res["ch2"] = ch2_value
-    res["dof"] = N_dof ## degrees of freedom
-    res["ch2_dof"] = ch2_value / N_dof
-
-    return(res)
-####
-
-
+    Args:
+        ansatz : ansatz taking a float and returning a float
+        x (np.ndarray): 1d array of x values
+        y (np.ndarray): 1d array of y values
+        ey (np.ndarray):1d array of errors on the values
+        guess (np.ndarray): 1d array fo guesses for the ansatz_
+        maxiter (int, optional): _description_. Defaults to 10000.
+        method (str, optional): _description_. Defaults to "BFGS".
+    """
+    def ansatz_casted(x, p):
+        return np.array([ansatz(x[0], p)])
+    #---
+    xp = x=np.array([x]).transpose()
+    ex = np.zeros(shape=xp.shape)
+    yp = np.array([y]).transpose()
+    eyp = np.array([ey]).transpose()
+    res = fit_trajectory(
+        ansatz=ansatz_casted, 
+        x=xp, ex=ex, y=yp, ey=eyp, 
+        guess=guess, 
+        maxiter=maxiter, method=method)
+    return res
+#---

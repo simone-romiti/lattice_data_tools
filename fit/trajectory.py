@@ -5,8 +5,10 @@ of many variables. This is done using a the maximum likelyhood principle
 and a "trajectory method":
 the function $\vec{y} = \vec{f}(\vec{x})$ is thought as 
 a trajectory $\vec{z}(t)$ in a n+m dimensional space: 
+
 $$z_i = x_i \, , \, i=1,...,n$$
 $$z_i = y_i \, , \, i=n+1,...,m$$
+
 The fit minimizes the distance of this trajectory 
 from the theoretical expectation.
 """
@@ -19,7 +21,8 @@ def fit_trajectory(
     x: np.ndarray, ex: np.ndarray, 
     y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"):
+    maxiter = 10000, method = "BFGS"
+    ):
     """Fit a function f: \mathbb{R}^n \to \mathbb{R}^m with the trajectory method
 
     Args:
@@ -75,62 +78,95 @@ def fit_trajectory(
     return(res)
 #---
 
-def fit_xyey(
-    ansatz, 
-    x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
-    guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"):
-    """Fit of y=f(x), there f: R^1 \to R^1
+# def fit_xyey(
+#     ansatz, 
+#     x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+#     guess: np.ndarray, 
+#     maxiter = 10000, method = "BFGS"
+#     ):
+#     """Fit of y=f(x), there f: R^1 \to R^1
 
-    Args:
-        ansatz : ansatz taking a float and returning a float
-        x (np.ndarray): 1d array of x values
-        y (np.ndarray): 1d array of y values
-        ey (np.ndarray):1d array of errors on the values
-        guess (np.ndarray): 1d array fo guesses for the ansatz_
-        maxiter (int, optional): _description_. Defaults to 10000.
-        method (str, optional): _description_. Defaults to "BFGS".
-    """
-    def ansatz_casted(x, p):
-        return np.array([ansatz(x[0], p)])
-    #---
-    xp = x=np.array([x]).transpose()
-    ex = np.zeros(shape=xp.shape)
-    yp = np.array([y]).transpose()
-    eyp = np.array([ey]).transpose()
-    res = fit_trajectory(
-        ansatz=ansatz_casted, 
-        x=xp, ex=ex, y=yp, ey=eyp, 
-        guess=guess, 
-        maxiter=maxiter, method=method)
-    return res
-#---
+#     Args:
+#         ansatz : ansatz taking a float and returning a float
+#         x (np.ndarray): 1d array of x values
+#         y (np.ndarray): 1d array of y values
+#         ey (np.ndarray):1d array of errors on the values
+#         guess (np.ndarray): 1d array fo guesses for the ansatz_
+#         maxiter (int, optional): _description_. Defaults to 10000.
+#         method (str, optional): _description_. Defaults to "BFGS".
+#     """
+#     def ansatz_casted(x, p):
+#         return np.array([ansatz(x[0], p)])
+#     #---
+#     xp = x=np.array([x]).transpose()
+#     ex = np.zeros(shape=xp.shape)
+#     yp = np.array([y]).transpose()
+#     eyp = np.array([ey]).transpose()
+#     res = fit_trajectory(
+#         ansatz=ansatz_casted, 
+#         x=xp, ex=ex, y=yp, ey=eyp, 
+#         guess=guess, 
+#         maxiter=maxiter, method=method)
+#     return res
+# #---
 
-def fit_xiexiyey(
-    ansatz, 
-    x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
-    guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"):
-    """Fit of y=f(\vec{x}), there f: R^n \to R^1
+# def fit_xiyey(
+#     ansatz, 
+#     x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+#     guess: np.ndarray, 
+#     maxiter = 10000, method = "BFGS"
+#     ):
+#     """Fit of y=f(\vec{x}), there f: R^n \to R^1
 
-    Args:
-        ansatz : ansatz taking a float and returning a float
-        x (np.ndarray): 1d array of x values
-        y (np.ndarray): 1d array of y values
-        ey (np.ndarray):1d array of errors on the values
-        guess (np.ndarray): 1d array fo guesses for the ansatz_
-        maxiter (int, optional): _description_. Defaults to 10000.
-        method (str, optional): _description_. Defaults to "BFGS".
-    """
-    def ansatz_casted(x, p):
-        return np.array([ansatz(x, p)])
-    #---
-    yp = np.array([y]).transpose()
-    eyp = np.array([ey]).transpose()
-    res = fit_trajectory(
-        ansatz=ansatz_casted, 
-        x=x, ex=ex, y=yp, ey=eyp, 
-        guess=guess, 
-        maxiter=maxiter, method=method)
-    return res
-#---
+#     Args:
+#         ansatz : ansatz taking a float and returning a float
+#         x (np.ndarray): 1d array of x values
+#         y (np.ndarray): 1d array of y values
+#         ey (np.ndarray):1d array of errors on the values
+#         guess (np.ndarray): 1d array fo guesses for the ansatz_
+#         maxiter (int, optional): _description_. Defaults to 10000.
+#         method (str, optional): _description_. Defaults to "BFGS".
+#     """
+#     def ansatz_casted(x, p):
+#         return np.array([ansatz(x, p)])
+#     #---
+#     ex = np.zeros(shape=x.shape)
+#     yp = np.array([y]).transpose()
+#     eyp = np.array([ey]).transpose()
+#     res = fit_trajectory(
+#         ansatz=ansatz_casted, 
+#         x=x, ex=ex, y=yp, ey=eyp, 
+#         guess=guess, 
+#         maxiter=maxiter, method=method)
+#     return res
+# #---
+
+# def fit_xiexiyey(
+#     ansatz, 
+#     x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+#     guess: np.ndarray, 
+#     maxiter = 10000, method = "BFGS"
+#     ):
+#     """Fit of y=f(\vec{x}), there f: R^n \to R^1
+
+#     Args:
+#         ansatz : ansatz taking a float and returning a float
+#         x (np.ndarray): 1d array of x values
+#         y (np.ndarray): 1d array of y values
+#         ey (np.ndarray):1d array of errors on the values
+#         guess (np.ndarray): 1d array fo guesses for the ansatz_
+#         maxiter (int, optional): _description_. Defaults to 10000.
+#         method (str, optional): _description_. Defaults to "BFGS".
+#     """
+#     def ansatz_casted(x, p):
+#         return np.array([ansatz(x, p)])
+#     #---
+#     yp = np.array([y]).transpose()
+#     eyp = np.array([ey]).transpose()
+#     res = fit_trajectory(
+#         ansatz=ansatz_casted, 
+#         x=x, ex=ex, y=yp, ey=eyp, 
+#         guess=guess, 
+#         maxiter=maxiter, method=method)
+#     return res
+# #---

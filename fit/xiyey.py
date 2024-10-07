@@ -1,11 +1,12 @@
-"""Fit of a 1d function of n variables with errors on the "x" too """
+"""Fit of a 1d function of n variables """
+
 
 import numpy as np
 from lattice_data_tools.fit.trajectory import fit_trajectory
 
-def fit_xiexiyey(
+def fit_xiyey(
     ansatz, 
-    x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+    x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
     maxiter = 10000, method = "BFGS"
     ):
@@ -23,6 +24,7 @@ def fit_xiexiyey(
     def ansatz_casted(x, p):
         return np.array([ansatz(x, p)])
     #---
+    ex = np.zeros(shape=x.shape)
     yp = np.array([y]).transpose()
     eyp = np.array([ey]).transpose()
     res = fit_trajectory(
