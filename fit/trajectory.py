@@ -37,9 +37,9 @@ def fit_trajectory(
     """
     assert (x.shape[0] == y.shape[0]) ## same number of points
     N_pts = x.shape[0] # number of points
-    ix_with_err = np.where(ex > 0) # indices of points with error
-    x_fit = x[ix_with_err]
-    ex_fit = x[ix_with_err]
+    ix_with_err = tuple(np.argwhere(ex > 0).T) # indices of points with error
+    x_fit = np.copy(x[ix_with_err])
+    ex_fit = ex[ix_with_err]
     iy_with_err = np.where(ey > 0) # indices of points with error
     y_fit = y[iy_with_err]
     ey_fit = ey[iy_with_err]
@@ -47,19 +47,19 @@ def fit_trajectory(
     N_par = len(guess) # number of parameters of the fit ansatz
     N_dof = N_pts - N_par # number of degrees of freedom
 
-
     # chi square residual function
     def ch2(p_all):
         p_ansatz = p_all[0:N_par] ## parameters of the fit only
-        p_x = p_all[N_par:].reshape(x_fit.shape)
-        x[ix_with_err] = p_x ## replacing x_i with errors with fit parameters
+        p_x = p_all[N_par:] # .reshape(x_fit.shape)
+        x_old = np.copy(x)
+        x[ix_with_err] = p_x ## replacing x_i (with errors) with fit parameters
         y_th = np.array([ansatz(x[i,:], p_ansatz) for i in range(N_pts)])[iy_with_err] # theoretical values
         ch2_x = np.sum(((x_fit - p_x)/ex_fit)**2)
         ch2_y = np.sum(((y_fit - y_th)/ey_fit)**2)
         ch2_res = ch2_x + ch2_y
         return ch2_res
     #---
-    guess = np.concatenate((guess, x[ix_with_err].flatten()))
+    guess = np.concatenate((guess, np.copy(x[ix_with_err].flatten())))
     mini = opt.minimize(fun = ch2, x0 = guess, method = method)
     ch2_value = ch2(mini.x)
     
@@ -84,10 +84,10 @@ def fit_xyey(
 
     Args:
         ansatz : ansatz taking a float and returning a float
-        x (np.ndarray): _description_
-        y (np.ndarray): _description_
-        ey (np.ndarray): _description_
-        guess (_type_): _description_
+        x (np.ndarray): 1d array of x values
+        y (np.ndarray): 1d array of y values
+        ey (np.ndarray):1d array of errors on the values
+        guess (np.ndarray): 1d array fo guesses for the ansatz_
         maxiter (int, optional): _description_. Defaults to 10000.
         method (str, optional): _description_. Defaults to "BFGS".
     """
@@ -106,3 +106,31 @@ def fit_xyey(
     return res
 #---
 
+def fit_xiexiyey(
+    ansatz, 
+    x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+    guess: np.ndarray, 
+    maxiter = 10000, method = "BFGS"):
+    """Fit of y=f(\vec{x}), there f: R^n \to R^1
+
+    Args:
+        ansatz : ansatz taking a float and returning a float
+        x (np.ndarray): 1d array of x values
+        y (np.ndarray): 1d array of y values
+        ey (np.ndarray):1d array of errors on the values
+        guess (np.ndarray): 1d array fo guesses for the ansatz_
+        maxiter (int, optional): _description_. Defaults to 10000.
+        method (str, optional): _description_. Defaults to "BFGS".
+    """
+    def ansatz_casted(x, p):
+        return np.array([ansatz(x, p)])
+    #---
+    yp = np.array([y]).transpose()
+    eyp = np.array([ey]).transpose()
+    res = fit_trajectory(
+        ansatz=ansatz_casted, 
+        x=x, ex=ex, y=yp, ey=eyp, 
+        guess=guess, 
+        maxiter=maxiter, method=method)
+    return res
+#---
