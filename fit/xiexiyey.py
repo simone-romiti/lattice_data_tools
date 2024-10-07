@@ -7,7 +7,7 @@ def fit_xiexiyey(
     ansatz, 
     x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"
+    method = "BFGS"
     ):
     """Fit of y=f(\vec{x}), there f: R^n \to R^1
 
@@ -29,6 +29,6 @@ def fit_xiexiyey(
         ansatz=ansatz_casted, 
         x=x, ex=ex, y=yp, ey=eyp, 
         guess=guess, 
-        maxiter=maxiter, method=method)
+        method=method)
     return res
 #---
