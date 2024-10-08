@@ -8,7 +8,7 @@ def fit_xyey(
     ansatz, 
     x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"
+    method = "BFGS"
     ):
     """Fit of y=f(x), there f: \mathbb{R}^1 \to \mathbb{R}^1
 
@@ -24,7 +24,7 @@ def fit_xyey(
     def ansatz_casted(x, p):
         return np.array([ansatz(x[0], p)])
     #---
-    xp = x=np.array([x]).transpose()
+    xp = np.array([x]).transpose()
     ex = np.zeros(shape=xp.shape)
     yp = np.array([y]).transpose()
     eyp = np.array([ey]).transpose()
@@ -32,6 +32,6 @@ def fit_xyey(
         ansatz=ansatz_casted, 
         x=xp, ex=ex, y=yp, ey=eyp, 
         guess=guess, 
-        maxiter=maxiter, method=method)
+        method=method)
     return res
 #---
