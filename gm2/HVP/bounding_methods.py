@@ -1,8 +1,46 @@
 """ Bounding methods for a_\mu, for a single bootstrap sample """
-
 import numpy as np
-
 from lattice_data_tools.gm2.HVP.amu import get_amu_precomp_K
+import dill
+import yaml
+import os
+import struct
+from lattice_data_tools.gm2.HVP.amu import get_amu
+from scipy.integrate import simpson
+
+def ZeroTail_w(ens_name: str, V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, mode: str, strategy: str = "trapezoidal") -> float:
+    """ 
+    Calculation of a_\mu window and full as \int_{0}^{t_0} t^2 K(t) Theta_w(t) Z^2 V(t) with different modes.
+    In other words, V(t) is replaced with 0 from t=t0 onwards.
+    NOTE: all quantities should be in lattice units.
+
+    Args:
+        ens_name: The ensemble name.
+        V (np.ndarray): Values of the correlator: V(0), V(1), ..., V(T_max).
+                        The correlator should be "bare" (i.e. not renormalized)
+                        and should already include the charge factors.
+        K (np.ndarray): Values of the Kernel: K(0), K(1), ..., K(T_max).
+        Z_ren (float): Renormalization constant for the vector current: Z_A for TM and Z_V for OS.
+        t0 (int): Value (included) of t after which we set V=0.
+        strategy (str): Integration strategy (e.g., "trapezoidal", "rectangles", "simpson").
+        mode (str): Specifies which calculation to perform. Options are:
+                    "SD" for short-distance contribution,
+                    "W" for window contribution,
+                    "LD" for long-distance contribution,
+                    "full" for using the full kernel.
+
+    Returns:
+        float: Value of the integral.
+    """
+    T_ext = V.shape[0]
+    ti = np.arange(0, T_ext)
+
+    # Truncate V and K arrays from t=t0 onward
+    Vi_truncated = V[0:t0 + 1]
+    K_truncated = K[0:t0 + 1]
+    ti_truncated = ti[0:t0 + 1]
+
+    return get_amu(ens_name=ens_name, ti=ti_truncated, Vi=Vi_truncated, K=K_truncated, Z_ren=Z_ren, strategy=strategy, mode=mode)
 
 def ZeroTail(V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, strategy="trapezoidal") -> float:
     """ 
