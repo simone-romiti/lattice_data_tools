@@ -10,7 +10,7 @@ def fit_xyey(
     guess: np.ndarray, 
     method = "BFGS"
     ):
-    """Fit of y=f(x), there f: \mathbb{R}^1 \to \mathbb{R}^1
+    """Fit of y=f(x), there f: \\mathbb{R}^1 \\to \\mathbb{R}^1
 
     Args:
         ansatz : ansatz taking a float and returning a float

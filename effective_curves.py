@@ -18,6 +18,25 @@ def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
 #---
 
+def get_A_eff_log(C: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Effective amplitude curve : A_eff(t) = C(t)/exp(-m_eff(t)*t)
+    
+    Args:
+        C (np.ndarray): Correlator C(t)
+        m_eff (np.ndarray): effective mass curve m_eff(t)
+    
+    Returns:
+        np.ndarray: M_eff(t) = log(C(t)/C(t+1))
+    """
+    T = C.shape[0] ## temporal extent
+    ti = np.array([t for t in range(T-1)])
+    res = C[0:T-1] * np.exp(+m_eff*ti)
+    return res
+#---
+
+# dictionary of ansaetze for correlators with the backward signal
+backward_signal_ansatz_dict = {+1: lambda x: np.cosh(x), -1: lambda x: np.sinh(x)}
+
 def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
     """ 
     
@@ -30,12 +49,7 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
         M_eff(t) is replaced with the previous value M_eff(t-1)
     
     """
-    
-    if p == +1:
-        form = lambda x: np.cosh(x)
-    elif p == -1:
-        form = lambda x: np.sinh(x)
-    #---
+    form = backward_signal_ansatz_dict[p]
     T_ext = C.shape[0] ## temporal extent
     T_half = int(T/2)
     t_eff = np.array([t for t in range(T_ext-1)])
@@ -63,6 +77,19 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
     return m_eff
 #---
 
+def get_A_eff_bkw(C: np.ndarray, m_eff: np.ndarray, T: int, p: int):
+    """
+    Effective Amplitude including the backward signal 
+    see eq. 6.57 of Gattringer & Lang    
+    """
+    form = backward_signal_ansatz_dict[p]
+    T_ext = m_eff.shape[0]
+    T_half = int(T/2)
+    ti = np.array([t for t in range(T-1)])[0:T_ext]
+    A_eff = C[0:T_ext]/form(m_eff*(T_half-ti))
+    return A_eff
+#---
+
 def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
     
@@ -86,6 +113,36 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> 
         return get_m_eff_bkw(C=C, T=T, p=-1, avoid_instability=avoid_instability)
     else:
         err_mess = "Illegal strategy for calculation of effective mass: "
+        err_mess += "{strategy}".format(strategy=strategy)
+        raise ValueError(err_mess)
+    #---
+#---
+
+def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: str) -> np.ndarray:
+    """Effective Amplitude curve from the correlator
+    
+    Args:
+        C (np.ndarray): correlator C(t)
+        m_eff (np.ndarray): effective mass m_eff(t)
+        
+        strategy (str): computation strategy. 
+                        Supported: ["log","cosh","sinh"]
+
+    Raises:
+        ValueError: if strategy is not in the list of supported types
+
+    Returns:
+        np.ndarray: array of effective mass values M_eff(t)
+    """
+    
+    if strategy == "log":
+        return get_A_eff_log(C)
+    elif strategy == "cosh":
+        return get_A_eff_bkw(C=C, m_eff=m_eff, T=T, p=+1)
+    elif strategy == "sinh":
+        return get_A_eff_bkw(C=C, m_eff=m_eff, T=T, p=-1)
+    else:
+        err_mess = "Illegal strategy for calculation of effective amplitude: "
         err_mess += "{strategy}".format(strategy=strategy)
         raise ValueError(err_mess)
     #---
