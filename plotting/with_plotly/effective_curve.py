@@ -10,6 +10,7 @@ phi_golden = (1 + np.sqrt(5)) / 2
 def get_figure(
     t: np.ndarray, y: np.ndarray, dy: np.ndarray, 
     title: str, yaxis_title: str, labels: List[str], legend_title: str,
+    colors_rgb=List[str],
     tmin = None, tmax=None,
     ymin = None, ymax=None,
     t1_fit = None, t2_fit=None,
@@ -44,14 +45,14 @@ def get_figure(
             ),
         ))
 
-        legendgroup = label[i]
+        legendgroup = labels[i]
         if not ((t1_fit is None) or (t2_fit is None) or (y_fit is None) or (dy_fit is None)):
             T_ext = t2_fit[i]-t1_fit[i]+1
             # Create trace for the upper boundary
             y_upper = y_fit[i]+dy_fit[i]
             y_lower = y_fit[i]-dy_fit[i]
             fig.add_trace(go.Scatter(
-                x=np.arange(t1_fit, t2_fit+1),
+                x=np.arange(t1_fit[i], t2_fit[i]+1),
                 y=np.full(shape=(T_ext), fill_value=y_upper),
                 mode='lines',
                 line=dict(color="rgb({rgb})".format(rgb=colors_rgb[i])),
@@ -61,7 +62,7 @@ def get_figure(
 
             # Create trace for the lower boundary and fill the area to the next y (upper bound)
             fig.add_trace(go.Scatter(
-                x=np.arange(t1_fit, t2_fit+1),
+                x=np.arange(t1_fit[i], t2_fit[i]+1),
                 y=np.full(shape=(T_ext), fill_value=y_lower),
                 mode='lines',
                 line=dict(color="rgb({rgb})".format(rgb=colors_rgb[i])),
@@ -76,8 +77,8 @@ def get_figure(
 
             # Optionally, plot the average line as a separate trace (optional for clearer visualization)
             fig.add_trace(go.Scatter(
-                x=np.arange(t1_fit, t2_fit+1),
-                y=np.full(shape=(T_ext), fill_value=y_avg),
+                x=np.arange(t1_fit[i], t2_fit[i]+1),
+                y=np.full(shape=(T_ext), fill_value=y_fit),
                 mode='lines+markers',
                 line=dict(color="rgb({rgb})".format(rgb=colors_rgb[i])),
                 showlegend=False,
@@ -87,20 +88,20 @@ def get_figure(
     # updating the layout
     fig.update_layout(
         font_family="Ubuntu Mono",
-        width=widht,
+        width=width,
         height=height,
         title=title,
         legend_title=legend_title,
         xaxis={
-            'title': 't/a', 
+            'title': '$t/a$', 
             'ticks': 'inside',
-            "range": [t_min, tmax],
+            "range": [tmin, tmax],
             "tickformat": ',d'
         },
         yaxis={
             'title': yaxis_title, 
             'tickformat':'.8e', 
-        'ticks': 'inside',
+            'ticks': 'inside',
             "range": [ymin, ymax]
         },
     )

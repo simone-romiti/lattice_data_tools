@@ -45,7 +45,7 @@ def extract_key_combinations(nested_dict: defaultdict, current_keys: List = None
 #---
 
 
-def launch_nested_loops(key_lists: List[List], function: Callable):
+def launch_nested_loops(key_lists: List[List], function: Callable, verbose=False):
     """
     Launches a nested loop based on the list of lists of string keys.
     The list of lists can be generared, e.g. with extract_key_combinations()
@@ -62,6 +62,9 @@ def launch_nested_loops(key_lists: List[List], function: Callable):
     launch_nested_loops(key_lists, func)
     """
     for key_combination in key_lists:
+        if verbose:
+            print(key_combination)
+        #---
         # Call the lambda function with the current key combination
         function(*key_combination)
 #-------
