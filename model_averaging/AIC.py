@@ -23,7 +23,7 @@ def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
 def get_Pi(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64):
     """ 
     Returns the Cumulative Density Functions (CDF) P_i(y, lambda) of Eq. 162 of https://arxiv.org/pdf/2002.12347
-    for all the values of the array "y"
+    for all the values of the array "y".
     """
     N_tot = y.shape[0]
     n_models = w.shape[0]
@@ -39,7 +39,11 @@ def get_Pi(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: 
 def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64):
     """ 
     Returns the sum of the Cumulative Density Functions (CDF) P_i(y, lambda) of Eq. 162 of https://arxiv.org/pdf/2002.12347
-    for all the values of the array "y"
+    for all the values of the array "y". These values are the domain of values that we can get from each model, 
+    i.e. the m[i] should fall into the interval of the y values.
+
+    Remark: We numerically evaluate the CDF at some values of y (specified by the array), 
+    and estimate the percentiles from those. Thus, the resolution in the y[i] should be much larger that the sigma[i]
     """
     Pi = get_Pi(y=y, w=w, m=m, sigma=sigma, lam=lam)
     P = np.sum(Pi, axis=0)
@@ -65,14 +69,26 @@ def get_mean_and_sigma2(y16, y50, y84):
     return (y_mean, sigma2_tot)
 #---
 
-def get_sigma2_contributions(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
-    y16, y50, y84 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=1.0, ymin=ymin, ymax=ymax, eps=eps)
+def get_sigma2_contributions(
+    w: np.ndarray, m: np.ndarray, sigma: np.ndarray, 
+    ymin: np.float64, ymax: np.float64, eps: np.float64, 
+    lambda1 = 1.0, lambda2 = 2.0):
+    """
+    Statistical and systematic variances using the AIC model averaging
+    
+    w: weights
+    m: means of the models
+    sigma: statistical uncertainties of the models
+    ymin, ymax, eps: parameters defining the interval for numerically reproduding the CDF finely enough
+
+    """
+    y16, y50, y84 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=lambda1, ymin=ymin, ymax=ymax, eps=eps)
     y_mean, sigma2_tot = get_mean_and_sigma2(y16=y16, y50=y50, y84=y84)
 
-    y16_l2, y50_l2, y84_l2 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=2.0, ymin=ymin, ymax=ymax, eps=eps)
+    y16_l2, y50_l2, y84_l2 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=lambda2, ymin=ymin, ymax=ymax, eps=eps)
     y_mean_l2, sigma2_tot_l2 = get_mean_and_sigma2(y16=y16_l2, y50=y50_l2, y84=y84_l2)
-    sigma2_stat = sigma2_tot_l2 - sigma2_tot
-    sigma2_syst = sigma2_tot - sigma2_stat
+    sigma2_stat = (sigma2_tot_l2 - sigma2_tot)/(lambda2-lambda1)
+    sigma2_syst = (lambda2*sigma2_tot - lambda1*sigma2_tot_l2)/(lambda2-lambda1)
     return {"stat": sigma2_stat, "syst": sigma2_syst}
 #---
 
