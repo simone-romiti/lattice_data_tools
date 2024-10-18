@@ -1,13 +1,13 @@
 """2nd test of the bootstrap routines
 
-This test shows how bootstrapping "gaussianize" the data.
+This test shows how bootstrapping "gaussianizes" the data.
 
 In fact, bootstrap samples are averages of a samples of data from the original dataset.
 Because of the central limit theorem, bootstrap samples are distributed gaussianly
 and their standard error corresponds to the error on the mean of the original distribution.
 
 The advantage is that if we have some data whose distribution is not known analytically,
-one can still estimate the mean and error by bootstrapping.
+one can still estimate the mean and error on the data by bootstrapping.
 
 NOTE: In this test we know it because we choose a uniform distribution. 
 """
