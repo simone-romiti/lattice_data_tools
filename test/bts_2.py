@@ -30,14 +30,16 @@ print("Generating", N, "random variables distributed uniformly between", a, "and
 
 x = np.random.uniform(low=0.0, high=1.0, size=N)
 
-plt.hist(x)
+plt.hist(x, bins=int(np.sqrt(N)))
 plt.savefig("histogram-original_data.pdf")
+plt.close()
 
 N_bts = 5000
 x_bts = sampling.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=456)
 
-plt.hist(x_bts)
+plt.hist(x_bts, bins=int(np.sqrt(N_bts)))
 plt.savefig("histogram-bootstrap_data.pdf")
+plt.close()
 
 print("================================")
 print("Average and error on the average")
