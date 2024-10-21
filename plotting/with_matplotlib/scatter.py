@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 
 def xy(
     x: np.ndarray, y: np.ndarray, 
-    title: str,
-    marker: str, color: str, 
-    xlabel: str, ylabel: str,
-    x_error: np.ndarray = None, y_error: np.ndarray = None):
+    title = "Plot title",
+    marker = "x", color = "blue", 
+    xlabel = "x", ylabel= "y",
+    ex: np.ndarray = None, ey: np.ndarray = None):
     """
     Plot of x values against y values with optional error bars (using Matplotlib).
 
@@ -26,9 +26,9 @@ def xy(
         Label for the X-axis.
     ylabel : str
         Label for the Y-axis.
-    x_error : np.ndarray, optional
+    ex : np.ndarray, optional
         Array of x-axis error values (default is None).
-    y_error : np.ndarray, optional
+    ey : np.ndarray, optional
         Array of y-axis error values (default is None).
 
     Returns:
@@ -42,13 +42,13 @@ def xy(
     xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis')
 
     # Plot with error bars on x-axis:
-    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', x_error=x_errors)
+    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', ex=exs)
 
     # Plot with error bars on y-axis:
-    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', y_error=y_errors)
+    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', ey=eys)
 
     # Plot with error bars on both x and y axes:
-    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', x_error=x_errors, y_error=y_errors)
+    xy(x, y, 'Plot Title', 'o', 'blue', 'X-Axis', 'Y-Axis', ex=exs, ey=eys)
     """
     # Create a figure and axis
     fig, ax = plt.subplots()
@@ -56,7 +56,7 @@ def xy(
     # Plot with optional error bars
     ax.errorbar(
         x, y, 
-        xerr=x_error, yerr=y_error,  # Error bars on x and/or y
+        xerr=ex, yerr=ey,  # Error bars on x and/or y
         fmt=marker, color=color,  # Marker and color style
         ecolor='gray', elinewidth=1, capsize=2  # Error bar styling
     )

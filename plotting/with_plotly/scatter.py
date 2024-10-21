@@ -3,10 +3,10 @@ import plotly.graph_objs as go
 
 def xy(
     x: np.ndarray, y: np.ndarray, 
-    title: str,
-    marker: str, color: str, 
-    xlabel: str, ylabel: str,
-    x_error: np.ndarray = None, y_error: np.ndarray = None):
+    title = "Plot title",
+    marker = "x", color = "blue", 
+    xlabel = "x", ylabel= "y",
+    ex: np.ndarray = None, ey: np.ndarray = None):
     """
     Plot of x values against y values with optional error bars.
 
@@ -26,9 +26,9 @@ def xy(
         Label for the X-axis.
     ylabel : str
         Label for the Y-axis.
-    x_error : np.ndarray, optional
+    ex : np.ndarray, optional
         Array of x-axis error values (default is None).
-    y_error : np.ndarray, optional
+    ey : np.ndarray, optional
         Array of y-axis error values (default is None).
 
     Returns:
@@ -42,17 +42,17 @@ def xy(
     xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis')
 
     # Plot with error bars on x-axis:
-    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', x_error=x_errors)
+    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ex=exs)
 
     # Plot with error bars on y-axis:
-    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', y_error=y_errors)
+    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ey=eys)
 
     # Plot with error bars on both x and y axes:
-    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', x_error=x_errors, y_error=y_errors)
+    xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ex=exs, ey=eys)
     """
     # Define scatter plot with error bars if provided
-    error_x = dict(type='data', array=x_error) if x_error is not None else None
-    error_y = dict(type='data', array=y_error) if y_error is not None else None
+    error_x = dict(type='data', array=ex) if ex is not None else None
+    error_y = dict(type='data', array=ey) if ey is not None else None
     
     fig = go.Figure(
         data=go.Scatter(
