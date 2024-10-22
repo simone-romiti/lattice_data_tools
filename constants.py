@@ -16,7 +16,11 @@ masses_MeV = {
         "isoQCD": {"Edinburgh": 494.6},
         "+": 493.664, # K^+
         "0": 497.611  # K^0
+    },
+    "Ds": {
+        "isoQCD": {"Edinburgh": 1967}
     }
+
 }
 
 ## units conversion

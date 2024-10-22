@@ -23,7 +23,7 @@ def bts_mf_phys_from_M(
     N_bts = M.shape[0] ## number of bootstraps
     dM = np.std(M, axis=0)
     mf_phys = np.zeros(shape=(N_bts))
-    par_fit = np.zeros(shape=(N_bts))
+    par_fit = np.zeros(shape=(N_bts, guess.shape[0]))
     for i in range(N_bts):
         mini = x0_from_xyey(
         ansatz=ansatz, guess=guess, 

@@ -72,7 +72,9 @@ def fit_trajectory(
     res["par"] = mini.x
     res["ch2"] = ch2_value
     res["dof"] = N_dof ## degrees of freedom
-    res["ch2_dof"] = ch2_value / N_dof
-
+    ch2_dof = float("nan")
+    if N_dof > 0:
+        res["ch2_dof"] = ch2_value / N_dof
+    #---
     return(res)
 #---
