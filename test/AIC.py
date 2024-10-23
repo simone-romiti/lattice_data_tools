@@ -61,10 +61,11 @@ print("sigma_tot^2 = ", sigma2_tot)
 
 sigma2_stat = sigma2_tot_l2 - sigma2_tot
 sigma2_syst = sigma2_tot - sigma2_stat
-
+sigma2_syst_alternative = (sigma2_tot_l2 - 2*sigma2_tot)/(1-2)
 
 print("       exact    AIC")
 print("syst: ", sigma2_syst_exact, sigma2_syst)
+print("syst_alternative: ", sigma2_syst_exact, sigma2_syst_alternative)
 print("stat: ", sigma2_stat_exact, sigma2_stat)
 
 Pi = AIC.get_Pi(y=y, w=w, m=m, sigma=sigma, lam=1.0)

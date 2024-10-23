@@ -63,18 +63,20 @@ def fit_trajectory(
     #---
     guess = np.concatenate((guess, np.copy(x[ix_with_err].flatten())))
     mini = opt.minimize(fun = ch2, x0 = guess, method = method)
-    ch2_value = ch2(mini.x)
+    par = mini.x
+    ch2_value = ch2(par)
     
     res = dict({})
 
     res["ansatz"] = ansatz
     res["N_par"] = N_par
-    res["par"] = mini.x
+    res["par"] = par
     res["ch2"] = ch2_value
     res["dof"] = N_dof ## degrees of freedom
     ch2_dof = float("nan")
     if N_dof > 0:
-        res["ch2_dof"] = ch2_value / N_dof
+        ch2_dof = ch2_value / N_dof
     #---
+    res["ch2_dof"] = ch2_dof
     return(res)
 #---
