@@ -55,12 +55,27 @@ def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: n
 def get_P_from_bootstraps(y: np.ndarray, w: np.ndarray, lam: np.float64):
     """CDFs from boostrap samples 
     
-    y: array of size (N_bts, n_models)
-    lam: scaling parameter for the variance --> sqrt(lambda) for the uncertainty
+    We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
+    This is done as follows:
+    
+    Step 0 (optional): we rescale the variance of the bootstrap samples
+    Step 1: We consider all the y values, i.e. from each bootstrap and each each model, all together
+    Step 2: We build the CDFs of each model, scaled by its weight (normalized to 1).
+            This is done by building, for each model k, a fictitious histogram count (with binning 1). 
+            Only for the values of "y" of the k-th model, we set the count to the weight w_k.
+    Step 3: The cumulative sums of these fictitious histogram gives the CDF 
+            in terms of the whole array of values coming from all the models.
+
+    Arguments:
+        y: array of size (N_bts, n_models)
+        lam: scaling parameter for the variance --> sqrt(lambda) for the uncertainty
+        
+    Returns:
+        dictionary with the results of this procedure
     """
     N_bts, n_models = y.shape
-    y_rescaled = np.copy(y)
     # producing bootstraps with same mean but rescaled uncertainty
+    y_rescaled = np.copy(y)
     if lam != 1.0:
         y_avg = np.average(y, axis=0)
         sqrt_lam = np.sqrt(lam)
@@ -71,13 +86,14 @@ def get_P_from_bootstraps(y: np.ndarray, w: np.ndarray, lam: np.float64):
     N_pts = y.shape[0] ## total number of points
     # weighted p.d.f. with binning 1
     w_pi = np.zeros(shape=(N_pts, n_models))
+    sum_wk = np.sum(w)
     for k in range(n_models):
         yk_idx = np.where(np.isin(y, y_rescaled[:,k]))[0]
-        w_pi[yk_idx, k] = w[k]
+        # the weights are normalized to 1
+        w_pi[yk_idx, k] = w[k] / sum_wk
     #---
     # each model contributes with N_bts points
-    # the weights are normalized to 1 with this division
-    wP = np.cumsum(w_pi, axis=0)/(N_bts*np.sum(w)) 
+    wP = np.cumsum(w_pi, axis=0)/N_bts 
     P = np.sum(wP, axis=1) # cumulating the models' contributions
     return {"y": y, "wP": wP, "P": P}
 #---
