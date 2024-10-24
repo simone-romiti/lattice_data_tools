@@ -1,9 +1,10 @@
 This folder contains test scripts of the routines of the library.
 
-**tests available**:
+**Available tests**:
 
-
-- _Bootstrap sampling_: `bts.py`
+- _Bootstrap sampling_: 
+  - `bts.py`: simple bootstrap sampling. Check of mean and variance
+  - `bts2.py`: evidence of how the bootstrap sampling "Gaussianizes" the data
 
 - _Function fitting routines_ :
   * `fit_xyey.py` : function of 1 variable, error on the y only
@@ -13,3 +14,5 @@ This folder contains test scripts of the routines of the library.
 - _Physical point extrapolation_ : `mf_phys.py`
 
 - _Bayesian model averaging_ : `AIC.py`
+- _Reduction of lattice artifacts_: `lambda_method.py`
+
