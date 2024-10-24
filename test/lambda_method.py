@@ -13,17 +13,17 @@ N_pts = 4
 a = np.linspace(0.001, 0.01, N_pts)
 
 # Calculate the difference between y1 and y2
-diff = -10.0*(a**2) # 4.0*a/np.log(a) -  a**2 - 2.0*a**4
+diff = -10.0*(a**2) + 4.0*a/np.log(a) -  a**2 - 2.0*a**4
 
 # Generate y1 and y2 arrays
-y1 = 0.02 + 7.0 * a**2 # - 5.0*a**4
+y1 = 0.02 + 25.0 * a**2 - 5.0*a**4
 y2 = y1 + diff
 
 def ansatz(ai, p):
-    return p[0] + p[1]*(ai**2)
+    return p[0] + p[1]*(ai**2) + p[2]*(ai**4) + p[3]*ai/np.log(ai)
 #---
 
-guess = np.array([1.0, 1.0])
+guess = np.array([0.0, 0.0, 0.0, 0.0])
 L0 = lambda_method(a)
 mini1 = L0.y1y2_lambda_fixed(y1, y2)
 mini2 = L0.y1y2_lambda_variable(y1, y2, ansatz=ansatz, guess=guess)
