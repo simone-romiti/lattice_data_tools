@@ -13,6 +13,8 @@ This folder contains test scripts of the routines of the library.
 
 - _Physical point extrapolation_ : `mf_phys.py`
 
-- _Bayesian model averaging_ : `AIC.py`
+- _Bayesian model averaging_ : 
+  - `AIC.py`: Akaike Information Criterion application: assuming continuous distributions
+  - `AIC_bootstrap.py`: AIC but with bootstrap samples. The CDF is discontinuos.
 - _Reduction of lattice artifacts_: `lambda_method.py`
 

@@ -11,7 +11,7 @@ import lattice_data_tools.model_averaging.AIC as AIC
 
 np.random.seed(13754)
 
-n_models = 10000
+n_models = 100
 sigma_syst_exact = 1.4
 sigma2_syst_exact = sigma_syst_exact**2
 
@@ -48,7 +48,6 @@ ymax = 20.0 # np.max(m)
 eps = 1e-3
 y = np.arange(ymin, ymax, eps)
 
-
 y16, y50, y84 = AIC.get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=1.0, ymin=ymin, ymax=ymax, eps=eps)
 y_mean, sigma2_tot = AIC.get_mean_and_sigma2(y16=y16, y50=y50, y84=y84)
 
@@ -68,9 +67,9 @@ print("syst: ", sigma2_syst_exact, sigma2_syst)
 print("syst_alternative: ", sigma2_syst_exact, sigma2_syst_alternative)
 print("stat: ", sigma2_stat_exact, sigma2_stat)
 
-Pi = AIC.get_Pi(y=y, w=w, m=m, sigma=sigma, lam=1.0)
+Pi = AIC.get_Pi(y=y, m=m, sigma=sigma, lam=1.0)
 for i in range(n_models):
-    # plt.plot(y[:-1], np.diff(Pi[i]), linestyle="--", alpha=0.1)
+    plt.plot(y[:-1], np.diff(Pi[i]), linestyle="--", alpha=0.1)
     pass
 ####
 P = AIC.get_P(y=y, w=w, m=m, sigma=sigma, lam=1.0)

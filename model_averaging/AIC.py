@@ -20,18 +20,18 @@ def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     return w_i
 #---
 
-def get_Pi(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64):
+def get_Pi(y: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64):
     """ 
     Returns the Cumulative Density Functions (CDF) P_i(y, lambda) of Eq. 162 of https://arxiv.org/pdf/2002.12347
     for all the values of the array "y".
     """
     N_tot = y.shape[0]
-    n_models = w.shape[0]
+    n_models = m.shape[0]
     Pi = np.zeros(shape=(n_models, N_tot))
     sigma_scaled = np.sqrt(lam) * sigma
     for i in range(n_models):
-        Pi[i,:] = w[i] * norm.cdf(y, loc=m[i], scale=sigma_scaled[i])
-        Pi[i,:] /= Pi[i,-1]
+        Pi[i,:] = norm.cdf(y, loc=m[i], scale=sigma_scaled[i])
+        # Pi[i,:] /= Pi[i,-1]
     #---
     return Pi
 #---
@@ -45,12 +45,42 @@ def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: n
     Remark: We numerically evaluate the CDF at some values of y (specified by the array), 
     and estimate the percentiles from those. Thus, the resolution in the y[i] should be much larger that the sigma[i]
     """
-    Pi = get_Pi(y=y, w=w, m=m, sigma=sigma, lam=lam)
-    P = np.sum(Pi, axis=0)
-    P_normalized = P/P[-1] # np.sum(P)
-    return P_normalized
+    Pi = get_Pi(y=y, m=m, sigma=sigma, lam=lam)
+    P = np.matmul(w, Pi)/np.sum(w)
+    return P
+    # P_normalized = P/P[-1] # np.sum(P)
+    # return P_normalized
 #---
 
+def get_P_from_bootstraps(y: np.ndarray, w: np.ndarray, lam: np.float64):
+    """CDFs from boostrap samples 
+    
+    y: array of size (N_bts, n_models)
+    lam: scaling parameter for the variance --> sqrt(lambda) for the uncertainty
+    """
+    N_bts, n_models = y.shape
+    y_rescaled = np.copy(y)
+    # producing bootstraps with same mean but rescaled uncertainty
+    if lam != 1.0:
+        y_avg = np.average(y, axis=0)
+        sqrt_lam = np.sqrt(lam)
+        y_rescaled = np.array([y_avg[i] + sqrt_lam*(y[i,:]-y_avg[i]) for i in range(N_bts)])
+    #---
+    # sorting the Pi contributions according to the values of y
+    y = np.unique(y_rescaled.flatten()) ## sorted array of unique elements
+    N_pts = y.shape[0] ## total number of points
+    # weighted p.d.f. with binning 1
+    w_pi = np.zeros(shape=(N_pts, n_models))
+    for k in range(n_models):
+        yk_idx = np.where(np.isin(y, y_rescaled[:,k]))[0]
+        w_pi[yk_idx, k] = w[k]
+    #---
+    # each model contributes with N_bts points
+    # the weights are normalized to 1 with this division
+    wP = np.cumsum(w_pi, axis=0)/(N_bts*np.sum(w)) 
+    P = np.sum(wP, axis=1) # cumulating the models' contributions
+    return {"y": y, "wP": wP, "P": P}
+#---
 
 def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
     """ Returns percentile values y16, y50 (the median) and y84 """
