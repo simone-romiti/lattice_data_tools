@@ -3,8 +3,7 @@ This folder contains test scripts of the routines of the library.
 **Available tests**:
 
 - _Bootstrap sampling_: 
-  - `bts.py`: simple bootstrap sampling. Check of mean and variance
-  - `bts2.py`: evidence of how the bootstrap sampling "Gaussianizes" the data
+  - `bootstrap_sampling.qmd`: quarto document discussing the bootstrap sampling with examples. Render it with `quarto render bootstrap_sampling.qmd`.
 
 - _Function fitting routines_ :
   * `fit_xyey.py` : function of 1 variable, error on the y only

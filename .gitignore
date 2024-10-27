@@ -16,5 +16,10 @@ doc/build/
 *.rst.*
 *.inv
 
-
+# quarto rendering
+*.ipynb
+*.png
+*.js
+*.woff
+*.css
 

@@ -1,0 +1,227 @@
+---
+title: "Bootstrap Sampling"
+author: "Simone Romiti"
+date: last-modified
+format: 
+    html:
+        html-math-method: katex
+        code-fold: true
+        embed-resources: true
+---
+
+# Introduction to Bootstrap Sampling
+
+Bootstrap sampling is a statistical method that allows to compute estimators of random variables,
+**based only of the dataset and without knowing the analytic form of the distribution**.
+This is useful in several contexts. Here we are interested in data produced by Monte Carlo integration for lattice calculations.
+The value of the obervable is computed for several points in the phase space, making a so called "time series" of $N$ points.
+Given the $N$ values of the observables $O_1, O_2, \ldots$,
+we often need to estimate the expectation value of functions of the $O_i$: $f(O_1, O_2, \ldots)$.
+**Example**: If we want to compute the specific heat we need the expectation value of the energy and its square.
+
+Here's how bootstrap sampling works for a given random variable $x$ of which we have $N$ measured points $x_k$.
+Let $N_b$ the "number of bootstrap samples" and $S_j$ the block sizes. 
+
+1. Draw $S_1$ points randomly from the $x_k$, allowing for repetition. This set is a single bootstrap sample, with block size $S_1$.
+2. Repeat the procedure $N_b$ times, each time drawing $S_j$ points ($j=1,2,\ldots,N_b$). 
+
+The $N_b$ sets of $S_1, S_2, \ldots, S_{N_b}$ points are the bootstrap samples of the original dataset.
+Please note that one often uses $S_j=S \, \forall j$,
+as this generates a matrix that can be handled more efficiently in numerical calculations.
+
+To make an example,
+the final result may look something like this:
+
+| Bootstrap sample | block size | x |
+|----------|----------|----------|
+| 1     | 3   | $(x_3, x_1, x_6)$           |
+| 2     | 2   | $(x_{11}, x_2)$             |
+| ...   | ...   | ...        |
+| $N_b$ | 5   | $(x_8, x_2, x_9, x_2, x_1)$ |
+
+**Remarks**:
+
+- Since every time we draw from the $x_k$, the set we get reflects approximately the original distribution.
+- When we have a sample of $n$ values $y_a$ distributed according to some distribution, the arithmetic average is always an estimator of the mean value $\mu$. In fact:
+\begin{equation}
+E\left(\frac{1}{n} \sum_{a=1}^{n} y_a\right) = \frac{1}{n} \sum_a E(y_a) = \frac{1}{n} n \mu = \mu
+\, .
+\end{equation}
+  This is still true if we consider an average of the averages from different samples.
+- In the above derivation, it doesn't matter whether $y$ is a primary observable or a function of it. **Example**: if we have a vector of random variables $\vec{x}$, we can estimate $E(f(\vec{x}))$ by averaging the values $y_a = f(\vec{x}_a)$. 
+    - The evaluation of $f$ on the datapoints takes into account the combined distribution of the different random variables. Loosely speaking, one often says that _this takes into account the correlation among the observables_, even if this is not the only feature as it preserves the whole combined distribution.
+
+By the above considerations,
+we can make a recipe on how to use the bootstrap sampling for a function of some random variables $O_1, O_2, \ldots$:
+
+1. Compute the bootstrap samples for each of the random variables. **Bootstrap by bootstrap**, and **point by point** in each block of size $S_j$, find $f(O_1, O_2, \ldots)$.
+2. Compute the averages of each block, getting $N_b$ values, and then average those. The result is an estimator of the function's expectation value over the combined distribution.
+
+
+## Questions and Aswers
+
+1. **Why do we need bootstrapping?** Can't we simply use the $N$ values from the Monte Carlo trajectory?
+    - In principle yes, but this can be unnecessarily expensive. $N$ is typically quite large, and we would need to compute every function $N$ times and average in the end. Usually, one runs the statistical analysis with a given $N_b$ and $S_j$, and _a posteriori_ finds how large they have to be in order to reach the desired precision.
+
+2. **What is the connection of bootstrapping with the Central Limit Theorem?**
+    - If we take the block size averages of the bootstrap samples we get $N_b$ points that, according to the Central Limit Theorem, are Gaussianly distributed. We can say that bootstrapping "Gaussianizes" the data.
+    **NOTE**: once averaged over the $S_j$, the observable can't be safely combined with others (even itself) anymore.
+    - By the Central Limit Theorem, the Standard Error on the Mean of the original distribution can be estimated from the $N_b$ averages $\bar{x}_b$ as:
+    \begin{equation}
+    \text{SEM} \approx 
+    \sqrt{ \frac{1}{N_b-1} \sum_{b=1}^{N_b} (\bar{x}_b - \bar{\bar{x}})^2}
+    \end{equation}
+    where $\bar{\bar{x}}$ is the average of the $\bar{x}_b$.
+    - If $S_j=S \, \forall j$, we have:
+    \begin{equation}
+    \text{SEM}  = \frac{\sigma}{\sqrt{S}}
+    \end{equation}
+    where $\sigma^2$ is the variance of the original distribution.
+
+3. **How do I choose the $S_j$?**
+    - In general, the larger $S_j$, the better we can reproduce the features of the combined distributions (such as autocorrelation). However, one often deals with distributions that are approximately gaussian, and even $S_j \approx 2$ does the job. In general this needs to be checked numerically _a posteriori_.
+    - A good computational choice is to use $S_j=S \, \forall j$. In this way, the bootstrap samples are a matrix of size $N_b \times S$. It is of course valid to choose $S_j$ variable, as e.g. the `geom` option of the function `tsboot` in the `R` programming language.
+
+4. **How do I choose $N_b$?**
+    - As for $S_j$, one needs to see _a posteriori_ if the $N_b$ leads to statistical fluctuations that are well below the target precision.
+
+
+## Examples
+
+```{python}
+# Importing the necessary libraries
+
+import numpy as np
+from scipy.stats import skewnorm
+import matplotlib.pyplot as plt
+
+import sys
+sys.path.append('../../')
+
+from lattice_data_tools import bootstrap_sampling as bts
+```
+
+---
+
+Example on **gaussianly distributed data points**:
+
+```{python}
+
+np.random.seed(123)
+
+N = 10000 # number of points
+mu, sigma = 0.0, 3.0
+x = np.random.normal(loc=mu, scale=sigma, size=N) # original dataset
+
+N_bts = 5000 # number of bootstrap samples
+S = 2
+x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
+
+print("           Mean | SEM")
+print("Exact:    ", mu, "|", sigma/np.sqrt(S))
+print("Bootstrap:", x_bts.average(), "|", x_bts.std())
+```
+
+---
+
+Example on **exponentially distributed datapoints**:
+
+```{python}
+
+lambda_param = 0.5  # rate parameter for an exponential distribution: λ > 0
+
+N = 100000
+y = np.random.exponential(scale=1/lambda_param, size=N)
+
+
+N_bts = 1000 # number of bootstrap samples
+S = 20
+y_bts = bts.uncorrelated_confs_to_bts(x=y, N_bts=N_bts, S=S, seed=9378)
+
+y2_bts = y_bts**2
+# < (y-<y>)^2 > = <y^2> - (<y>)^2
+dy2 = y2_bts - (y_bts.average())**2
+
+print("Variance")
+print("Exact: ", 1/lambda_param**2)
+print("Bootstrap:", dy2.average())
+```
+
+Example on the **bootstraps and the Central Limit Theorem**:
+
+```{python}
+np.random.seed(21346)
+
+N = 100000
+a = 0.0
+b = 2.4
+print("Generating", N, "random variables distributed uniformly between", a, "and", b)
+
+x = np.random.uniform(low=a, high=b, size=N)
+
+plt.hist(x, bins=int(np.sqrt(N)))
+plt.title("Distribution of the original dataset")
+plt.show()
+# plt.savefig("histogram-original_data.pdf")
+plt.close()
+
+N_bts = 50000
+S = 20
+x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
+
+plt.hist(np.ndarray.mean(x_bts, axis=1), bins=int(np.sqrt(N_bts)))
+
+plt.title("Distribution of the bootstrap samples block averages")
+plt.show()
+# plt.savefig("histogram-bootstrap_data.pdf")
+plt.close()
+
+print("================================")
+print("Average and error on the average")
+print("================================")
+print("           x_avg | dx_avg")
+print("Exact:    ", (a+b)/2, "|", np.sqrt((b-a)**2/12)/np.sqrt(S))
+print("Bootstrap:", x_bts.average(), "|", x_bts.std())
+```
+
+---
+
+Example on **data drawn from a skewed distribution**:
+
+```{python}
+import matplotlib.pyplot as plt
+
+import sys
+
+sys.path.append('../../')
+
+from lattice_data_tools import bootstrap_sampling as bts
+
+np.random.seed(18236)
+
+N = 10000
+mean = 0.0
+sigma = 2.0
+skewness = 5
+
+# N random variables with skewed distribution
+x = skewnorm.rvs(a=skewness, loc=mean, scale=sigma, size=N)
+sinx2 = np.sin(x**2)
+
+n_bins = int(np.sqrt(N))
+
+pdf_values = skewnorm.pdf(x, a=skewness, loc=mean, scale=sigma)
+
+# variance of sin(x^2)
+sinx2_var = np.var(sinx2)
+
+N_bts = 10000
+S = 2
+x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
+sinx2_bts = np.sin(x_bts**2)
+
+print("                         Error on the mean of sin(x^2)")
+print("Original dataset:      ", np.sqrt(sinx2_var/S))
+print("Bootstrap:             ", sinx2_bts.std())
+print("Bootstrap (equivalent):", np.sqrt((sinx2_bts**2 - sinx2_bts.average()**2).average()/S))
+```
