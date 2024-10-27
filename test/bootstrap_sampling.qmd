@@ -7,6 +7,8 @@ format:
         html-math-method: katex
         code-fold: true
         embed-resources: true
+        toc: true
+
 ---
 
 # Introduction to Bootstrap Sampling
@@ -38,6 +40,8 @@ the final result may look something like this:
 | 2     | 2   | $(x_{11}, x_2)$             |
 | ...   | ...   | ...        |
 | $N_b$ | 5   | $(x_8, x_2, x_9, x_2, x_1)$ |
+
+## Practical recipe
 
 **Remarks**:
 
