@@ -135,6 +135,6 @@ def get_sigma2_contributions(
     y_mean_l2, sigma2_tot_l2 = get_mean_and_sigma2(y16=y16_l2, y50=y50_l2, y84=y84_l2)
     sigma2_stat = (sigma2_tot_l2 - sigma2_tot)/(lambda2-lambda1)
     sigma2_syst = (lambda2*sigma2_tot - lambda1*sigma2_tot_l2)/(lambda2-lambda1)
-    return {"stat": sigma2_stat, "syst": sigma2_syst}
+    return {"mean": y_mean, "stat": sigma2_stat, "syst": sigma2_syst}
 #---
 

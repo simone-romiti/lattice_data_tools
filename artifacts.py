@@ -52,7 +52,7 @@ class lambda_method:
             return slope_avg
         #---        
         mini = opt.minimize(fun=avg_slope_sqr, x0=0.5, method=method)
-        lam_fit = mini.x
+        lam_fit = mini.x[0]
         y_lambda_fit = lam_fit*y1 + (1.0-lam_fit)*y2
         res = {"lambda": lam_fit, "residue": avg_slope_sqr(lam_fit), "y": y_lambda_fit}
         return res
