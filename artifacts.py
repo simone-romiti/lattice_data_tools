@@ -8,17 +8,22 @@ because they differ only by lattice artifacts
 import numpy as np
 from typing import Callable
 import scipy.optimize as opt
+from typing import Callable, List
 
 class lambda_method:
     """Minimization routines for minimizing the discretization effects with the "lambda method"
     
-    If two observables y1 and y2 are the same in the continuum, 
-    this quantity converges to the same limit for any \lambda:
-    y(lambda) = lambda*y1 + (1-lambda)*y2 for any lambda
+    If n observables y1(a) and y2(a) are the same in the continuum, 
+    this quantity converges to the same limit for any \lambda(a) such that 
+    $\lim_{a\to 0} \lambda(a) = \lambda_0 < \infty$:
     
-    This class defines routines for finding the optimal parameter \lambda 
-    such that discretization effects on y(lambda) are minimal.
+    $$y_\lambda(a) = \sum_{i=1}^{n} \lambda_i(a) y_i(a) \, , \, \sum_{i} \lambda_i(a)=1$$
     
+    This class defines routines for finding the optimal parameter \lambda(a) 
+    such that discretization effects on y_\lambda are minimal. 
+    This is implemented by minimizing the average of the squares at each point.
+    See the documentation of the for more details.
+
     """
     def __init__(self, a: np.ndarray):
         """Setting the lattice spacing values
@@ -101,6 +106,36 @@ class lambda_method:
         y_lambda_fit = lam_fit*y1 + (1.0-lam_fit)*y2
         print(y_lambda_fit)
         res = {"par": par_fit, "lambda": lam_fit, "residue": avg_slope_sqr(par_fit), "y": y_lambda_fit}
+        return res
+    #---
+    def y1y2_lambda_auto(
+        self,
+        y1: np.ndarray, y2: np.ndarray,
+        fk: List[Callable],
+        method="BFGS") -> dict:
+        n_guess = 1+len(fk) # number of guesses
+        guess = np.zeros(shape=(n_guess)) # array of guesses
+        guess[0] = np.average(-np.diff(y2)/np.diff(y1-y2)) # guess for \lambda_0
+        y_bar = (y1+y2)/2 # average of the 2 curves
+        fk_values = np.array([fk_fun(self.a) for fk_fun in fk]) # arrays of values of f_k(a)
+        N_pts = (self.a).shape[0] # number of lattice spacings
+        lambda_km1 = np.full(shape=(N_pts), fill_value=guess[0])
+        for k in range(1, n_guess):
+            y_lambda_km1 = lambda_km1*y1 + (1-lambda_km1)*y2
+            ck = np.average(-np.diff(y_lambda_km1)/np.diff(fk_values[k-1]*y_bar))
+            lambda_km1 += ck*fk_values[k-1]
+            guess[k] = ck/2
+        #---
+        def ansatz_lambda(ai, p):
+            N_par = p.shape[0]
+            res = p[0]
+            for k in range(1, N_par):
+                res += p[k]*fk[k-1](ai)
+            #---
+            return res
+        #---
+        res = self.y1y2_lambda_variable(y1=y1, y2=y2, ansatz=ansatz_lambda, guess=guess, method=method)
+        res["guess"] = guess
         return res
     #---
 #---

@@ -113,12 +113,12 @@ Example on **gaussianly distributed data points**:
 
 np.random.seed(123)
 
-N = 10000 # number of points
+N = 100 # number of points
 mu, sigma = 0.0, 3.0
 x = np.random.normal(loc=mu, scale=sigma, size=N) # original dataset
 
 N_bts = 5000 # number of bootstrap samples
-S = 2
+S = N
 x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
 
 print("           Mean | SEM")
@@ -134,12 +134,12 @@ Example on **exponentially distributed datapoints**:
 
 lambda_param = 0.5  # rate parameter for an exponential distribution: λ > 0
 
-N = 100000
+N = 100
 y = np.random.exponential(scale=1/lambda_param, size=N)
 
 
 N_bts = 1000 # number of bootstrap samples
-S = 20
+S = N
 y_bts = bts.uncorrelated_confs_to_bts(x=y, N_bts=N_bts, S=S, seed=9378)
 
 y2_bts = y_bts**2
@@ -156,7 +156,7 @@ Example on the **bootstraps and the Central Limit Theorem**:
 ```{python}
 np.random.seed(21346)
 
-N = 100000
+N = 100
 a = 0.0
 b = 2.4
 print("Generating", N, "random variables distributed uniformly between", a, "and", b)
@@ -170,7 +170,7 @@ plt.show()
 plt.close()
 
 N_bts = 50000
-S = 20
+S = N
 x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
 
 plt.hist(np.ndarray.mean(x_bts, axis=1), bins=int(np.sqrt(N_bts)))
@@ -203,7 +203,7 @@ from lattice_data_tools import bootstrap_sampling as bts
 
 np.random.seed(18236)
 
-N = 10000
+N = 100
 mean = 0.0
 sigma = 2.0
 skewness = 5
@@ -220,7 +220,7 @@ pdf_values = skewnorm.pdf(x, a=skewness, loc=mean, scale=sigma)
 sinx2_var = np.var(sinx2)
 
 N_bts = 10000
-S = 2
+S = N
 x_bts = bts.uncorrelated_confs_to_bts(x=x, N_bts=N_bts, S=S, seed=456)
 sinx2_bts = np.sin(x_bts**2)
 

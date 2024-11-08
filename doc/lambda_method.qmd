@@ -62,7 +62,7 @@ and so on.
 At each step,
 it is relevant to start the minimization from a reasonable guess for the parameters $c^k$.
 Here's a procedure that estimates them from the data points.
-Without loss of generality, we cann the 2 curves $y_1$ and $y_2$,
+Without loss of generality, we call the 2 curves $y_1$ and $y_2$,
 and use the convention $\lambda(a) = \lambda_0 + \frac{c^k}{2} f_k(a)$.
 _Notation_: We use $\braket{\cdot}$ to indicate the average over the data points,
 and $\bar{y}=(y_1+y_2)/2$.
@@ -86,6 +86,6 @@ $$c^1 = \braket{-y_{\lambda_0}'/(f_1 \bar{y})'}$$
 We proceed until we find all the $c^k$ iteratively. 
 Their estimators are:
 
-$$c^k = \braket{- y_{\lambda_k}'/(f_k \bar{y})'}$$
+$$c^k = \braket{- y_{\lambda_{k-1}}'/(f_k \bar{y})'}$$
 
 ---

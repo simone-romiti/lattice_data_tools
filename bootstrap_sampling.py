@@ -4,41 +4,28 @@ import numpy as np
 
 from lattice_data_tools import uwerr
 
-class Boot(np.ndarray):
-    """Class for bootstrap samples array
 
-    The central limit theorem implies that:
-    1. The mean over the N_bts samples of the arithmetic averages over the K points converges to the mean value
-    2. The N_bts means over the K points are gaussianly distributed. 
-       The Standard Error on the Mean is estimated as from those. 
-       This doesn't require to know the original distribution.
+
+
+
+def parametric_gaussian(mu, sigma, N_bts, S=None, seed=12345):
+    """Parametric boostraps
+
+    Args:
+        mu (_type_): _description_
+        sigma (_type_): _description_
+        N_bts (_type_): _description_
+        S (_type_, optional): _description_. Defaults to None.
+        seed (int, optional): _description_. Defaults to 12345.
+
+    Returns:
+        _type_: _description_
     """
-    def __new__(cls, input_array):
-        # Convert input to an instance of our subclassed array
-        obj = np.asarray(input_array).view(cls)
-        assert(len(obj.shape) >= 2)
-        cls.N_bts = obj.shape[0] # number of bootstrap samples
-        cls.K = obj.shape[1] # number of points of each bootstrap sample 
-        return obj
+    np.random.seed(seed)
+    if S==None:
+        S=N_bts
     #---
-    def mean(self):
-        """Estimator of the mean through the bootstrap samples"""
-        return np.ndarray.mean(np.ndarray.mean(self, axis=1), axis=0)
-    #---
-    def average(self):
-        return self.mean()
-    #---
-    def std(self):
-        """Estimator of the standard error on the mean using the bootstrap samples"""
-        avgs = np.ndarray.mean(self, axis=1)
-        return np.ndarray.std(avgs, axis=0, ddof=1)
-    def var(self):
-        """Estimator of (variance/N) using the bootstrap samples"""
-        return self.std()**2
-#-------
-
-def parametric_gaussian(mu, sigma, N_bts, S, seed=12345):
-    return Boot([np.random.normal(loc=mu, scale=sigma, size=S) for i in range(N_bts)])
+    return np.array([np.mean(np.random.normal(loc=mu, scale=sigma, size=S)) for i in range(N_bts)])
 #---
 
 def uncorrelated_confs_to_bts(x, N_bts, S=2, seed=12345):
