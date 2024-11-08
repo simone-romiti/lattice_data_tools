@@ -1,0 +1,91 @@
+---
+title: $\lambda$ method for discretization effects
+author: Simone Romiti
+date: last-modified
+format:
+    html:
+        html-math-method: katex
+        fontsize: 16pt
+        embed-resources: true
+---
+
+# Presentation of the method
+
+In some lattice calculations we have 2 (or more) determinations affected by different lattice artifacts,
+but that must agree in the continuum limit.
+_Example_: in a calculation involving fermions, we may have the result for 2 different regularizations of fermions.
+
+Instead of extrapolating the curves independently,
+one can the this physical information and fit them simultaneously with the constraint that they share the same continuum limit.
+Even in this case however,
+it may be necessary to work out several types of fits,
+each including a different combination of discretization effects.
+_A posteriori_, one needs to average the models with some information criterion.
+
+The $\lambda$ method presented here is a methodology to bypass the model averaging,
+and consider only the constant fit of a combination of the different curves.
+Let's say we have a set of $n$ curves $y_i(a)$, where $a$ is the lattice spacing and:
+$$\lim_{a \to 0} y_i(a) = y_0 < \infty \, \forall i=1,\ldots,n \, .$$
+
+Then, we can construct a combination such that the discretization effects are minimal,
+i.e. such that it is the flattest possible as a function of the lattice spacing:
+
+$$y_\lambda(a) = \sum_i \lambda_i(a) y_i(a) \, , \, \sum_i \lambda_i=1 \, .$$ 
+
+The only constraint is that
+
+$$\lim_{a \to 0} \lambda_i(a) < \infty \, , \, \forall i \, . $$
+
+In the following,
+we consider $\lambda_i$ of the form:
+$$\lambda_i(a) = \lambda_0 + c_i^k f_k(a) \, ,$$
+where $f_k(a)$ are a set of functions describing different types of discretization effects.
+_Example_: $f_1(a)=a^2$, $f_2(a)=a^2/\log(a)$.
+
+## Algorith and minimization guesses
+
+Algorithmically, we propose a pairwise reduction approach:
+consider sequential pairs of $y_i$ and find the optimal combination each time.
+At each step,
+given the curves $y_i$, $y_j$,
+we find $\lambda_{ij}(a)$ in order to minimimize the average slope squared of the following curve:
+$$y_{\lambda_{ij}}(a) = \lambda_{ij}(a) y_i(a) + (1 - \lambda_{ij}(a))y_j(a) \, ,$$
+namely by minimizing:
+$$R = \sum_{p} [y_{\lambda_{ij}}'(a_p)]^2$$
+where $a_p$ are the values of the lattice spacing for which the curves have been evaluated.
+It is understood that the derivatives are computed as finite differences.
+
+Once the 1st pair $y_{\lambda_{12}}$ have been found,
+we can use this curve to repeat the procedure with $y_3$ and build $y_{\lambda_{123}}$,
+and so on.
+
+At each step,
+it is relevant to start the minimization from a reasonable guess for the parameters $c^k$.
+Here's a procedure that estimates them from the data points.
+Without loss of generality, we cann the 2 curves $y_1$ and $y_2$,
+and use the convention $\lambda(a) = \lambda_0 + \frac{c^k}{2} f_k(a)$.
+_Notation_: We use $\braket{\cdot}$ to indicate the average over the data points,
+and $\bar{y}=(y_1+y_2)/2$.
+
+**Step 1**: We build $y_{\lambda_0}$:
+$$y_{\lambda_0}(a) = \lambda_0 y_1(a) + (1-\lambda_0) y_2(a)$$
+
+and impose $y'_{\lambda_0}(a) = 0$. From this it follows the estimator:
+$$\lambda_0 = \braket{-y_2'/(y_1' - y_2')}$$
+
+**Step 2**: We build $y_{\lambda_1}$:
+$$y_{\lambda_1}(a) 
+= \lambda_1 y_1(a) + (1-\lambda_1) y_2(a) 
+= y_{\lambda_0} + c^1 f_1 \bar{y} 
+\, .$$
+
+From $y'_{\lambda_1}(a) = 0$ we get:
+$$c^1 = \braket{-y_{\lambda_0}'/(f_1 \bar{y})'}$$
+
+**Step k**: 
+We proceed until we find all the $c^k$ iteratively. 
+Their estimators are:
+
+$$c^k = \braket{- y_{\lambda_k}'/(f_k \bar{y})'}$$
+
+---
