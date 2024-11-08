@@ -16,7 +16,7 @@ but that must agree in the continuum limit.
 _Example_: in a calculation involving fermions, we may have the result for 2 different regularizations of fermions.
 
 Instead of extrapolating the curves independently,
-one can the this physical information and fit them simultaneously with the constraint that they share the same continuum limit.
+one can use this physical information and fit them simultaneously with the constraint that they share the same continuum limit.
 Even in this case however,
 it may be necessary to work out several types of fits,
 each including a different combination of discretization effects.
@@ -34,7 +34,8 @@ $$y_\lambda(a) = \sum_i \lambda_i(a) y_i(a) \, , \, \sum_i \lambda_i=1 \, .$$
 
 The only constraint is that
 
-$$\lim_{a \to 0} \lambda_i(a) < \infty \, , \, \forall i \, . $$
+$$\lim_{a \to 0} \lambda_i(a) < \infty 
+\, , \text{and} \, \lim_{a \to 0} \sum_i \lambda_i(a) = 1 \, . $$
 
 In the following,
 we consider $\lambda_i$ of the form:
@@ -42,7 +43,7 @@ $$\lambda_i(a) = \lambda_0 + c_i^k f_k(a) \, ,$$
 where $f_k(a)$ are a set of functions describing different types of discretization effects.
 _Example_: $f_1(a)=a^2$, $f_2(a)=a^2/\log(a)$.
 
-## Algorith and minimization guesses
+## Algorithm and minimization guesses
 
 Algorithmically, we propose a pairwise reduction approach:
 consider sequential pairs of $y_i$ and find the optimal combination each time.
@@ -89,5 +90,5 @@ Their estimators are:
 $$c^k = \braket{- y_{\lambda_{k-1}}'/(f_k \bar{y})'}$$
 
 
-**Note**: At each step $k$, one can do the minimization using a limited subset of the functions $f_k$ with the guesses found to that point, and set the $k$-th guess to the fit value, not just the estimator.
+**Note**: At each step $k$, one can do the minimization using a limited subset of the functions $f_k$ with the guesses found to that point, and then set the $k$-th guess for $c^k$ to the fit value (not just the estimator).
 ---
