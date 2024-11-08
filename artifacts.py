@@ -10,6 +10,8 @@ from typing import Callable
 import scipy.optimize as opt
 from typing import Callable, List
 
+import matplotlib.pyplot as plt
+
 class lambda_method:
     """Minimization routines for minimizing the discretization effects with the "lambda method"
     
@@ -51,7 +53,6 @@ class lambda_method:
         diff_a = np.diff(self.a)
         def avg_slope_sqr(lam):
             y_lambda = lam*y1 + (1.0-lam)*y2
-            # print(lam, lam*y1, lam*y2)
             diff_y = np.diff(y_lambda)
             slope_avg = np.average((diff_y/diff_a)**2)
             return slope_avg
@@ -95,7 +96,6 @@ class lambda_method:
         def avg_slope_sqr(p):
             lam = np.array([ansatz(ai, p) for ai in a])
             y_lambda = lam*y1 + (1.0-lam)*y2
-            # print(lam, lam*y1, lam*y2)
             diff_y = np.diff(y_lambda)
             slope_avg = np.average((diff_y/diff_a)**2)
             return slope_avg
@@ -104,7 +104,6 @@ class lambda_method:
         par_fit = mini.x
         lam_fit = np.array([ansatz(ai, par_fit) for ai in a])
         y_lambda_fit = lam_fit*y1 + (1.0-lam_fit)*y2
-        print(y_lambda_fit)
         res = {"par": par_fit, "lambda": lam_fit, "residue": avg_slope_sqr(par_fit), "y": y_lambda_fit}
         return res
     #---
@@ -112,29 +111,38 @@ class lambda_method:
         self,
         y1: np.ndarray, y2: np.ndarray,
         fk: List[Callable],
-        method="BFGS") -> dict:
-        n_guess = 1+len(fk) # number of guesses
-        guess = np.zeros(shape=(n_guess)) # array of guesses
-        guess[0] = np.average(-np.diff(y2)/np.diff(y1-y2)) # guess for \lambda_0
-        y_bar = (y1+y2)/2 # average of the 2 curves
-        fk_values = np.array([fk_fun(self.a) for fk_fun in fk]) # arrays of values of f_k(a)
-        N_pts = (self.a).shape[0] # number of lattice spacings
-        lambda_km1 = np.full(shape=(N_pts), fill_value=guess[0])
-        for k in range(1, n_guess):
-            y_lambda_km1 = lambda_km1*y1 + (1-lambda_km1)*y2
-            ck = np.average(-np.diff(y_lambda_km1)/np.diff(fk_values[k-1]*y_bar))
-            lambda_km1 += ck*fk_values[k-1]
-            guess[k] = ck/2
-        #---
+        method="Nelder-Mead") -> dict:
         def ansatz_lambda(ai, p):
             N_par = p.shape[0]
             res = p[0]
             for k in range(1, N_par):
-                res += p[k]*fk[k-1](ai)
+                res += (p[k]/2)*fk[k-1](ai)
             #---
             return res
         #---
-        res = self.y1y2_lambda_variable(y1=y1, y2=y2, ansatz=ansatz_lambda, guess=guess, method=method)
+        n_guess = 1+len(fk) # number of guesses
+        guess = np.zeros(shape=(n_guess)) # array of guesses
+        f0 = lambda ai: 1
+        fk_values = np.array([fk_fun(self.a) for fk_fun in fk]) # arrays of values of f_k(a)
+        lambda_km1 = y2 # lambda=0
+        y_bar = (y1+y2)/2 # average of the 2 curves
+        N_pts = (self.a).shape[0]
+        y_lambda_km1 = np.zeros(shape=(N_pts))
+        for k in range(n_guess):
+            if k==0:
+                ck = np.average(np.diff(-y2)/np.diff(y1-y2))
+            else:
+                lambda_0 = guess[0]
+                ck = np.average(np.diff(-y_lambda_km1)/np.diff(fk_values[k-1]*y_bar))
+            #---
+            guess[k] = ck
+            res_k = self.y1y2_lambda_variable(y1=y1, y2=y2, ansatz=ansatz_lambda, guess=guess[0:(k+1)], method=method)
+            par_fit = res_k["par"]
+            lambda_km1 = res_k["lambda"]
+            y_lambda_km1 = lambda_km1*y1 + (1.0-lambda_km1)*y2
+            guess[0:(k+1)] = par_fit
+        #---
+        res = res_k
         res["guess"] = guess
         return res
     #---

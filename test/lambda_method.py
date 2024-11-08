@@ -13,7 +13,7 @@ N_pts = 8
 a = np.linspace(0.001, 0.01, N_pts)
 
 # Calculate the difference between y1 and y2
-diff = -11.0*(a**2) + 0.1*a**2/np.log(a) - 2.0*a**4
+diff = -11.0*(a**2) + a**2/np.log(a) - 2.0*a**4
 
 # Generate y1 and y2 arrays
 y1 = 0.02 + 5.0 * a**2 + 5.0*a**4
@@ -44,10 +44,11 @@ print("1: lambda", mini1["lambda"])
 print("1: residue", mini1["residue"])
 print("2: lambda", mini2["lambda"])
 print("2: residue", mini2["residue"])
-
-print("---")
 print("3: lambda", mini3["lambda"])
 print("3: residue", mini3["residue"])
+
+print("---")
+print("Automatic guesses: guesses VS fit parameters")
 print("3: guess", mini3["guess"])
 print("3: par", mini3["par"])
 

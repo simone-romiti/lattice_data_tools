@@ -88,4 +88,6 @@ Their estimators are:
 
 $$c^k = \braket{- y_{\lambda_{k-1}}'/(f_k \bar{y})'}$$
 
+
+**Note**: At each step $k$, one can do the minimization using a limited subset of the functions $f_k$ with the guesses found to that point, and set the $k$-th guess to the fit value, not just the estimator.
 ---
