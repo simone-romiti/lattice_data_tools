@@ -1,5 +1,5 @@
 
 doc:
-	cd ./doc/; sphinx-apidoc -o source/ ../; make html
+	echo "Still looking for a simple documentation generator"
 ####
 
