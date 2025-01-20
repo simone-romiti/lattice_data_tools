@@ -57,7 +57,7 @@ class lambda_method:
             slope_avg = np.average((diff_y/diff_a)**2)
             return slope_avg
         #---        
-        mini = opt.minimize(fun=avg_slope_sqr, x0=0.5, method=method)
+        mini = opt.minimize(fun=avg_slope_sqr, x0=0.0, method=method)
         lam_fit = mini.x[0]
         y_lambda_fit = lam_fit*y1 + (1.0-lam_fit)*y2
         res = {"lambda": lam_fit, "residue": avg_slope_sqr(lam_fit), "y": y_lambda_fit}
@@ -107,6 +107,48 @@ class lambda_method:
         res = {"par": par_fit, "lambda": lam_fit, "residue": avg_slope_sqr(par_fit), "y": y_lambda_fit}
         return res
     #---
+    def y1y2_mu_variable(
+        self,
+        y_input: np.ndarray, 
+        ansatz: Callable, guess=np.ndarray, method="BFGS") -> dict:
+        """Finding the optimal mu: it can depend on the lattice spacing
+
+            Steps:
+            - we impose \mu=ansatz(a) for each lattice spacing "a"
+            - we minimize numerically the slope of y(lambda)=y1+\mu(a)
+
+            NOTE: 
+            The ansatz should be chosen such that \mu(a=0)=0
+        
+        Args:
+            y_input (np.ndarray): array of values of the observable (i.e. for each lattice spacing)
+            method (str, optional): minimization routine. Defaults to "BFGS".
+
+        Returns:
+            dict: dictionary of results
+        """
+        a = self.a
+        assert (a.shape==y_input.shape)
+        diff_a = np.diff(a)
+        def avg_slope_sqr(p):
+            mu = np.array([ansatz(ai, p) for ai in a])
+            y_mu = mu + y_input
+            diff_y = np.diff(y_mu)
+            slope_avg = np.average((diff_y/diff_a)**2)
+            return slope_avg
+        #---        
+        mini = opt.minimize(fun=avg_slope_sqr, x0=guess, method=method)
+        par_fit = mini.x
+        mu_fit = np.array([ansatz(ai, par_fit) for ai in a])
+        y_mu_fit = mu_fit + y_input
+        res = {
+            "par": par_fit, 
+            "mu": mu_fit, 
+            "residue": avg_slope_sqr(par_fit), 
+            "y": y_mu_fit
+            }
+        return res
+    #---
     def y1y2_lambda_auto(
         self,
         y1: np.ndarray, y2: np.ndarray,
@@ -122,7 +164,6 @@ class lambda_method:
         #---
         n_guess = 1+len(fk) # number of guesses
         guess = np.zeros(shape=(n_guess)) # array of guesses
-        f0 = lambda ai: 1
         fk_values = np.array([fk_fun(self.a) for fk_fun in fk]) # arrays of values of f_k(a)
         lambda_km1 = y2 # lambda=0
         y_bar = (y1+y2)/2 # average of the 2 curves
@@ -132,8 +173,8 @@ class lambda_method:
             if k==0:
                 ck = np.average(np.diff(-y2)/np.diff(y1-y2))
             else:
-                lambda_0 = guess[0]
                 ck = np.average(np.diff(-y_lambda_km1)/np.diff(fk_values[k-1]*y_bar))
+                # ck = np.average(np.diff(-y_lambda_km1)/((y1-y2)[:-1] + fk_values[k-1][:-1]*np.diff(y1-y2)))
             #---
             guess[k] = ck
             res_k = self.y1y2_lambda_variable(y1=y1, y2=y2, ansatz=ansatz_lambda, guess=guess[0:(k+1)], method=method)
