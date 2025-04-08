@@ -23,6 +23,10 @@ masses_MeV = {
 
 }
 
+Fpi_MeV = {
+    "isoQCD": { "Edinburgh":  130.5 }
+}
+
 ## units conversion
 
 MeV_to_GeV = lambda x: x/1000.0

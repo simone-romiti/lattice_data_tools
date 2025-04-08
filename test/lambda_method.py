@@ -13,7 +13,8 @@ N_pts = 8
 a = np.linspace(0.001, 0.01, N_pts)
 
 # Calculate the difference between y1 and y2
-diff = -11.0*(a**2) + a**2/np.log(a) - 2.0*a**4
+# diff = -11.0*(a**2) + a**2/np.log(a) - 2.0*a**4
+diff = -0.0011*(a**2) + 0.001*a**2/np.log(a) - 0.002*a**4
 
 # Generate y1 and y2 arrays
 y1 = 0.02 + 5.0 * a**2 + 5.0*a**4

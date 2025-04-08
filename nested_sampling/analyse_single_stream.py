@@ -60,7 +60,7 @@ class MotherAnalysis:
         logX_arr = self.get_logX()
         t = self.get_compression_factor()
         if strategy == "fwd":
-            ## forward difference X[i+1] - X[i]
+            ## log of forward difference X[i] - X[i+1]
             log_w = logX_arr  + np.log(1.0 - t)
             return log_w
         elif strategy == "symm":
@@ -133,6 +133,7 @@ class MotherAnalysis:
         # Z = np.exp(log_Z)
                 
         res = dict({
+            "S": self.S,
             "logX": logX,
             "log_w": log_w,
             "logL": logL,
