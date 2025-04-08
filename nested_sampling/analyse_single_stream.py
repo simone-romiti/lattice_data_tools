@@ -108,12 +108,13 @@ class MotherAnalysis:
         """
         log_S = np.log(self.S)
         logX = self.get_logX()
+        print(logX.shape, log_S.shape)
         log_der = np.log(np.gradient(logX, log_S))
         log_rho = logX - log_S + log_der
         return log_rho
     ####
     def run_analysis_beta_ref(self, beta_ref, wi_strategy="fwd", eps_wL=1e-7):
-        """ Behavior at a given refernce value of beta """
+        """ Behavior at a given reference value of beta """
         ## phase space volumes
         logX = self.get_logX()
 
