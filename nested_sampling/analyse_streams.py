@@ -9,7 +9,7 @@ class StreamsAnalyser:
         self.beta_ref = beta_ref
         self.beta_range = beta_range
     ####
-    def run(self, ssa_list, wi_strategy="symm"):
+    def run(self, parallelize, ssa_list, wi_strategy="symm"):
         """
         n_streams analysis using a list of ssa (single-stream-analiser).
         The length of ss_list equals n_streams
@@ -23,13 +23,15 @@ class StreamsAnalyser:
         streams_P2_avg = []
         i_stream = 0
         n_streams = len(ssa_list)
+        dt_wL = 0
+        dt_logZ = 0
         for ssa in ssa_list:
             print("Analysing streams: ", 100*i_stream/n_streams, "%")
             S = ssa.S
             streams_S.append(S)
             logS = np.log(S)
             streams_logS.append(logS)
-            ssa_beta_ref = ssa.run_analysis_beta_ref(beta_ref=self.beta_ref, wi_strategy=wi_strategy)
+            ssa_beta_ref = ssa.run_analysis_beta_ref(parallelize=parallelize, beta_ref=self.beta_ref, wi_strategy=wi_strategy)
 
             logX = ssa_beta_ref["logX"]
             streams_logX.append(logX)
@@ -55,6 +57,9 @@ class StreamsAnalyser:
             P2_avg = ssa.get_average_P2(beta_range=self.beta_range)
             streams_P2_avg.append(P2_avg)
             i_stream += 1
+            #
+            dt_wL += ssa_beta_ref["dt_wL"]
+            dt_logZ += ssa_beta_ref["dt_logZ"]
         ####
         streams_logX    = np.array(streams_logX   )
         streams_S       = np.array(streams_S      )
@@ -71,7 +76,9 @@ class StreamsAnalyser:
             "Z_curve": streams_Z_curve,
             "log_rho": streams_log_rho,
             "P_avg": streams_P_avg,
-            "P2_avg": streams_P2_avg
+            "P2_avg": streams_P2_avg,
+            "dt_wL" : dt_wL,
+            "dt_logZ" : dt_logZ
         })
         return res
     ####

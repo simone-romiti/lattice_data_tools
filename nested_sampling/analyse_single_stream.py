@@ -7,12 +7,46 @@ Assumptions:
 
 """
 
-import math
+import time
+
 import numpy as np
 from scipy.special import logsumexp
 import matplotlib.pyplot as plt
-from numba import jit
 import time
+
+import multiprocessing
+
+def compute_cumulative_logaddexp_chunk(chunk):
+    """
+    Compute cumulative log-sum-exp of a single chunk.
+    """
+    out = np.empty_like(chunk)
+    s = chunk[0]
+    out[0] = s
+    for i in range(1, len(chunk)):
+        s = np.logaddexp(s, chunk[i])
+        out[i] = s
+    return out
+
+def parallel_cumulative_logaddexp(log_wL_normalized, num_chunks):
+    n = len(log_wL_normalized)
+    chunk_size = (n + num_chunks - 1) // num_chunks  # Ceiling division
+    split_indices = [(i * chunk_size, min((i + 1) * chunk_size, n)) for i in range(num_chunks)]
+    chunks = [log_wL_normalized[start:end] for start, end in split_indices]
+
+    with multiprocessing.Pool(processes=num_chunks) as pool:
+        chunk_results = pool.map(compute_cumulative_logaddexp_chunk, chunks)
+
+    # Now adjust later chunks using accumulated offsets
+    adjusted_results = [chunk_results[0]]
+    last_val = chunk_results[0][-1]
+    for i in range(1, len(chunk_results)):
+        adjusted_chunk = np.logaddexp(last_val, chunk_results[i])
+        adjusted_results.append(adjusted_chunk)
+        last_val = adjusted_chunk[-1]
+
+    return np.concatenate(adjusted_results)
+
 
 #@jit(cache=True, nopython=True)
 def log_sum_with_logaddexp(log_wL):
@@ -87,19 +121,26 @@ class MotherAnalysis:
         log_wL = log_wL - logZ
         return log_wL
     ####
-    def get_log_Z_curve(self, log_wL_normalized):
+    def get_log_Z_curve(self, log_wL_normalized, parallelize):
         """
         The partition function is normalized to 1.
         The total weights w_i*L_i are the discrete version of the probability density function.
         The cumulative sum of the total weights gives use the cumulative density function. This function returns the log of that curve.
         """
-        s = log_wL_normalized[0]
-        logZ = [s]
-        for i in range(self.n_iter-1):
-            s = np.logaddexp(s, log_wL_normalized[i+1])
-            logZ.append(s)
-        ####
-        return np.array(logZ)
+        if not parallelize:
+            s = log_wL_normalized[0]
+            logZ = [s]
+            for i in range(self.n_iter-1):
+                s = np.logaddexp(s, log_wL_normalized[i+1])
+                logZ.append(s)
+            ####
+            res = np.array(logZ)
+            return res
+        else:
+            num_chunks = multiprocessing.cpu_count()
+            res = parallel_cumulative_logaddexp(log_wL_normalized, num_chunks=num_chunks)
+            return res
+        #---
     ####
     def get_log_rho(self):
         """ 
@@ -112,8 +153,8 @@ class MotherAnalysis:
         log_rho = logX - log_S + log_der
         return log_rho
     ####
-    def run_analysis_beta_ref(self, beta_ref, wi_strategy="fwd", eps_wL=1e-7):
-        """ Behavior at a given refernce value of beta """
+    def run_analysis_beta_ref(self, parallelize, beta_ref, wi_strategy="fwd", eps_wL=1e-7):
+        """ Behavior at a given reference value of beta """
         ## phase space volumes
         logX = self.get_logX()
 
@@ -122,14 +163,18 @@ class MotherAnalysis:
         logL = -beta_ref*self.S
         log_wL = (log_w+logL)
 
+        t1 = time.time()
         log_wL = self.get_log_wL_normalized(log_wL=log_wL)
+        t2 = time.time()
         wL = np.exp(log_wL)
 
         ## finding the indices of the pruned interval where the "important" configurations lie
         pruned_interval = (wL>eps_wL)
         idx_prn = np.where(pruned_interval)
         ## Cumulants of partition function
-        log_Z_curve = self.get_log_Z_curve(log_wL_normalized=log_wL)
+        t3 = time.time()
+        log_Z_curve = self.get_log_Z_curve(log_wL_normalized=log_wL, parallelize=parallelize)
+        t4 = time.time()
         # Z = np.exp(log_Z)
                 
         res = dict({
@@ -138,7 +183,9 @@ class MotherAnalysis:
             "logL": logL,
             "log_wL": log_wL,
             "idx_pruned_interval": idx_prn,
-            "log_Z_curve": log_Z_curve 
+            "log_Z_curve": log_Z_curve,
+            "dt_wL": (t2-t1), 
+            "dt_logZ": (t4-t3), 
         }) 
         
         return res
