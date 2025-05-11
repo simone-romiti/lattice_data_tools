@@ -1,2 +1,27 @@
+
+
+*.Rhistory
 *__pycache__*
 *.pyc
+*.pdf
+*.png
+
+# documentation
+doc/build/
+*.pickle
+*.html
+*.doctree
+*.buildinfo
+*.js
+*.rst.*
+*.inv
+
+# quarto rendering
+*.ipynb
+*.png
+*.js
+*.woff
+*.css
+
+
+/.quarto/

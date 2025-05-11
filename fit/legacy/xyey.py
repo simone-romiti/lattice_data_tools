@@ -19,8 +19,9 @@ def fit_xyey(ansatz, x: np.ndarray, y: np.ndarray, ey: np.ndarray, guess: np.nda
     # chi square residual function
     # NOTE: "p" is the array of the external parameters of the function
     def ch2(p):
-        res = np.array([(y[i] - ansatz(x[i], p)) / ey[i] for i in range(N_pts)])
-        return np.sum(res**2)
+        y_th = np.array([ansatz(x[i], p) for i in range(N_pts)])
+        res = np.sum(((y - y_th)/ey)**2) # np.array([(y[i] - ansatz(x[i], p)) / ey[i] for i in range(N_pts)])
+        return res # np.sum(res**2)
     ####
 
     guess = list(guess)

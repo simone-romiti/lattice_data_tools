@@ -4,18 +4,38 @@ from scipy.optimize import root, fsolve
 
 def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     """Effective mass curve
-
+    
     log: log(C[t]/C[t+1])
-
+    
     Args:
         C (np.ndarray): Correlator C(t)
+    
+    Returns:
+        np.ndarray: M_eff(t) = log(C(t)/C(t+1))
+    """
 
+    T = C.shape[0] ## temporal extent
+    return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
+#---
+
+def get_A_eff_log(C: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Effective amplitude curve : A_eff(t) = C(t)/exp(-m_eff(t)*t)
+    
+    Args:
+        C (np.ndarray): Correlator C(t)
+        m_eff (np.ndarray): effective mass curve m_eff(t)
+    
     Returns:
         np.ndarray: M_eff(t) = log(C(t)/C(t+1))
     """
     T = C.shape[0] ## temporal extent
-    return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
-####
+    ti = np.array([t for t in range(T-1)])
+    res = C[0:T-1] * np.exp(+m_eff*ti)
+    return res
+#---
+
+# dictionary of ansaetze for correlators with the backward signal
+backward_signal_ansatz_dict = {+1: lambda x: np.cosh(x), -1: lambda x: np.sinh(x)}
 
 def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
     """ 
@@ -25,14 +45,11 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
     
     avoid_instability: 
         flag relative to the case C(t)/C(t+1) <= 1 (statistical fluctuation)
-        if True, when t>=1, M_eff(t) is replaced with the previous value M_eff(t-1)
+        if True AND t>=1, 
+        M_eff(t) is replaced with the previous value M_eff(t-1)
     
     """
-    if p == +1:
-        form = lambda x: np.cosh(x)
-    elif p == -1:
-        form = lambda x: np.sinh(x)
-    ####
+    form = backward_signal_ansatz_dict[p]
     T_ext = C.shape[0] ## temporal extent
     T_half = int(T/2)
     t_eff = np.array([t for t in range(T_ext-1)])
@@ -42,7 +59,7 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
         def func(m_t):
             r_th = form(m_t*(T_half-t))/form(m_t*(T_half-t-1))
             return (r_th - r)
-        ####
+        #---
         if ((t<T_half and r<=1) or (t>=T_half and r>=1)) and (avoid_instability):
             if t==0:
                 m_eff[t] = 0.0 ## t=0 contains no information --> contact divergence 
@@ -53,19 +70,33 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
             m_guess = np.log(r)
             if t >= T_half:
                 m_guess *= -1
-            ####
+            #---
             m_eff[t] = fsolve(func=func, x0=m_guess)[0]
-        ####
-    ####
+        #---
+    #---
     return m_eff
-####
+#---
+
+def get_A_eff_bkw(C: np.ndarray, m_eff: np.ndarray, T: int, p: int):
+    """
+    Effective Amplitude including the backward signal 
+    see eq. 6.57 of Gattringer & Lang    
+    """
+    form = backward_signal_ansatz_dict[p]
+    T_ext = m_eff.shape[0]
+    T_half = int(T/2)
+    ti = np.array([t for t in range(T-1)])[0:T_ext]
+    A_eff = C[0:T_ext]/form(m_eff*(T_half-ti))
+    return A_eff
+#---
 
 def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
-
+    
     Args:
         C (np.ndarray): correlator C(t)
-        strategy (str): computation strategy. Supported: ["log","cosh","sinh"]
+        strategy (str): computation strategy. 
+                        Supported: ["log","cosh","sinh"]
 
     Raises:
         ValueError: if strategy is not in the list of supported types
@@ -73,6 +104,7 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> 
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
     """
+    
     if strategy == "log":
         return get_m_eff_log(C)
     elif strategy == "cosh":
@@ -80,30 +112,63 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> 
     elif strategy == "sinh":
         return get_m_eff_bkw(C=C, T=T, p=-1, avoid_instability=avoid_instability)
     else:
-        raise ValueError("Illegal strategy for calculation of effective mass: {strategy}".format(strategy=strategy))
-    ####
-####
+        err_mess = "Illegal strategy for calculation of effective mass: "
+        err_mess += "{strategy}".format(strategy=strategy)
+        raise ValueError(err_mess)
+    #---
+#---
 
-def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
-    """Effective mass correction assuming C(t) = A*exp(-M*t)
-
+def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: str) -> np.ndarray:
+    """Effective Amplitude curve from the correlator
+    
     Args:
-        C0 (np.ndarray): Correlator C(t)
-        dC (np.ndarray): correction to the correlator C_0(t)
+        C (np.ndarray): correlator C(t)
+        m_eff (np.ndarray): effective mass m_eff(t)
+        
+        strategy (str): computation strategy. 
+                        Supported: ["log","cosh","sinh"]
+
+    Raises:
+        ValueError: if strategy is not in the list of supported types
 
     Returns:
-        np.ndarray: dM_eff(t) = - [R(t+1) - R(t)], where R(t) = dC(t)/C0(t)
+        np.ndarray: array of effective mass values M_eff(t)
     """
-    # T = C.shape[0] ## temporal extent
+    
+    if strategy == "log":
+        return get_A_eff_log(C)
+    elif strategy == "cosh":
+        return get_A_eff_bkw(C=C, m_eff=m_eff, T=T, p=+1)
+    elif strategy == "sinh":
+        return get_A_eff_bkw(C=C, m_eff=m_eff, T=T, p=-1)
+    else:
+        err_mess = "Illegal strategy for calculation of effective amplitude: "
+        err_mess += "{strategy}".format(strategy=strategy)
+        raise ValueError(err_mess)
+    #---
+#---
+
+def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
+    """Effective mass correction assuming $C(t) = A e^{-M t}$
+    
+    Args:
+        C0 (np.ndarray): Correlator $C(t)$
+        dC (np.ndarray): Correction to the correlator $C_0(t)$
+    
+    Returns:
+        np.ndarray: `dM_eff(t) = - [R(t+1) - R(t)], where R(t) = dC(t)/C0(t)`
+    """
+    
     R = dC/C0
     return np.diff(R)
-####
+#---
 
 def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p: int):
     """ 
     
     Effective mass correction including the backward signal 
-    see eq. 11 of https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.014502
+    see eq. 11 of:
+    https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.014502
     
     C0 (np.ndarray): Correlator C(t)
     dC (np.ndarray): correction to the correlator C_0(t)
@@ -113,14 +178,15 @@ def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p
               the user may want to fix it for all "t". 
               In this case, pass M0_eff as a constant array
     """
+
     if T==None:
         raise ValueError("You need to pass T explicitly as an argument!")
-    ####
+    #---
     if p==+1:
         hyp_fun = lambda z: np.tanh(z)
     elif p==-1:
         hyp_fun = lambda z: 1.0/np.tanh(z)
-    ####
+    #---
     F = lambda x, M: x*hyp_fun(M*x) - (x+1)*hyp_fun(M*(x+1))
     T_ext = C0.shape[0] ## temporal extent
     T_half = int(T/2)
@@ -128,7 +194,7 @@ def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p
     R = dC/C0
     res = np.diff(R)/F(T_half-t_eff-1, M0_eff)
     return res
-####
+#---
 
 
 def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str, T=None) -> np.ndarray:
@@ -136,7 +202,7 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str
 
     Args:
         C0 (np.ndarray): correlator C_0(t) in the free theory (e.g. isoQCD)
-        dC (np.ndarray): correction to the correlator C_0(t)
+        dC (np.ndarray): correction to the correlator $C_0(t)$
         strategy (str): 
             computation strategy. 
             Supported: ["log","tanh","coth"]
@@ -147,6 +213,7 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
     """
+    
     if strategy == "log":
         return get_dm_eff_log(C0=C0, dC=dC)
     elif strategy == "tanh":
@@ -155,8 +222,9 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str
         return get_dm_eff_bkw(C0=C0, dC=dC, M0_eff=M0_eff, T=T, p=-1)
     else:
         raise ValueError("Illegal strategy for calculation of effective mass correction: {strategy}".format(strategy=strategy))
-    ####
-####
+    #---
+    return None
+#----
 
 
 def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
@@ -171,21 +239,23 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
     Returns:
         float: best fit value of y_eff
     """
+    
     T = y_eff.shape[0]
     t = [i for i in range(T)] ## dummy variables, fitting to a constant
     ansatz = lambda x, m0: m0
     par, cov = curve_fit(ansatz, t, y_eff, sigma=dy_eff, p0=np.average(y_eff))
     return par[0]
-####
+#---
 
 
 def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> float:
     """ alias for the fit to a generic effective curve """
+    
     return fit_eff_curve(y_eff=m_eff, dy_eff=dm_eff)
-####
+#---
 
 
-## example code
+# example code
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     T = 24
@@ -194,9 +264,9 @@ if __name__ == "__main__":
     C = np.random.normal(1.0, 0.001, T)*np.exp(-m*t)
 
     m_eff = get_m_eff(C, strategy="log")[4:16]
-
+    
     plt.plot(m_eff)
     plt.show()
 
     print(fit_eff_mass(m_eff=m_eff, dm_eff=0.01*m_eff))
-####
+#---

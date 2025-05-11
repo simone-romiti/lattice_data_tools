@@ -1,0 +1,229 @@
+---
+title: "Bootstrap Sampling"
+author: "Simone Romiti"
+date: last-modified
+format: 
+    html:
+        html-math-method: katex
+        code-fold: true
+        embed-resources: true
+        toc: true
+        fontsize: 14pt
+
+---
+
+# Introduction to Bootstrap Sampling
+
+Bootstrap sampling is a statistical method that allows to estimate the mean and variance of random variables,
+**based only of the dataset and without knowing the analytic form of the distribution**.
+This is useful in several contexts. Here we are interested in data produced by Monte Carlo integration for lattice calculations.
+The value of the obervable is computed for several points in the phase space, making a so called "time series" of $N$ points.
+Given the $N$ values of the observables $O_1, O_2, \ldots$,
+we often need to estimate the expectation value of functions of the averages of the $O_i$ over the configurations: $f(\braket{O_1}, \braket{O_2}, \ldots)$.
+**Example**: If we want to compute the specific heat we need the expectation value of the energy and its square.
+
+Here's how bootstrap sampling works for a given random variable $x$ of which we have $N$ measured points $x_k$.
+Let $N_b$ the "number of bootstrap samples". 
+
+1. Draw $N$ points randomly from the $x_k$, allowing for repetition. This set is a single bootstrap sample. 
+2. Find the mean $\bar{x}_1$ of these sampled values. $\bar{x}_1$ is a bootstrap sample average.
+2. Repeat the procedure $N_b$ times, each time drawing $N$ points and storing the mean $\bar{x}_b$. 
+
+The $N_b$ values of $\bar{x}_b$ are the bootstrap samples averages of the original dataset.
+Loosely speaking, it is frequent to call the $\bar{x}_b$ the _bootstrap samples_.
+
+To make a (trivial) example,
+let's consider $4$ values of the random variable $x$.
+The final result may look something like this:
+
+| b        | Bootstrap sample            | $\bar{x}_b$                   |
+|----------|-----------------------------|-------------------------------|
+| 1        | $(x_1, x_3, x_1, x_2)$ | $(x_1+ x_3+ x_1+ x_2)/5$ |
+| 2        | $(x_2, x_2, x_4, x_4)$ | $(x_2+ x_2+ x_4+ x_4)/5$ |
+| ...      | ...                    | ...                      |
+| $N_b$    | $(x_3, x_2, x_1, x_4)$ | $(x_3+ x_2+ x_1+ x_4)/5$ |
+
+**Remarks**:
+
+- Since every time we draw from the $x_k$, each bootstrap sample reflects approximately the original distribution.
+- When we have a sample of $n$ values $y_a$ distributed according to some distribution, the arithmetic average is always an estimator of the mean value $\mu$. In fact:
+\begin{equation}
+E\left(\frac{1}{n} \sum_{a=1}^{n} y_a\right) = \frac{1}{n} \sum_a E(y_a) = \frac{1}{n} n \mu = \mu
+\, .
+\end{equation}
+  
+  In the above derivation, it doesn't matter whether $y$ is a primary observable or a function of it. 
+  **Example**: if we have a vector of random variables $\vec{x}$, 
+  we can estimate $E(f(\vec{x}))$ by averaging the values $y_a = f(\vec{x}_a)$. 
+- **We have to be careful** to the statements we make. 
+  If we want to study a function of 2 (correlated) variables, 
+  we need to first compute the function on the original dataset, 
+  and only then compute the bootstraps. We can combine two variables 
+  (bootstrap average by bootstrap average) only if the statements we make refer to the combination of the means.
+
+- The bootstraps are biased, which means that the true mean value and the average of the boostrap are systematically different, by an amount that vanishes for $N\to\infty$.
+
+## Questions and Aswers
+
+1. **Why do we need bootstrapping?** Can't we simply use the $N$ values from the Monte Carlo trajectory?
+    - In lattice calculations (but not only), some statemets are true only on mean values.
+      For instance, an euclidean correlator behaves as $\sim e^{-E t}$ only on average. Configuration per configuration it can do all sorts of things.
+      Thus, we build $N_b$ "pseudo averages", like if they were coming from different simulations done in the same conditions.
+
+2. **What is the connection of bootstrapping with the Central Limit Theorem?**
+    - If we take the averages of the bootstrap samples $\bar{x}_b$ we get $N_b$ points that, according to the Central Limit Theorem, are Gaussianly distributed. We can say that bootstrapping "Gaussianizes" the data.
+    - By the Central Limit Theorem, the Standard Error on the Mean of the original distribution can be estimated from the $N_b$ averages $\bar{x}_b$ as:
+    \begin{equation}
+    \text{SEM } = \frac{\sigma}{\sqrt{N}} \approx 
+    \sqrt{ \frac{1}{N_b-1} \sum_{b=1}^{N_b} (\bar{x}_b - \bar{\bar{x}})^2}
+    \end{equation}
+    where $\bar{\bar{x}}$ is the average of the $\bar{x}_b$.
+    $\sigma^2$ is the variance of the original distribution.
+    
+    _Remark_: the above estimators do not require any knowledge about the original distribution.
+
+3. **How do I choose $N_b$?**
+    - One needs to see _a posteriori_ if the $N_b$ leads to statistical fluctuations that are well below the target precision. 
+    - Obviously, if $N$ is too small, increasing $N_b$ doesn't help: the bootstrap samplings cannot contain more information of the original dataset.
+
+
+## Examples
+
+```{python}
+# Importing the necessary libraries
+
+import numpy as np
+from scipy.stats import skewnorm
+import matplotlib.pyplot as plt
+
+import sys
+sys.path.append('../../')
+
+from lattice_data_tools.sampling import uncorrelated_confs_to_bts
+```
+
+---
+
+Example on **gaussianly distributed data points**:
+
+```{python}
+
+np.random.seed(123)
+
+N = 100000 # number of points
+mu, sigma = 0.0, 3.0
+x = np.random.normal(loc=mu, scale=sigma, size=N) # original dataset
+
+N_bts = 500 # number of bootstrap samples
+x_bts = uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=1456)
+
+print("           Mean | sigma")
+print("Exact:    ", mu, "|", sigma)
+print("Bootstrap:", np.mean(x_bts), "|", np.sqrt(N)*np.std(x_bts, ddof=1))
+```
+
+---
+
+Example on **exponentially distributed datapoints**:
+
+```{python}
+
+lambda_param = 0.5  # rate parameter for an exponential distribution: λ > 0
+
+N = 100000
+y = np.random.exponential(scale=1/lambda_param, size=N)
+
+N_bts = 500 # number of bootstrap samples
+y_bts = uncorrelated_confs_to_bts(x=y, N_bts=N_bts, seed=9378)
+
+# NOTE: we need to compute y**2 first, and then bootstrap
+y2_bts = uncorrelated_confs_to_bts(x=y**2, N_bts=N_bts, seed=9378)
+
+# < (y-<y>)^2 > = <y^2> - (<y>)^2
+dy2 = y2_bts - (np.mean(y_bts))**2
+
+print("Variance")
+print("Exact: ", 1/lambda_param**2)
+print("Bootstrap:", np.mean(dy2))
+```
+
+Example on the **bootstraps and the Central Limit Theorem**:
+
+```{python}
+np.random.seed(21346)
+
+N = 10000
+a = 0.0
+b = 2.4
+print("Generating", N, "random variables:")
+print("Distribution: Uniform distribution between", a, "and", b)
+
+x = np.random.uniform(low=a, high=b, size=N)
+
+plt.hist(x, bins=int(np.sqrt(N)))
+plt.title("Distribution of the original dataset")
+plt.show()
+plt.close()
+
+N_bts = 5000
+x_bts = uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=456)
+
+plt.hist(x_bts, bins=int(np.sqrt(N_bts)))
+
+plt.title("Distribution of the bootstrap samples block averages")
+plt.show()
+plt.close()
+
+print("================================")
+print("Average and error on the average")
+print("================================")
+print("           x_avg | dx_avg")
+print("Exact:    ", (a+b)/2, "|", np.sqrt((b-a)**2/12)/np.sqrt(N))
+print("Bootstrap:", np.mean(x_bts), "|", np.std(x_bts, ddof=1))
+```
+
+---
+
+Example on **data drawn from a skewed distribution**:
+(we also show what happens if we bootstrap before computing functions of the random variables)
+
+```{python}
+import matplotlib.pyplot as plt
+
+import sys
+
+sys.path.append('../../')
+
+from lattice_data_tools import bootstrap_sampling as bts
+
+np.random.seed(18236)
+
+N = 10000
+mean = 0.0
+sigma = 2.0
+skewness = 5
+
+# N random variables with skewed distribution
+x = skewnorm.rvs(a=skewness, loc=mean, scale=sigma, size=N)
+sinx2 = np.sin(x**2)
+
+n_bins = int(np.sqrt(N))
+
+pdf_values = skewnorm.pdf(x, a=skewness, loc=mean, scale=sigma)
+
+# variance of sin(x^2)
+sinx2_var = np.var(sinx2)
+
+N_bts = 1000
+x_bts = uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=456)
+sinx2_bts = uncorrelated_confs_to_bts(x=np.sin(x**2), N_bts=N_bts, seed=456)
+
+# this is not how to do it, one shoud compute sin(x^2) first, and then bootstrap
+# the lines below show that this leads to the wrong prediction
+sinx2_bts_WRONG = np.sin(x_bts**2)
+
+print("                              Error on the mean of sin(x^2)")
+print("Original dataset:           ", np.sqrt(sinx2_var/N))
+print("Bootstrap:                  ", np.std(sinx2_bts, ddof=1))
+print("Bootstrap (WRONG APPROACH): ", np.std(sinx2_bts_WRONG, ddof=1))
+```

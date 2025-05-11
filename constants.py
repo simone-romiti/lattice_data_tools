@@ -16,7 +16,15 @@ masses_MeV = {
         "isoQCD": {"Edinburgh": 494.6},
         "+": 493.664, # K^+
         "0": 497.611  # K^0
+    },
+    "Ds": {
+        "isoQCD": {"Edinburgh": 1967}
     }
+
+}
+
+Fpi_MeV = {
+    "isoQCD": { "Edinburgh":  130.5 }
 }
 
 ## units conversion
@@ -30,6 +38,7 @@ GeV_inv_to_MeV_inv = lambda x: MeV_to_GeV(x)
 hbarc_fm_MeV = np.float64(197.3269804)
 
 fm_to_MeV_inv = lambda a: a/hbarc_fm_MeV
+MeV_to_fm_inv = lambda m: m/hbarc_fm_MeV
 
 ## electromagnetic fine structure constant
 alpha_EM_inv = 137.035999084

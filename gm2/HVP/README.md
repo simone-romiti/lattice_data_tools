@@ -1,0 +1,1 @@
+This folder contains script for common use routines in the analysis of the Hadronic Vacuum Polarization (HVP) on the lattice.
