@@ -1,0 +1,17 @@
+---
+title: "Overview of the project"
+author: Simone Romiti
+date: last-modified
+---
+
+This is the documentation of the software library hosted at [this repostory](https://github.com/simone-romiti/nested_sampling).
+
+# Things to be done
+
+- Routines for the extrapolation to the physical point using F_\pi. References:
+    * Eq. 16 and 17 of https://arxiv.org/pdf/1403.4504
+    * FVE: Eq. 31 and 32 of https://arxiv.org/pdf/1003.0847 for the R factors of eq. 16 and 25.
+- Generate the documentation for the already written code. 
+- Write some theoretical notes on Nested Sampling
+
+

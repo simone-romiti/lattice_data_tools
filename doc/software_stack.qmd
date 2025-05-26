@@ -1,0 +1,38 @@
+---
+title: "Software stack"
+author: Simone Romiti
+date: last-modified
+---
+
+For this project we use the following libraries:
+
+**Data production**:
+
+- [`QUDA`](https://github.com/lattice/quda): GPU offloading of lattice calculations using the [CUDA software layer](https://developer.nvidia.com/cuda-toolkit). We use it essentially to solve the Dirac equation with its implementation of the Multigrid.
+- [`LAPACK`](https://www.netlib.org/lapack/): linear algebra for `tmLQCD`. Usually available as a module on HPC systems.
+- [`lime`](https://github.com/usqcd-software/c-lime): I/O in `tmLQCD` and `cvc`.
+- [`lemon`](https://github.com/etmc/lemon): I/O in `tmLQCD` and `cvc` with MPI-parallelization.
+- `hdf5`: output of `cvc`. It is usually available as a module in HPC systems.
+- [`tmLQCD`](https://github.com/etmc/tmLQCD): library for HMC (Hybrid Monte Carlo) lattice simulations. It contains routines for the inversion of the Dirac operator for both CPU and GPU (through an interface to `QUDA`).
+- [`cvc`](https://github.com/marcuspetschlies/cvc) [^1]: top-level library for performing the Wick contractions.
+- [`aff`](https://github.com/usqcd-software/aff): output in `cvc`.
+
+The instructions on how to compile the software stack up to `cvc` can be found in [this PDF file](./www/Tej-building_CVC_on_Daint.Alps.pdf).
+
+_Other libraries related (but not relevant) to this project_:
+
+- [`KQED`](https://github.com/RJHudspith/KQED): Evaluation of the HLbL QED kernel for $a_\mu^{\text{HLbL}}$. See @Asmussen:2022oql.
+
+
+
+- [Juan's repository for the setup on ALPS](https://github.com/fernandezdlg/p2gg-production-env#)
+
+
+**Data analysis**:
+
+- [Old repository of Marcus](https://github.com/bebo-hlbl/p_to_gamma_gamma/tree/master?tab=readme-ov-file)
+- [Tej analysis](https://github.com/bebo-hlbl/lattice-fp2gg)
+
+
+[^1]: The name of the library (probably) is the acronym of conserved-vector-current. The latter is a possible choice of current to use in the calculation of lattice correlators containing it (e.g. the HVP correlator).
+

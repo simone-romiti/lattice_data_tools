@@ -5,6 +5,7 @@
 *.pyc
 *.pdf
 *.png
+*.json
 
 # documentation
 doc/build/

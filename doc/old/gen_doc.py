@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, '../../')
 
-def generate_docs(package_name, output_dir="doc/"):
+def generate_docs(package_name, output_dir="_pages/"):
     """
     Generate HTML documentation for the given package and save it to output_dir.
     

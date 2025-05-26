@@ -1,0 +1,13 @@
+---
+title: "Structure of the project"
+author: Simone Romiti
+date: last-modified
+---
+
+
+**Tests**:
+In the `./test/` folder there are scripts testing the routines of the library. 
+They should be run from that directory.
+
+
+

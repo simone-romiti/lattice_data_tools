@@ -1,0 +1,14 @@
+---
+title: "Nomenclature"
+author: Simone Romiti
+date: last-modified
+fontsize: 14pt
+---
+
+This document contains a (non-exhaustive) list of acronyms, naming conventions, etc.
+
+- **LQCD**: Lattice QCD.
+- **NS**: Nested Sampling.
+
+
+
