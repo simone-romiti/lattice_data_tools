@@ -17,7 +17,7 @@ def get_k(omega: float, MP: float):
 
 def get_omega(k: float, MP: float):
     omega = 2.0*np.sqrt(k**2 + MP**2)
-    return k
+    return omega
 #---
     
 class Luscher_2Pions:
@@ -57,8 +57,8 @@ class Luscher_2Pions:
         kn_list : list
             List of momentum values \omega_n for each energy level.
         """
-        omega_n_list = np.zeros(shape=(self.N_lev))
-        omega_min = 0.0
+        omega_n = np.zeros(shape=(self.N_lev))
+        omega_min = 2.0*self.MP + eps # at 2*MP delta_11 diverges
         sign_left, sign_right = -1, -1
         for n in range(self.N_lev):
             def f(omega):
@@ -66,12 +66,13 @@ class Luscher_2Pions:
                 z = k * self.Nx / (2 * np.pi)
                 lhs = self.tan_phi(z)
                 rhs = np.tan(n * np.pi - delta_11(k))
-                return (lhs - rhs)
+                res = (lhs - rhs)
+                return res
             #---
             sign_left = np.sign(f(omega_min))
             sign_right = sign_left
             omega_i = omega_min 
-            while sign_left != sign_right:
+            while sign_left == sign_right:
                 omega_i += eps
                 sign_right = np.sign(f(omega_i))
             #---
@@ -139,11 +140,13 @@ class GS_model:
         return (num/den)
     #---
     def cot_delta_11(self, k: float):
+        assert (k != 0) # Gamma_VPP(2*M_P) diverges
         MP, MV = self.MP, self.MV
         omega = get_omega(k=k, MP=MP)
         num = MV**2 - omega**2 - self.h(MV) - (omega**2 - MV**2)*self.hprime(MV)/(2.0*MV) + self.h(omega)
         den = omega*self.Gamma_VPP(omega)
         return (num/den)
+    #---
     def delta_11(self, k: float):
         delta = np.arctan(1.0/self.cot_delta_11(k))
         delta += np.pi*(delta < 0)
@@ -154,7 +157,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     MP = 0.140 # pion mass
     MV = 0.775 # rho mass
-    g_VPP =  5.95 # r_{\rho\pi\pi}
+    g_VPP =  5.5 # 95 # r_{\rho\pi\pi}
     print("Testing GS_model and Luscher_2Pions classes...")
     print("MP =", MP)
     print("MV =", MV)
@@ -162,16 +165,21 @@ if __name__ == "__main__":
     L2P = Luscher_2Pions(MP=MP, Nx=4, N_lev=5, mi_max=10)
     GS1 = GS_model(MP=MP, MV=MV, g_VPP=g_VPP)
     delta_11 = lambda k: GS1.delta_11(k)
-    omega_vals = np.linspace(2*MP, 10*MP, 1000)
-    # k_vals = get_k(omega_vals, MP)
-    F_vals = [np.abs(GS1.F_P(omega))**2 for omega in omega_vals]
-    plt.plot(omega_vals, F_vals)
-    plt.xlabel(r'$\omega$')
-    plt.ylabel(r'$\delta_{11}(k(\omega))$')
-    plt.title(r'$\delta_{11}$ vs $\omega$')
-    plt.grid(True)
-    plt.show()
-    # omega_n = L2P.find_omega_n(delta_11 = delta_11, eps=1e-10)
-    # print("Roots:")
-    # print(omega_n)
-    # print("Done!")
+    # # omega_vals = np.linspace(2*MP, 10*MP, 1000)
+    # # omega_vals = np.linspace(0.5, 1.1, 1000)
+    # # F_vals = [np.abs(GS1.F_P(omega))**2 for omega in omega_vals]
+    # # plt.plot(omega_vals, F_vals)
+    # # plt.ylim([-2, 50])
+    # k_vals = np.linspace(0.4, 1.2, 1000)
+    # delta_11_vals = np.array([GS1.delta_11(k) for k in k_vals])*(180.0/np.pi)
+    # plt.ylim([0, 180])
+    # plt.plot(k_vals, delta_11_vals)
+    # plt.xlabel(r'$\omega$')
+    # plt.ylabel(r'$\delta_{11}(k(\omega))$')
+    # plt.title(r'$\delta_{11}$ vs $\omega$')
+    # plt.grid(True)
+    # plt.show()
+    omega_n = L2P.find_omega_n(delta_11 = delta_11, eps=1e-3)
+    print("Roots:")
+    print(omega_n)
+    print("Done!")
