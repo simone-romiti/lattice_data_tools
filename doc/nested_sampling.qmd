@@ -96,6 +96,8 @@ w_k = X_{k} - X_{k+1} = X_k (1 - t)
 
 where the last equation has to be used iteratively when computing $Z$.
 
+## Processing streams and memory constrains
+
 
 
 # References
