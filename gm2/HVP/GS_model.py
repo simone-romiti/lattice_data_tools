@@ -11,7 +11,7 @@ from typing import Callable
 from scipy.optimize import brentq
 
 def get_k(omega: float, MP: float):
-    k = np.emath.sqrt((omega**2/4) - MP**2)
+    k = np.sqrt((omega**2/4) - MP**2)
     return k
 #---
 
@@ -48,7 +48,7 @@ class Luscher_2Pions:
     #---
     def tan_phi(self, z):
         # Generate all integer 3-vectors with each component in [-mi_max, mi_max]
-        num = -2*(np.pi**2)*z
+        num = -2.0*(np.pi**2)*z
         nth_terms = self.nu_m2 * (1.0/(self.m2_vals - z**2))
         den = np.sum(nth_terms)
         return (num/den)
@@ -56,11 +56,11 @@ class Luscher_2Pions:
     def phi(self, z):
         return np.arctan(self.tan_phi(z=z))
     #---
-    def omega_n_residue_function(self, delta_11: Callable[[float], float], k: float, n:int):
+    def omega_n_residue_function(self, delta_11: Callable[[float], float], k: float):
         """ The zeroes of this function give the energy levels of the PP states """
         z = k * self.L / (2.0 * np.pi)
         lhs = self.tan_phi(z)
-        rhs = np.tan(n*np.pi - delta_11(k))
+        rhs = -np.tan(delta_11(k))
         res = (lhs-rhs)
         return res
     #---        
@@ -86,7 +86,7 @@ class Luscher_2Pions:
         omega_min = 2.0*self.MP + eps # at 2*MP delta_11 diverges
         sign_left, sign_right = -1, -1
         for n in range(self.N_lev):
-            f = lambda omega: self.omega_n_residue_function(delta_11=delta_11, k=get_k(omega=omega, MP=self.MP), n=n+1)
+            f = lambda omega: self.omega_n_residue_function(delta_11=delta_11, k=get_k(omega=omega, MP=self.MP))
             #---
             sign_left = np.sign(f(omega_min))
             sign_right = sign_left
@@ -242,9 +242,8 @@ if __name__ == "__main__":
     MP_MeV = 322 # 0.140 # pion mass
     MV_MeV = 2.77*MP_MeV # 0.775 # rho mass
     g_VPP =  5.22 # 5.5 # 95 # r_{\rho\pi\pi}
-    L_fm = 2.1 # A40.24 of https://arxiv.org/pdf/1808.00887 (see Tab. I)
     hbarc_MeV_fm = 197.3269631
-    a_fm = 0.089
+    a_fm = 0.082
     a_MeV_inv = a_fm / hbarc_MeV_fm
     Nx = 24
     L_MeV_inv = a_fm * Nx
@@ -252,7 +251,7 @@ if __name__ == "__main__":
     aMV = a_MeV_inv*MV_MeV
     # Example: print the residue function for a range of omega values
     times = np.arange(3, 23, 1)
-    for N_lev in range(1, 5):
+    for N_lev in range(0, 5):
         # in lattice units
         res = get_V_PP_GSmodel(
             times=times,
@@ -262,14 +261,14 @@ if __name__ == "__main__":
             L=Nx,
             N_lev=N_lev,
             Z3_obj=Z3_obj,
-            eps_roots=1e-4,
+            eps_roots=1e-3,
             eps_der=1e-14
             )
         V_PP = res["V_PP"]
         plt.plot(times, V_PP, label=f"N_lev={N_lev}")
         # plt.yscale('log')
     #---
-    plt.xlim([2, 22])
+    plt.xlim([2, 22.1])
     plt.ylim([1e-7, 0.0015])
     plt.yscale("log")
     plt.tick_params(direction='in')
