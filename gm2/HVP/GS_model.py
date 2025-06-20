@@ -22,21 +22,25 @@ def get_omega(k: float, MP: float):
     
 class Luscher_2Pions:
     """ Luscher's formalism for 2-pions state on the lattice """
-    def __init__(self, MP: float, Nx: int, N_lev: int, mi_max: int):
+    def __init__(self, MP: float, L: int, N_lev: int, mi_max: int):
         self.MP = MP # pion mass (in lattice units)
         self.N_lev = N_lev # number of energy levels
-        self.Nx = Nx  # L/a (volume in lattice units)
+        self.L = L  # L/a (volume in lattice units)
         self.mi_max = mi_max # maximum values of \vec{m}_i (see eq. F3 of https://arxiv.org/pdf/2206.15084)
+        # Z^3 vectors and their norms, needed later
+        grid = np.arange(-self.mi_max, self.mi_max + 1)
+        mesh = np.stack(np.meshgrid(grid, grid, grid, indexing='ij'), -1).reshape(-1, 3)
+        self.Z3_vectors = mesh[np.max(np.abs(mesh), axis=1) < self.mi_max]
+        self.m2_arr = np.linalg.norm(self.Z3_vectors, axis=1)**2 # list of |\vec{m}|^2
     #---
     def tan_phi(self, z):
         # Generate all integer 3-vectors with each component in [-mi_max, mi_max]
-        grid = np.arange(-self.mi_max, self.mi_max + 1)
-        mesh = np.stack(np.meshgrid(grid, grid, grid, indexing='ij'), -1).reshape(-1, 3)
-        Z3_vectors = mesh[np.max(np.abs(mesh), axis=1) < self.mi_max]
-        m2_arr = np.linalg.norm(Z3_vectors, axis=1)**2 # list of |\vec{m}|^2
         num = -2*(np.pi**2)*z
-        den = np.sum(1.0/(m2_arr - z**2))
+        den = np.sum(1.0/(self.m2_arr - z**2))
         return (num/den)
+    #---
+    def phi(self, z):
+        return np.arctan(self.tan_phi(z=z))
     #---
     def find_omega_n(self, delta_11: Callable[[float], float], eps: float):
         """
@@ -63,7 +67,7 @@ class Luscher_2Pions:
         for n in range(self.N_lev):
             def f(omega):
                 k = get_k(omega=omega, MP=self.MP)
-                z = k * self.Nx / (2 * np.pi)
+                z = k * self.L / (2 * np.pi)
                 lhs = self.tan_phi(z)
                 rhs = np.tan(n * np.pi - delta_11(k))
                 res = (lhs - rhs)
@@ -81,6 +85,48 @@ class Luscher_2Pions:
             omega_min = omega_i
         #---
         return np.array(omega_n)
+    #---
+    def get_nuA_n(
+        self, 
+        n: int, omega_arr: int, 
+        FP2: Callable[[float], float], delta_11: Callable[[float], float],
+        eps: float
+        ):
+        """ \nu_n * |A_n|^2 as in eq. 15 of https://arxiv.org/pdf/1808.00887 """
+        omega_n = omega_arr[n]
+        k_n = get_k(omega=omega_arr[n], MP=self.MP)
+        A = (2.0*k_n**5)/(3.0*np.pi*(omega_n**2))
+        B = FP2(omega_n) # |F(\omega)|^2
+        der_delta_11 = (delta_11(k_n+eps) - delta_11(k_n)) / eps
+        q_n = k_n * (self.L/(2.0*np.pi))
+        der_phi = (self.phi(q_n+eps) - self.phi(q_n)) / eps
+        C = 1.0/(k_n*der_delta_11 + q_n*der_phi)
+        return A*B*C
+    #---
+    def get_V_PP(
+        self, 
+        times: np.ndarray, 
+        FP2: Callable[[float], float], delta_11: Callable[[float], float],
+        omega_n: np.ndarray,
+        eps_der: float
+        ):
+        """ 
+        Compute the two-pion vector correlator V_{\pi\pi}(t) as defined in equation 14 of 
+        https://arxiv.org/pdf/1808.00887, using the provided form factor and phase shift functions.
+
+            times (np.ndarray): Array of time values at which to evaluate the correlator.
+            FP2 (Callable[[float], float]): Function returning the squared pion form factor F_\pi^2(s) for a given energy squared s.
+            delta_11 (Callable[[float], float]): Function returning the isospin-1, angular momentum-1 \pi\pi scattering phase shift δ_11(s) for a given energy squared s.
+            eps_roots (float): Tolerance for finding the roots of the quantization condition (energy levels).
+            eps_der (float, optional): Tolerance for numerical derivatives used in the calculation. Defaults to 1e-12.
+
+        Returns:
+            np.ndarray: The computed V_{\pi\pi}(t) correlator evaluated at the input time values.
+        """
+        nuA_n = np.array([self.get_nuA_n(n=n, omega_arr=omega_n, FP2=FP2, delta_11=delta_11, eps=eps_der) for n in range(self.N_lev)])
+        exp_fact = np.array([np.exp(-omega_n*t_i) for t_i in times]).transpose()
+        V_PP = np.sum(nuA_n[:,np.newaxis] * exp_fact, axis=0)
+        return V_PP
 #-----------        
 
 
@@ -153,33 +199,50 @@ class GS_model:
         return delta
 
 
+def get_V_PP_GSmodel(
+    times: np.ndarray,
+    MP: float, MV: float, g_VPP: float, L: float, 
+    N_lev: int, mi_max: int, 
+    eps_roots=1e-3, 
+    eps_der=1e-10
+    ):
+    """ Representation of the Vector-Vector correlator using the Luscher's formalism for PP states in a finite volume """
+    PP_mod = Luscher_2Pions(MP=MP, L=L, N_lev=N_lev, mi_max=mi_max)
+    GS_mod = GS_model(MP=MP, MV=MV, g_VPP=g_VPP)
+    delta_11 = lambda k: GS_mod.delta_11(k)
+    F_squared = lambda omega: np.abs(GS_mod.F_P(omega))**2
+    omega_n = PP_mod.find_omega_n(delta_11=delta_11, eps=eps_roots)
+    V_PP = PP_mod.get_V_PP(times=times, FP2=F_squared, delta_11=delta_11, omega_n=omega_n, eps_der=1e-10)
+    res = {"omega_n": omega_n, "V_PP": V_PP}
+    return res
+#---    
+    
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     MP = 0.140 # pion mass
     MV = 0.775 # rho mass
     g_VPP =  5.5 # 95 # r_{\rho\pi\pi}
+    a_GeV_inv = 2
+    L_GeV_inv = 16*a_GeV_inv
     print("Testing GS_model and Luscher_2Pions classes...")
     print("MP =", MP)
     print("MV =", MV)
     print("g_VPP =", g_VPP)
-    L2P = Luscher_2Pions(MP=MP, Nx=4, N_lev=5, mi_max=10)
-    GS1 = GS_model(MP=MP, MV=MV, g_VPP=g_VPP)
-    delta_11 = lambda k: GS1.delta_11(k)
-    # # omega_vals = np.linspace(2*MP, 10*MP, 1000)
-    # # omega_vals = np.linspace(0.5, 1.1, 1000)
-    # # F_vals = [np.abs(GS1.F_P(omega))**2 for omega in omega_vals]
-    # # plt.plot(omega_vals, F_vals)
-    # # plt.ylim([-2, 50])
-    # k_vals = np.linspace(0.4, 1.2, 1000)
-    # delta_11_vals = np.array([GS1.delta_11(k) for k in k_vals])*(180.0/np.pi)
-    # plt.ylim([0, 180])
-    # plt.plot(k_vals, delta_11_vals)
-    # plt.xlabel(r'$\omega$')
-    # plt.ylabel(r'$\delta_{11}(k(\omega))$')
-    # plt.title(r'$\delta_{11}$ vs $\omega$')
-    # plt.grid(True)
-    # plt.show()
-    omega_n = L2P.find_omega_n(delta_11 = delta_11, eps=1e-3)
-    print("Roots:")
-    print(omega_n)
-    print("Done!")
+    times = np.arange(0, L_GeV_inv/2, 0.1)
+    for N_lev in range(20):
+        res = get_V_PP_GSmodel(
+            times=times,
+            MP=MP,
+            MV=MV,
+            g_VPP=g_VPP,
+            L=L_GeV_inv,
+            N_lev=N_lev,
+            mi_max=3,
+            eps_roots=1e-3,
+            eps_der=1e-10
+            )
+        V_PP = res["V_PP"]
+        plt.plot(times, V_PP, label=f"N_lev={N_lev}")
+    #---
+    plt.legend()
+    plt.show()
