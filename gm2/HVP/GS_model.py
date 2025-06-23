@@ -10,12 +10,12 @@ import numpy as np
 from typing import Callable
 from scipy.optimize import brentq
 
-def get_k(omega: float, MP: float):
+def get_k(omega: np.float64, MP: np.float64):
     k = np.sqrt((omega**2/4) - MP**2)
     return k
 #---
 
-def get_omega(k: float, MP: float):
+def get_omega(k: np.float64, MP: np.float64):
     omega = 2.0*np.sqrt(k**2 + MP**2)
     return omega
 #---
@@ -38,7 +38,7 @@ class Z3_vectors:
 #---    
 class Luscher_2Pions:
     """ Luscher's formalism for 2-pions state on the lattice """
-    def __init__(self, MP: float, L: int, N_lev: int, Z3_obj: Z3_vectors):
+    def __init__(self, MP: np.float64, L: int, N_lev: int, Z3_obj: Z3_vectors):
         self.MP = MP # pion mass (in lattice units)
         self.N_lev = N_lev # number of energy levels
         self.L = L  # volume
@@ -56,7 +56,7 @@ class Luscher_2Pions:
     def phi(self, z):
         return np.arctan(self.tan_phi(z=z))
     #---
-    def omega_n_residue_function(self, delta_11: Callable[[float], float], k: float):
+    def omega_n_residue_function(self, delta_11: Callable[[float], float], k: np.float64):
         """ The zeroes of this function give the energy levels of the PP states """
         z = k * self.L / (2.0 * np.pi)
         lhs = self.tan_phi(z)
@@ -64,7 +64,7 @@ class Luscher_2Pions:
         res = (lhs-rhs)
         return res
     #---        
-    def find_omega_n(self, delta_11: Callable[[float], float], eps: float):
+    def find_omega_n(self, delta_11: Callable[[float], float], eps: np.float64):
         """
         Find the momentum k_n for each energy level n using the phase shift function delta_11,
         as in eq F2 of https://arxiv.org/pdf/2206.15084. 
@@ -74,7 +74,7 @@ class Luscher_2Pions:
         ----------
         delta_11 : callable
             A lambda function that takes a float (momentum) and returns the phase shift delta_11(k).
-        eps : float
+        eps : np.float64
             The step size used to search for the roots of the equation.
 
         Returns
@@ -105,7 +105,7 @@ class Luscher_2Pions:
         self, 
         n: int, omega_arr: int, 
         FP2: Callable[[float], float], delta_11: Callable[[float], float],
-        eps_k: float
+        eps_k: np.float64
         ):
         """ \nu_n * |A_n|^2 as in eq. 15 of https://arxiv.org/pdf/1808.00887 """
         omega_n = omega_arr[n]
@@ -124,7 +124,7 @@ class Luscher_2Pions:
         times: np.ndarray, 
         FP2: Callable[[float], float], delta_11: Callable[[float], float],
         omega_n: np.ndarray,
-        eps_der: float
+        eps_der: np.float64
         ):
         """ 
         Compute the two-pion vector correlator V_{\pi\pi}(t) as defined in equation 14 of 
@@ -154,31 +154,35 @@ class GS_model:
     MV --> resonance mass (rho meson)
     
     """
-    def __init__(self, MP: float, MV: float, g_VPP: float):
+    def __init__(self, MP: np.float64, MV: np.float64, g_VPP: np.float64):
         self.MP = MP  # Pion mass (in lattice units)
         self.MV = MV  # Rho mass (in lattice units)
         self.g_VPP = g_VPP  # Rho-pion-pion coupling
     #---
-    def h(self, omega: float):
+    def arg_log(self, omega: np.float64):
+        """ Argument of the logarithm in the h function """
+        k = get_k(omega=omega, MP=self.MP)
+        return (omega + 2.0*k)/(2.0*self.MP)
+    #---
+    def h(self, omega: np.float64):
         g = self.g_VPP
-        A = g**2/(6*np.pi)
+        A = g**2/(6.0*np.pi)
         k = get_k(omega=omega, MP=self.MP)
         B = (k**3/omega)*(2.0/np.pi)
-        C = np.log((omega + 2.0*k)/(2*self.MP))
+        C = np.log(self.arg_log(omega=omega))
         return A*B*C
     #---
-    def hprime(self, omega: float):
+    def hprime(self, omega: np.float64):
         g = self.g_VPP
-        A = g**2/(6*np.pi)
+        A = g**2/(6.0*np.pi)
         k = get_k(omega=omega, MP=self.MP)
         # splitting the sum in 2 terms in order to avoid divergences at k=0
-        B1 = k**2/(np.pi*omega)
-        B2 = k/(np.pi*omega)
-        C1 = 1 
-        C2 = 2.0*(self.MP**2)/(omega**2)*(omega)*np.log((omega+2.0*k)/(2.0*self.MP))
-        return A*(B1*C1 + B2*C2)
+        B = 1.0/np.pi
+        C1 = k/omega
+        C2 = (1.0 + 2.0*(self.MP**2)/(omega**2))*np.log(self.arg_log(omega=omega))
+        return A*B*(C1 + C2)
     #---
-    def Gamma_VPP(self, omega: float):
+    def Gamma_VPP(self, omega: np.float64):
         assert (omega != 0) # Gamma_VPP(2*M_P) diverges
         g = self.g_VPP
         A = (g**2/(6.0*np.pi))
@@ -189,30 +193,30 @@ class GS_model:
     def A_PP_zero(self):
         one = self.h(self.MV)
         two = (-self.MV/2.0)*self.hprime(self.MV)
-        three = (self.g_VPP**2/(6.0*np.pi))*(self.MP**2/np.pi)
+        three = (self.g_VPP**2/(6.0*np.pi))*(self.MP**2.0/np.pi)
         return (one+two+three)
     #---            
-    def A_PP(self, omega: float):
+    def A_PP(self, omega: np.float64):
         one = self.h(self.MV)
-        two = (omega**2 - self.MV**2)*self.hprime(self.MV)/(2*self.MV)
-        three = -self.h(omega)
-        four = 1j*omega*self.Gamma_VPP(omega)
+        two = (omega**2 - self.MV**2)*self.hprime(self.MV)/(2.0*self.MV)
+        three = -self.h(omega=omega)
+        four = 1j*omega*self.Gamma_VPP(omega=omega)
         return (one+two+three+four)
     #--- 
-    def F_P(self, omega: float):
+    def F_P(self, omega: np.float64):
         MV2 = self.MV**2
         num = MV2 - self.A_PP_zero()
         den = MV2 - omega**2 - self.A_PP(omega)
         return (num/den)
     #---
-    def cot_delta_11(self, k: float):
+    def cot_delta_11(self, k: np.float64):
         MP, MV = self.MP, self.MV
         omega = get_omega(k=k, MP=MP)
         num = MV**2 - omega**2 - self.h(MV) - (omega**2 - MV**2)*self.hprime(MV)/(2.0*MV) + self.h(omega)
         den = omega*self.Gamma_VPP(omega)
         return (num/den)
     #---
-    def delta_11(self, k: float):
+    def delta_11(self, k: np.float64):
         delta = np.arctan(1.0/self.cot_delta_11(k))
         delta += np.pi*(delta < 0)
         return delta
@@ -220,10 +224,10 @@ class GS_model:
 
 def get_V_PP_GSmodel(
     times: np.ndarray,
-    MP: float, MV: float, g_VPP: float, L: float, 
+    MP: np.float64, MV: np.float64, g_VPP: np.float64, L: np.float64, 
     N_lev: int, Z3_obj: Z3_vectors, 
-    eps_roots: float, 
-    eps_der: float
+    eps_roots: np.float64, 
+    eps_der: np.float64
     ):
     """ Representation of the Vector-Vector correlator using the Luscher's formalism for PP states in a finite volume """
     PP_mod = Luscher_2Pions(MP=MP, L=L, N_lev=N_lev, Z3_obj=Z3_obj)
@@ -239,38 +243,50 @@ def get_V_PP_GSmodel(
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     Z3_obj = Z3_vectors(mi_max=100)
-    MP_MeV = 322 # 0.140 # pion mass
-    MV_MeV = 2.77*MP_MeV # 0.775 # rho mass
-    g_VPP =  5.22 # 5.5 # 95 # r_{\rho\pi\pi}
-    hbarc_MeV_fm = 197.3269631
-    a_fm = 0.082
-    a_MeV_inv = a_fm / hbarc_MeV_fm
-    Nx = 24
-    L_MeV_inv = a_fm * Nx
-    aMP = a_MeV_inv*MP_MeV
-    aMV = a_MeV_inv*MV_MeV
-    # Example: print the residue function for a range of omega values
-    times = np.arange(3, 23, 1)
-    for N_lev in range(0, 5):
-        # in lattice units
-        res = get_V_PP_GSmodel(
-            times=times,
-            MP=aMP,
-            MV=aMV,
-            g_VPP=g_VPP,
-            L=Nx,
-            N_lev=N_lev,
-            Z3_obj=Z3_obj,
-            eps_roots=1e-3,
-            eps_der=1e-14
-            )
-        V_PP = res["V_PP"]
-        plt.plot(times, V_PP, label=f"N_lev={N_lev}")
-        # plt.yscale('log')
-    #---
-    plt.xlim([2, 22.1])
-    plt.ylim([1e-7, 0.0015])
-    plt.yscale("log")
-    plt.tick_params(direction='in')
+    MP_MeV = 135 # pion mass
+    MV_MeV = 775 # rho mass
+    g_VPP =  5.5 # g_{\rho\pi\pi}
+    # hbarc_MeV_fm = 197.3269631
+    # a_fm = 0.082
+    # a_MeV_inv = a_fm / hbarc_MeV_fm
+    # Nx = 24
+    # L_MeV_inv = a_fm * Nx
+    # aMP = a_MeV_inv*MP_MeV
+    # aMV = a_MeV_inv*MV_MeV
+    # Plot delta_11 (in degrees) as a function of omega in the interval [0.4, 1.2]
+    GS_mod = GS_model(MP=MP_MeV, MV=MV_MeV, g_VPP=g_VPP)
+    omega_vals = np.linspace(400, 1200, 200)
+    k_vals = np.array([get_k(omega=omega, MP=MP_MeV) for omega in omega_vals])
+    # delta_vals_deg = np.array([GS_mod.delta_11(k=k) for k in k_vals])*(180/np.pi)  # Convert radians to degrees
+    F2_vals = np.array([np.abs(GS_mod.F_P(omega=omega))**2 for omega in omega_vals])
+    plt.figure()
+    # plt.plot(omega_vals, delta_vals_deg, label=r'$\delta_{11}$ from GS model')
+    plt.plot(omega_vals, F2_vals)
     plt.legend()
+    plt.grid(True)
     plt.show()
+    # # Example: print the residue function for a range of omega values
+    # times = np.arange(3, 23, 1)
+    # for N_lev in range(0, 5):
+    #     # in lattice units
+    #     res = get_V_PP_GSmodel(
+    #         times=times,
+    #         MP=aMP,
+    #         MV=aMV,
+    #         g_VPP=g_VPP,
+    #         L=Nx,
+    #         N_lev=N_lev,
+    #         Z3_obj=Z3_obj,
+    #         eps_roots=1e-3,
+    #         eps_der=1e-14
+    #         )
+    #     V_PP = res["V_PP"]
+    #     plt.plot(times, V_PP, label=f"N_lev={N_lev}")
+    #     # plt.yscale('log')
+    # #---
+    # plt.xlim([2, 22.1])
+    # plt.ylim([1e-7, 0.0015])
+    # plt.yscale("log")
+    # plt.tick_params(direction='in')
+    # plt.legend()
+    # plt.show()
