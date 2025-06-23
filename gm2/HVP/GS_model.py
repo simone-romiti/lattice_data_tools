@@ -3,6 +3,10 @@ Gounaris-Sakurai (GS) model of Finite Volume Effects (FVEs)
 
 This file contains an implementation of the GS model as used in https://inspirehep.net/literature/2103903
 
+!!! ACHTUNG !!! 
+The original paper has a typo in the definition of the function h'(omega) (eq. 20 of https://arxiv.org/pdf/1808.00887).
+A factor of "k" is missing in the equation, but the implementation below includes it.
+
 """
 
 
@@ -11,12 +15,16 @@ from typing import Callable
 from scipy.optimize import brentq
 
 def get_k(omega: np.float64, MP: np.float64):
-    k = np.sqrt((omega**2/4) - MP**2)
+    omega2 = omega**2
+    MP2 = MP**2
+    k = np.sqrt((omega2/4.0) - MP2)
     return k
 #---
 
 def get_omega(k: np.float64, MP: np.float64):
-    omega = 2.0*np.sqrt(k**2 + MP**2)
+    k2 = k**2
+    MP2 = MP**2
+    omega = 2.0*np.sqrt(k2 + MP2)
     return omega
 #---
 
@@ -173,17 +181,24 @@ class GS_model:
         return A*B*C
     #---
     def hprime(self, omega: np.float64):
+        """
+        Eq. 20 of https://arxiv.org/pdf/1808.00887.
+
+        !!! ACHTUNG !!! 
+        The original paper has a typo in the definition of the function h'(omega) 
+        A factor of "k" is missing in the equation, but the implementation below includes it.
+        """
         g = self.g_VPP
         A = g**2/(6.0*np.pi)
         k = get_k(omega=omega, MP=self.MP)
         # splitting the sum in 2 terms in order to avoid divergences at k=0
-        B = 1.0/np.pi
+        B = k/np.pi # factor of k is missing in the paper, but it is a mistake
         C1 = k/omega
         C2 = (1.0 + 2.0*(self.MP**2)/(omega**2))*np.log(self.arg_log(omega=omega))
         return A*B*(C1 + C2)
     #---
     def Gamma_VPP(self, omega: np.float64):
-        assert (omega != 0) # Gamma_VPP(2*M_P) diverges
+        # assert (omega != 0) # Gamma_VPP(2*M_P) diverges
         g = self.g_VPP
         A = (g**2/(6.0*np.pi))
         k = get_k(omega=omega, MP=self.MP)
@@ -243,8 +258,8 @@ def get_V_PP_GSmodel(
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     Z3_obj = Z3_vectors(mi_max=100)
-    MP_MeV = 135 # pion mass
-    MV_MeV = 775 # rho mass
+    MP_MeV = 0.135 # pion mass
+    MV_MeV = 0.775 # rho mass
     g_VPP =  5.5 # g_{\rho\pi\pi}
     # hbarc_MeV_fm = 197.3269631
     # a_fm = 0.082
@@ -255,12 +270,22 @@ if __name__ == "__main__":
     # aMV = a_MeV_inv*MV_MeV
     # Plot delta_11 (in degrees) as a function of omega in the interval [0.4, 1.2]
     GS_mod = GS_model(MP=MP_MeV, MV=MV_MeV, g_VPP=g_VPP)
-    omega_vals = np.linspace(400, 1200, 200)
+    omega_vals = np.linspace(0.4, 1.2, 200)
     k_vals = np.array([get_k(omega=omega, MP=MP_MeV) for omega in omega_vals])
-    # delta_vals_deg = np.array([GS_mod.delta_11(k=k) for k in k_vals])*(180/np.pi)  # Convert radians to degrees
+    delta_vals_deg = np.array([GS_mod.delta_11(k=k) for k in k_vals])*(180/np.pi)  # Convert radians to degrees
+    print("Calling GS_mod methods with omega_vals or k_vals:")
+    print("  arg_log:", GS_mod.arg_log(omega_vals)[:2])
+    print("  h:", GS_mod.h(omega_vals)[:2])
+    print("  hprime:", GS_mod.hprime(omega_vals)[:2])
+    print("  Gamma_VPP:", GS_mod.Gamma_VPP(omega_vals)[:2])
+    print("  A_PP:", GS_mod.A_PP(omega_vals)[:2])
+    print("  F_P:", GS_mod.F_P(omega_vals)[:2])
+    print("A_PP_zero:", GS_mod.A_PP_zero())
+    print("  cot_delta_11:", GS_mod.cot_delta_11(k_vals)[:2])
+    print("  delta_11:", GS_mod.delta_11(k_vals)[:2])    
     F2_vals = np.array([np.abs(GS_mod.F_P(omega=omega))**2 for omega in omega_vals])
     plt.figure()
-    # plt.plot(omega_vals, delta_vals_deg, label=r'$\delta_{11}$ from GS model')
+    plt.plot(omega_vals, delta_vals_deg, label=r'$\delta_{11}$ from GS model')
     plt.plot(omega_vals, F2_vals)
     plt.legend()
     plt.grid(True)
