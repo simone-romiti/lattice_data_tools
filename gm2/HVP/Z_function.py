@@ -1,14 +1,29 @@
 """ 
 Implementation of the Luescher's Zeta function, 
-as in eq. (7) of https://arxiv.org/pdf/1707.05817
+as in eq. (7) of https://arxiv.org/pdf/1707.05817.
 
 NOTE: For Z_00 in the Center of Mass frame: \vec{s}=(0,0,0) [see eq. (3)], l=m=0, gamma=1.
 
 
 Additional references:
+
 - https://doi.org/10.1016/0550-3213(91)90366-6 (analytic continuation of the Luscher's Zeta function)
 - https://doi.org/10.1016/0550-3213(91)90584-K (tabulated values of phi(q))
+- https://arxiv.org/abs/1202.2145, see appendix
+- https://arxiv.org/pdf/1107.5023: eq. (5) and Eq.(2)+Tab.II for the tabulated energy levels
+- https://arxiv.org/pdf/1011.5288. Tab.V for some tabulated values
 
+
+- `python2` implementation: https://github.com/knippsch/LueschersZetaFunction
+    - For `python3` calls, use  
+        ```
+        -np.arctan(np.pi**1.5*np.sqrt(q2) * 1./np.real(Z(q2, gamma=1., d=np.zeros(3, dtype=int), m_split=1., precision=1e-8)))/(np.pi*q2)
+        ```
+- Morningstar's implementation: https://github.com/cjmorningstar10/TwoHadronsInBox
+    - For a `python` wrapper, see this repo as a template 
+      (note that the actual repository needed is a fork of the above `TwoHadronsBox`):
+      https://github.com/ebatz/pythib
+    
 """
 
 import numpy as np
@@ -96,8 +111,8 @@ class Z_00_Calculator:
         # Gauss-Legendre quadrature points and weights for [0,1]
         x, w = np.polynomial.legendre.leggauss(self.N_gauss)
         # Transform from [-1,1] to [0,1]
-        t = 0.5 * (x + 1)
-        wt = 0.5 * w
+        t = (1.0/2.0) * (x + 1)
+        wt = (1.0/2.0) * w
         I3 = np.sum([wt_i * integrand_0_1(t_i) for t_i, wt_i in zip(t, wt)])
         three = A3*I3
         #  returning the sum of the three terms
@@ -105,28 +120,33 @@ class Z_00_Calculator:
         return res
     #--- 
     def get_Z_00_brute_force(self, u2: float):
+        """ 
+        This is the brute-force calculation of Z_00.
+        It should be used only to show that it actually does not converge,
+        and we need the get_Z_00() method implemented in this class 
+        """
         denominators = (self.unique_n2 - u2)
         res = np.sum(self.n2_multiplicities / denominators)
         return res
+    #---
+    def tan_phi(self, q: float) -> float:
+        num = -np.pi**(3.0/2.0) * q
+        den = Z_00_obj.get_Z_00(u2=q**2)
+        return num/den
+    #---
+    def phi(self, q: float) -> float:
+        res = np.arctan(self.tan_phi(q=q))
+        nu = np.sum(np.array(Z_00_obj.zeros_Z_00) < q**2)
+        res += np.pi * nu
+        return res
 #---
 
-def tan_phi(q: float , Z_00_obj: Z_00_Calculator) -> float:
-    num = -np.pi**(3.0/2.0) * q
-    den = Z_00_obj.get_Z_00(u2=q**2)
-    return num/den
-#---
-
-def phi(q: float, Z_00_obj: Z_00_Calculator) -> float:
-    res = np.arctan(tan_phi(q=q, Z_00_obj=Z_00_obj))
-    nu = np.sum(np.array(Z_00_obj.zeros_Z_00) < q**2)
-    res += np.pi * nu
-    return res
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
-    N_gauss = 200  # number of Gauss-Legendre points
+    N_gauss = 100  # number of Gauss-Legendre points
     Lambda = 1.0
-    Lambda_Z3 = 200 # cutoff for |n| in Z_00
+    Lambda_Z3 = 5 # cutoff for |n| in Z_00
 
     Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss)
     Z_00_obj.find_Z_00_zeros(u2_min=0.0, u2_max=10.0)
@@ -135,5 +155,5 @@ if __name__ == "__main__":
     print(f"{'q^2':>10} {'phi(q)/pi/q^2':>20}")
     for q2 in q2_vals:
         q = np.sqrt(q2)
-        phi_val = phi(q, Z_00_obj)
+        phi_val = Z_00_obj.phi(q)
         print(f"{q2:10.4f} {phi_val/np.pi/q2:20.8f}")
