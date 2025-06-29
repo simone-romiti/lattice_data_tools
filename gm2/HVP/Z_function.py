@@ -41,7 +41,7 @@ class Z_00_Calculator:
 
     Additional reference: https://arxiv.org/pdf/hep-lat/0404001, appendix A
     """
-    def __init__(self, Lambda_Z3: float, Lambda: float, N_gauss: int):
+    def __init__(self, Lambda_Z3: float, Lambda: float, N_gauss: int, q2_max: float, tol_Z_00_zeroes: float = 1e-14):
         self.Lambda = Lambda
         self.Lambda_Z3 = Lambda_Z3 # maximum values of |\vec{n}|
         grid = np.arange(-self.Lambda_Z3, self.Lambda_Z3 + 1) # numbers from -Lambda_Z3 to Lambda_Z3 (included)
@@ -57,6 +57,8 @@ class Z_00_Calculator:
         self.unique_n2 = unique_n2[idx_sort] # unique |m|^2 sorted
         self.n2_multiplicities = n2_multiplicities[idx_sort]
         self.N_gauss = N_gauss # number of Gauss-Legendre points for the integral
+        # finding the zeros of Z_00 --> periodicity convention for \phi(q)
+        self.find_Z_00_zeros(q2_min=0.0, q2_max=q2_max, tol=tol_Z_00_zeroes)
     #---
     def curly_Y_lm(self, l: int, m:int, r: np.float64, theta: np.float64, phi: np.float64):
         """ \mathcal{Y}_{lm}(r, \theta, \phi) as in eq. 3.14 of https://doi.org/10.1016/0550-3213(91)90366-6 """
@@ -74,38 +76,38 @@ class Z_00_Calculator:
         #---
         return res
     #---
-    def find_Z_00_zeros(self, u2_min: float, u2_max: float, tol: float = 1e-14):
+    def find_Z_00_zeros(self, q2_min: float, q2_max: float, tol: float = 1e-14):
         """
-        Find all zeros of Z_00(u2) in the range [u2_min, u2_max].
-        Returns a list of u2 values where Z_00(u2) = 0.
+        Find all zeros of Z_00(q2) in the range [q2_min, q2_max].
+        Returns a list of q2 values where Z_00(q2) = 0.
         """
-        # Find zeros between integer values in [u2_min, u2_max]
+        # Find zeros between integer values in [q2_min, q2_max]
         zeros = []
-        int_min = int(np.floor(u2_min))
-        int_max = int(np.floor(u2_max))
+        int_min = int(np.floor(q2_min))
+        int_max = int(np.floor(q2_max))
         for n in range(int_min, int_max):
-            u2_guess = int_min+n+0.5
-            root = scipy.optimize.newton(self.get_Z_00, x0=u2_guess, tol=tol)
+            q2_guess = int_min+n+0.5
+            root = scipy.optimize.newton(self.get_Z_00, x0=q2_guess, tol=tol, maxiter=500)
             zeros.append(root)
         #---
         self.zeros_Z_00 = np.array(zeros)
         self.zeros_Z_00 = zeros
     #---
-    def get_Z_00(self, u2: float) -> float:
+    def get_Z_00(self, q2: float) -> float:
         # NOTE: for Z_00, Y_lm does not depend on the summed vector
         A1 = (1.0/np.sqrt(4.0*np.pi)) # self.curly_Y_lm(l=0,m=0,r=np.array([0,0,0]), theta=0.0, phi=0.0).real
-        n2_minus_u2 = self.unique_n2 - u2
-        nth_terms = np.exp(- self.Lambda*n2_minus_u2)/n2_minus_u2
+        n2_minus_q2 = self.unique_n2 - q2
+        nth_terms = np.exp(- self.Lambda*n2_minus_q2)/n2_minus_q2
         one = A1*np.sum(self.n2_multiplicities*nth_terms)
         #
-        two = (np.pi/np.sqrt(self.Lambda))*self.F0(self.Lambda*u2)
+        two = (np.pi/np.sqrt(self.Lambda))*self.F0(self.Lambda*q2)
         #
         A3 = (1.0/np.sqrt(self.Lambda))*(np.pi**(3.0/2.0))*A1
         def integrand_0_1(t: float):
             """ integrand for the interval [0, 1] """
             C =  t**(-3.0/2.0)
             # summing over n2 != 0
-            sum_Z3 = np.sum(self.n2_multiplicities[1:] * np.exp(self.Lambda * t * u2 - (np.pi**2)*self.unique_n2[1:]/(t*self.Lambda)))
+            sum_Z3 = np.sum(self.n2_multiplicities[1:] * np.exp(self.Lambda * t * q2 - (np.pi**2)*self.unique_n2[1:]/(t*self.Lambda)))
             return C * sum_Z3
         #---
         # Gauss-Legendre quadrature points and weights for [0,1]
@@ -119,26 +121,27 @@ class Z_00_Calculator:
         res = one+two+three
         return res
     #--- 
-    def get_Z_00_brute_force(self, u2: float):
+    def get_Z_00_brute_force(self, q2: float):
         """ 
         This is the brute-force calculation of Z_00.
         It should be used only to show that it actually does not converge,
         and we need the get_Z_00() method implemented in this class 
         """
-        denominators = (self.unique_n2 - u2)
+        denominators = (self.unique_n2 - q2)
         res = np.sum(self.n2_multiplicities / denominators)
         return res
     #---
-    def tan_phi(self, q: float) -> float:
+    def tan_phi(self, q: float):
         num = -np.pi**(3.0/2.0) * q
-        den = Z_00_obj.get_Z_00(u2=q**2)
+        den = self.get_Z_00(q2=q**2)
         return num/den
     #---
-    def phi(self, q: float) -> float:
+    def phi(self, q: float):
         res = np.arctan(self.tan_phi(q=q))
-        nu = np.sum(np.array(Z_00_obj.zeros_Z_00) < q**2)
+        nu = np.sum(np.array(self.zeros_Z_00) < q**2)
         res += np.pi * nu
         return res
+    #---
 #---
 
 
@@ -148,8 +151,8 @@ if __name__ == "__main__":
     Lambda = 1.0
     Lambda_Z3 = 5 # cutoff for |n| in Z_00
 
-    Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss)
-    Z_00_obj.find_Z_00_zeros(u2_min=0.0, u2_max=10.0)
+    q2_max = 10.0
+    Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss, q2_max=q2_max)
 
     q2_vals = np.arange(0.1, 9.0, 0.1)
     print(f"{'q^2':>10} {'phi(q)/pi/q^2':>20}")
