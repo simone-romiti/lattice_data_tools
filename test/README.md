@@ -17,3 +17,6 @@ This folder contains test scripts of the routines of the library.
   - `AIC_bootstrap.py`: AIC but with bootstrap samples. The CDF is discontinuos.
 - _Reduction of lattice artifacts_: `lambda_method.py`
 
+- _Finite volume effects_:
+  - `Luescher_condition.py`: plotting the Luescher's quantization condition
+  - `PP_model.py`: Finding the Vector-Vector correlator in the approximation of 2-pions states in a finite volume. We use the Gounaris-Sakurai model in the I=1,J=1 channel.

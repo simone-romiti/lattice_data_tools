@@ -114,12 +114,12 @@ def get_V_PP_GSmodel(
     ):
     """ Representation of the Vector-Vector correlator using the Luscher's formalism for PP states in a finite volume """
     PP_mod = PP_model(MP=MP, L=L, N_lev=N_lev, Z_00_obj=Z_00_obj)
-    N_gauss = 100  # number of Gauss-Legendre points
-    Lambda = 1.0
-    Lambda_Z3 = 10 # cutoff for |n| in Z_00
+    # N_gauss = 100  # number of Gauss-Legendre points
+    # Lambda = 1.0
+    # Lambda_Z3 = 10 # cutoff for |n| in Z_00
 
-    q2_max = (N_lev+1)**2
-    Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss, q2_max=q2_max)
+    # q2_max = (N_lev+1)**2
+    # Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss, q2_max=q2_max)
     GS_mod = GS_model(MP=MP, MV=MV, g_VPP=g_VPP)
     delta_11 = lambda k: GS_mod.delta_11(k)
     F_squared = lambda omega: np.abs(GS_mod.F_P(omega))**2

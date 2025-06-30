@@ -1,4 +1,10 @@
+""" 
+This test script shows how to use the library to find the Vector-Vector correlator (HVP) 
+in terms of 2-pion states in a finite volume, in the I=1, J=1 channel. 
+The phase shift needed to solve the Luescher's quantization condition is provided by the Gounaris-Sakurai model.
 
+Reference: https://arxiv.org/pdf/1808.00887
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt    
@@ -12,9 +18,12 @@ from lattice_data_tools.gm2.HVP.PP_finite_volume import PP_model, get_V_PP_GSmod
 
 N_gauss = 100  # number of Gauss-Legendre points
 Lambda = 1.0
-Lambda_Z3 = 10 # cutoff for |n| in Z_00
+Lambda_Z3 = 5 # cutoff for |n| in Z_00
 
-Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss, q2_max=25.0)
+
+N_lev = 5
+q2_max = (N_lev)**2 # after this value, \phi(q) is not correctly wrapped around the half-circle
+Z_00_obj = Z_00_Calculator(Lambda_Z3=Lambda_Z3, Lambda=Lambda, N_gauss=N_gauss, q2_max=q2_max)
 
 #
 MP_MeV = 320 # pion mass
@@ -30,25 +39,6 @@ aMV = a_MeV_inv*MV_MeV
 print("aMP:", aMP)
 print("aMV:", aMV)
 
-# k_vals = np.linspace(0.01, 1.5, 500)
-# q_vals = k_vals*Nx/(2.0*np.pi)
-# GS_obj = GS_model(MP=aMP, MV=aMV, g_VPP=g_VPP)
-# delta_11 = np.array([GS_obj.delta_11(k) for k in k_vals])
-# phi_vals = np.array([Z_00_obj.phi(q) for q in q_vals])
-
-# plt.figure(figsize=(8, 6))
-# plt.plot(k_vals, delta_11 + phi_vals, label=r'$\delta_{11}(k) + \phi(q)$')
-# N_lev = 5
-# for n in range(N_lev + 1):
-#     plt.axhline(n * np.pi, color='gray', linestyle='--', linewidth=0.8, label=r'$n\pi$' if n == 0 else None)
-# plt.xlabel(r'$k$')
-# plt.ylabel(r'$\delta_{11}(k) + \phi(q)$')
-# plt.title(r'$\delta_{11}(k) + \phi(q)$ and $n\pi$ lines')
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
-
-
 # -------------------
 # The following lines reproduce Fig. 5 of https://arxiv.org/pdf/1808.00887
 #--------------------
@@ -57,7 +47,7 @@ times = np.arange(3, 22+1)
 VV_info = get_V_PP_GSmodel(
     times=times, 
     MP=aMP, MV=aMV, g_VPP=g_VPP, 
-    L=Nx, N_lev=5, 
+    L=Nx, N_lev=N_lev, 
     Z_00_obj=Z_00_obj, 
     eps_roots=1e-3, eps_der=1e-10
     )
