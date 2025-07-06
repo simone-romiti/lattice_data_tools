@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import time
 
 import multiprocessing
+import re
+import os
 
 def compute_cumulative_logaddexp_chunk(chunk):
     """
@@ -50,12 +52,12 @@ def parallel_cumulative_logaddexp(log_wL_normalized, num_chunks):
 
 #@jit(cache=True, nopython=True)
 def log_sum_with_logaddexp(log_wL):
-    """ Finds  logZ = log( \sum_i (wL)_i ) from the log( (wL)_i )
+    """ Finds  logZ = log( \\sum_i (wL)_i ) from the log( (wL)_i )
     
     -----------
     Explanation:
     
-    The partition function is Z = \sum_i w_i * L_i
+    The partition function is Z = \\sum_i w_i * L_i
     As a function of the phase space volume X_i, the w_i and L_i are:
       - very small in almost all the range
       - mildly overlapping 
@@ -99,7 +101,6 @@ class MotherAnalysis:
             return log_w
         elif strategy == "symm":
             logt = self.get_log_compression_factor()
-            # print(t, t**2, t**(-2))
             log_w = -np.log(2) + logX_arr - logt + np.log(1.0 - t**2)
             return log_w
         else:
@@ -113,7 +114,7 @@ class MotherAnalysis:
     ####
     def get_log_wL_normalized(self, log_wL):
         """ 
-        Total weights w_i*L_i, where 1 = Z = \sum_i w_i*L_i
+        Total weights w_i*L_i, where 1 = Z = \\sum_i w_i*L_i
         NOTE: The normalization using Z (see implementation) is crucial.
         If not used, exp(log(w_i*L_i)) is typically compatible with 0 numerically.
         """
@@ -149,7 +150,7 @@ class MotherAnalysis:
         """
         log_S = np.log(self.S)
         logX = self.get_logX()
-        print(logX.shape, log_S.shape)
+        # print(logX.shape, log_S.shape)
         log_der = np.log(np.gradient(logX, log_S))
         log_rho = logX - log_S + log_der
         return log_rho
@@ -177,7 +178,6 @@ class MotherAnalysis:
         log_Z_curve = self.get_log_Z_curve(log_wL_normalized=log_wL, parallelize=parallelize)
         t4 = time.time()
         # Z = np.exp(log_Z)
-                
         res = dict({
             "S": self.S,
             "logX": logX,
@@ -222,7 +222,7 @@ class MotherAnalysis:
         """ 
         The average plaquette^2 is: 
         
-        <P> = \sum_i wL[i]*(P[i]^2) 
+        <P> = \\sum_i wL[i]*(P[i]^2) 
         
         where P(S) = 1 - (S/V/ndims_fact)
         """
@@ -250,6 +250,33 @@ class MotherAnalysis:
         ####
         P2_avg = np.array(P2_avg)
         return P2_avg
+    ####
+    def add_polyakov(self, Polyakov_vol_avg: np.ndarray):
+        """ Adding the measure of the Polyakov loop average over the lattice """
+        self.measure_polyakov = True
+        self.Polyakov_vol_avg = Polyakov_vol_avg # volume average
+    #---
+    def get_average_Polyakov(self, beta_range):
+        """ 
+        The average Polyakov loop is: 
+        
+        <P> = \\sum_i wL[i]*P[i]        
+        """
+        assert(self.measure_polyakov == True)
+        ## Plaquette expectation value
+        n_arr = beta_range.shape[0]
+        Polyakov_avg = []
+        for i in range(n_arr):
+            beta = beta_range[i]
+            log_w = self.get_log_w(strategy="fwd")
+            logL = -beta*self.S
+            log_wL = self.get_log_wL_normalized(log_wL=(log_w+logL))
+            wL = np.exp(log_wL)
+            Polyakov_avg_val = np.sum(wL*self.Polyakov_vol_avg)
+            Polyakov_avg.append(Polyakov_avg_val)
+        ####
+        Polyakov_avg = np.array(Polyakov_avg)
+        return Polyakov_avg
     ####
 ####
 

@@ -21,6 +21,7 @@ class StreamsAnalyser:
         streams_log_rho = []
         streams_P_avg = []
         streams_P2_avg = []
+        streams_Polyakov_avg = []
         i_stream = 0
         n_streams = len(ssa_list)
         dt_wL = 0
@@ -56,6 +57,11 @@ class StreamsAnalyser:
 
             P2_avg = ssa.get_average_P2(beta_range=self.beta_range)
             streams_P2_avg.append(P2_avg)
+
+            if ssa.measure_polyakov == True:
+                Polyakov_avg = ssa.get_average_Polyakov(beta_range=self.beta_range)
+                streams_Polyakov_avg.append(Polyakov_avg)
+            ####
             i_stream += 1
             #
             dt_wL += ssa_beta_ref["dt_wL"]
@@ -69,6 +75,7 @@ class StreamsAnalyser:
         streams_log_rho = np.array(streams_log_rho)
         streams_P_avg   = np.array(streams_P_avg  )
         streams_P2_avg   = np.array(streams_P2_avg  )
+        streams_Polyakov_avg = np.array(streams_Polyakov_avg)
         res = dict({
             "logX": streams_logX,
             "logS": streams_logS,
@@ -77,9 +84,11 @@ class StreamsAnalyser:
             "log_rho": streams_log_rho,
             "P_avg": streams_P_avg,
             "P2_avg": streams_P2_avg,
+            "Polyakov_avg": streams_Polyakov_avg,
             "dt_wL" : dt_wL,
             "dt_logZ" : dt_logZ
         })
+        
         return res
     ####
 ####
