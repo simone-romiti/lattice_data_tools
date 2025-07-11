@@ -8,7 +8,7 @@ masses_MeV = {
     "mu": 105.6583745, # \mu lepton
     "tau": 1776.86, # \tau lepton
     "pi": {
-        "isoQCD": {"Edinburgh": 135.0},
+        "isoQCD": {"Edinburgh": 135.0}, # Edinburgh consensus https://arxiv.org/pdf/2411.04268
         "+": 139.57061, # \pi^+
         "0": 134.9770   # \pi^0
     },

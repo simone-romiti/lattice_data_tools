@@ -2,6 +2,9 @@ This folder contains test scripts of the routines of the library.
 
 **Available tests**:
 
+- _Monte Carlo history_:
+  - `MC_history.py`: Monte Carlo history of some made-up data.
+
 - _Bootstrap sampling_: 
   - `bootstrap_sampling.qmd`: quarto document discussing the bootstrap sampling with examples. Render it with `quarto render bootstrap_sampling.qmd`.
 
