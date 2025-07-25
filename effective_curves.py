@@ -227,7 +227,7 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str
 #----
 
 
-def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
+def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> np.float128:
     """Fit the effective curve (in the plateau) to a constant
 
     Args:
@@ -248,7 +248,7 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> float:
 #---
 
 
-def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> float:
+def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> np.float128:
     """ alias for the fit to a generic effective curve """
     
     return fit_eff_curve(y_eff=m_eff, dy_eff=dm_eff)
