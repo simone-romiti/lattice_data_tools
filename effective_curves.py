@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import root, fsolve
+from typing import Literal
 
 def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     """Effective mass curve
@@ -18,7 +19,7 @@ def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     return np.array([np.log(C[t]/C[t+1]) if C[t]/C[t+1] > 0 else 0.0 for t in range(T-1)])
 #---
 
-def get_A_eff_log(C: np.ndarray, m: np.ndarray) -> np.ndarray:
+def get_A_eff_log(C: np.ndarray, m_eff: np.ndarray) -> np.ndarray:
     """Effective amplitude curve : A_eff(t) = C(t)/exp(-m_eff(t)*t)
     
     Args:
@@ -82,21 +83,19 @@ def get_A_eff_bkw(C: np.ndarray, m_eff: np.ndarray, T: int, p: int):
     Effective Amplitude including the backward signal 
     see eq. 6.57 of Gattringer & Lang    
     """
-    form = backward_signal_ansatz_dict[p]
     T_ext = m_eff.shape[0]
-    T_half = int(T/2)
+    form = lambda t: np.exp(-m_eff*t) + np.exp(-m_eff*(T-t))
     ti = np.array([t for t in range(T-1)])[0:T_ext]
-    A_eff = C[0:T_ext]/form(m_eff*(T_half-ti))
+    A_eff = C[0:T_ext]/form(ti)
     return A_eff
 #---
 
-def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> np.ndarray:
+def get_m_eff(C: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
     
     Args:
         C (np.ndarray): correlator C(t)
-        strategy (str): computation strategy. 
-                        Supported: ["log","cosh","sinh"]
+        strategy (str): computation strategy
 
     Raises:
         ValueError: if strategy is not in the list of supported types
@@ -118,15 +117,14 @@ def get_m_eff(C: np.ndarray, strategy: str, T=None, avoid_instability=False) -> 
     #---
 #---
 
-def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: str) -> np.ndarray:
+def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: Literal["log", "cosh", "sinh"]) -> np.ndarray:
     """Effective Amplitude curve from the correlator
     
     Args:
         C (np.ndarray): correlator C(t)
         m_eff (np.ndarray): effective mass m_eff(t)
         
-        strategy (str): computation strategy. 
-                        Supported: ["log","cosh","sinh"]
+        strategy (str): computation strategy
 
     Raises:
         ValueError: if strategy is not in the list of supported types
@@ -136,7 +134,7 @@ def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: str) -> np.ndar
     """
     
     if strategy == "log":
-        return get_A_eff_log(C)
+        return get_A_eff_log(C=C, m_eff=m_eff)
     elif strategy == "cosh":
         return get_A_eff_bkw(C=C, m_eff=m_eff, T=T, p=+1)
     elif strategy == "sinh":
@@ -197,15 +195,13 @@ def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p
 #---
 
 
-def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: str, T=None) -> np.ndarray:
+def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None) -> np.ndarray:
     """Effective curve for a mass correction the correlator
 
     Args:
         C0 (np.ndarray): correlator C_0(t) in the free theory (e.g. isoQCD)
         dC (np.ndarray): correction to the correlator $C_0(t)$
-        strategy (str): 
-            computation strategy. 
-            Supported: ["log","tanh","coth"]
+        strategy (str): computation strategy
 
     Raises:
         ValueError: if strategy is not in the list of supported types
@@ -252,6 +248,16 @@ def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> np.float128:
     """ alias for the fit to a generic effective curve """
     
     return fit_eff_curve(y_eff=m_eff, dy_eff=dm_eff)
+#---
+
+
+def get_leading_curve(t: np.ndarray, A0: np.float128, m0: np.float128, p: int = None, T: int = None):
+    if p==None:
+        return A0*np.exp(-m0*t)
+    else:
+        assert(p in [-1, 1])
+        return A0*(np.exp(-m0*t) + p*np.exp(-m0*(T-t)))
+    #---
 #---
 
 
