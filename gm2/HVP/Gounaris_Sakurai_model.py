@@ -112,15 +112,18 @@ class GS_model:
     #---
 #---
 
-    
+# physical values taken from https://arxiv.org/pdf/2206.15084
+physical_parameters = {"M_rho_MeV": 775, "g_rho_pi_pi": 5.95}
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
-    MP_MeV = 0.135 # pion mass
-    MV_MeV = 0.775 # rho mass
+    MP_GeV = 0.135 # pion mass
+    MV_GeV = 0.775 # rho mass
     g_VPP =  5.5 # g_{\rho\pi\pi}
-    GS_mod = GS_model(MP=MP_MeV, MV=MV_MeV, g_VPP=g_VPP)
+    GS_mod = GS_model(MP=MP_GeV, MV=MV_GeV, g_VPP=g_VPP)
     omega_vals = np.linspace(0.4, 1.2, 200)
-    k_vals = np.array([get_k(omega=omega, MP=MP_MeV) for omega in omega_vals])
+    k_vals = np.array([get_k(omega=omega, MP=MP_GeV) for omega in omega_vals])
     delta_vals_deg = np.array([GS_mod.delta_11(k=k) for k in k_vals])*(180/np.pi)  # Convert radians to degrees
     print("Calling GS_mod methods with omega_vals or k_vals:")
     print("  arg_log:", GS_mod.arg_log(omega_vals)[:2])
@@ -134,9 +137,9 @@ if __name__ == "__main__":
     print("  delta_11:", GS_mod.delta_11(k_vals)[:2])    
     F2_vals = np.array([np.abs(GS_mod.F_P(omega=omega))**2 for omega in omega_vals])
     plt.figure()
-    plt.plot(omega_vals, delta_vals_deg, label=r'$\delta_{11}$ from GS model')
+    plt.plot(omega_vals, delta_vals_deg, label='$\\delta_{11}$ from GS model')
     plt.plot(omega_vals, F2_vals)
     plt.legend()
     plt.grid(True)
-    plt.title(r'$\delta_{11}$ and $F_P^2$ from GS model, as in Fig. 3 of https://arxiv.org/pdf/1808.00887')
+    plt.title('$\\delta_{11}$ and $F_P^2$ from GS model, as in Fig. 3 of https://arxiv.org/pdf/1808.00887')
     plt.show()
