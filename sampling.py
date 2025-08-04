@@ -38,17 +38,17 @@ def correlated_confs_to_jkf(Cg: np.ndarray, N_jkf: int, output_file=None) -> np.
 ####
 
 
-def parametric_gaussian_bts(mean: float, std: float, N_bts: int, seed: int = 12345) -> np.ndarray:
-    """Generate bootstrap samples from a Gaussian distribution
-
+def parametric_gaussian_bts(mean: float, std: float, N_bts, seed=12345):
+    """Generate paramteric bootstrap samples from a Gaussian distribution
+    
     Args:
         mean (float): Mean of the Gaussian distribution
         std (float): Standard deviation of the Gaussian distribution
         N_bts (int): Number of bootstrap samples to generate
         seed (int): Random seed for reproducibility
-
+    
     Returns:
-        np.ndarray: Bootstrap samples drawn from the Gaussian distribution
+        np.ndarray: Bootstrap samples
     """
     np.random.seed(seed=seed)
     return np.random.normal(loc=mean, scale=std, size=N_bts)

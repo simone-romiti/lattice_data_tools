@@ -3,6 +3,8 @@
 import numpy as np
 
 from lattice_data_tools.gm2.HVP.amu import get_amu_precomp_K
+from lattice_data_tools.gm2.HVP.Z_function import Z_00_Calculator
+from lattice_data_tools.gm2.HVP.PP_finite_volume import get_V_PP_GSmodel
 
 def ZeroTail(V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, strategy="trapezoidal") -> float:
     """ 
@@ -93,3 +95,26 @@ def M_eff_t0_Tail(M_eff: np.ndarray, V: np.ndarray, K: np.ndarray, Z_ren: float,
     return res
 ####
 
+class FiniteVolume:
+    @staticmethod
+    def Gounaris_Sakurai(
+        V_PP:  np.ndarray, t0: int,
+        V_lat: np.ndarray, K: np.ndarray, Z_ren: float, 
+        strategy: str ="trapezoidal"):
+        """ 
+        Calculation of a_\mu as \int_{0}^{t_0} t^2 K(t) Z^2 V_lat(t) + \int_{t0}^{T_max} t^2 K(t) V_{\pi\pi}(t)
+        In other words, we replace the tail of the correlator with a model,
+        assuming that is gets the leading contribution from \pi\pi states.
+        
+        All the inputs are in lattice units      
+        """
+        T_ext = V_lat.shape[0]
+        ti = np.arange(0, T_ext)
+        a_mu_left = get_amu_precomp_K(ti=ti[0:t0], Vi=V_lat[0:t0], K=K[0:t0], Z_ren=Z_ren, strategy=strategy)
+        a_mu_right = get_amu_precomp_K(ti=ti[t0:T_ext], Vi=V_PP[t0:T_ext], K=K[t0:T_ext], Z_ren=Z_ren, strategy=strategy)
+        a_mu_tot = a_mu_left+a_mu_right
+        return a_mu_tot
+    #---
+#---
+
+        

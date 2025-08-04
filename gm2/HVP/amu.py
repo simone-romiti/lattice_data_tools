@@ -1,15 +1,16 @@
 
 
 import numpy as np
+from scipy.integrate import simpson as simpson_integration
 
-import lattice_data_tools.gm2.HVP.kernel
+import lattice_data_tools.gm2.HVP.kernel as kernel
 from lattice_data_tools.constants import alpha_EM
 
 def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: float, strategy="trapezoidal"):
     """ 
     a_\mu as in eq. 1 of https://inspirehep.net/literature/2615948
     
-    ti : array of times, e.g. [1,2,3,...]
+    ti : array of times in lattice units, e.g. [1,2,3,...]
     Vi : values of the (bare) correlator at each ti (already including the charge factors)
     Ki: precomputed value of the kernel at each ti
     Z_ren: renormalization constant of the vector current: Z_A for tm and Z_V for OS
@@ -23,6 +24,8 @@ def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: floa
         res = np.trapz(integrand)
     elif strategy == "rectangles":
         res = np.sum(integrand)
+    elif strategy == "simpson":
+        res = simpson_integration(integrand, x=ti)
     else:
         raise ValueError("Illegal integration strategy: {strategy}".format(strategy=strategy))
     ####

@@ -55,3 +55,5 @@ q_s = - 1.0/3.0 # strange
 q_t = + 2.0/3.0 # top
 q_b = - 1.0/3.0 # bottom
 
+
+q_dict = {"u":q_u, "d":q_d, "c":q_c, "s":q_s, "t":q_t, "b":q_b}
