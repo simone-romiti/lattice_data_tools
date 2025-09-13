@@ -1,7 +1,7 @@
-"""Routines for fitting a function $f: \mathbb{R}^n \to \mathbb{R}^m$
+"""Routines for fitting a function $f: \\mathbb{R}^n \\to \\mathbb{R}^m$
 
 This file contains functions for fitting multi-dimensional functions 
-of many variables. This is done using a the maximum likelyhood principle 
+of many variables. This is done using the maximum likelyhood principle 
 and a "trajectory method":
 the function $\vec{y} = \vec{f}(\vec{x})$ is thought as 
 a trajectory $\vec{z}(t)$ in a n+m dimensional space: 
@@ -23,7 +23,7 @@ def fit_trajectory(
     guess: np.ndarray, 
     method = "BFGS"
     ):
-    """Fit a function f: \mathbb{R}^n \to \mathbb{R}^m with the trajectory method
+    """Fit a function f: \\mathbb{R}^n \\to \\mathbb{R}^m with the trajectory method
 
     Args:
         ansatz : function f(x, p): x=1d array, p=1d array, returns 1d array
@@ -52,9 +52,9 @@ def fit_trajectory(
 
     # chi square residual function
     def ch2(p_all):
-        p_ansatz = p_all[0:N_par] ## parameters of the fit only
-        p_x = p_all[N_par:] # .reshape(x_fit.shape)
-        x[ix_with_err] = p_x ## replacing x_i (with errors) with fit parameters
+        p_ansatz = p_all[0:N_par] # parameters of the fit only
+        p_x = p_all[N_par:] 
+        x[ix_with_err] = p_x # replacing x_i (with errors) with fit parameters
         y_th = np.array([ansatz(x[i,:], p_ansatz) for i in range(N_pts)])[iy_with_err] # theoretical values
         ch2_x = np.sum(((x_fit - p_x)/ex_fit)**2)
         ch2_y = np.sum(((y_fit - y_th)/ey_fit)**2)
