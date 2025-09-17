@@ -194,7 +194,7 @@ import sys
 
 sys.path.append('../../')
 
-from lattice_data_tools import bootstrap_sampling as bts
+# from lattice_data_tools import bootstrap_sampling as bts
 
 np.random.seed(18236)
 

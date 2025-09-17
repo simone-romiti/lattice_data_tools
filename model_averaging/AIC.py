@@ -1,7 +1,9 @@
 """
 Model averaging of lattice determinations using the Akaike Information Criterion (AIC)
 
-Reference: Section 21 of https://arxiv.org/pdf/2002.12347
+Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
+    Used in: https://arxiv.org/pdf/2411.08852, eq. 17
+    ACHTUNG: Typo in https://arxiv.org/pdf/2002.12347, eq. 161: factor 2 in front of n_data is missing
 
 """
 
@@ -11,10 +13,10 @@ import matplotlib.pyplot as plt
 
 def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """ 
-    Returns the 1d array of weights as in eq. 161 of https://arxiv.org/pdf/2002.12347
+    Returns the 1d array of weights as in eq. 17 of https://arxiv.org/pdf/2411.08852
     The inputs are the array of models (each with a \chi^2) the number of fit parameters and number of points
     """
-    A = ch2 + 2*n_par - n_data
+    A = ch2 + 2.0*n_par - 2.0*n_data
     w_i = np.exp(-A/2)
     w_i /= np.sum(w_i)
     return w_i
