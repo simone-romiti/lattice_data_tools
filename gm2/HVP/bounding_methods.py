@@ -91,8 +91,7 @@ def M_eff_t0_Tail(M_eff: np.ndarray, window: Literal["SD", "W", "LD", "full"], a
         if t0 < T_ext-1:
             ## NOTE: for t0=T_ext-1 the effective mass may be not defined
             E_tail = M_eff[t0]
-            A0 = V[t0]*np.exp(E_tail*t0)
-            V_tail = np.array([A0*np.exp(-E_tail*t) for t in ti[t0:T_ext]]) 
+            V_tail = np.array([V[t0]*np.exp(-E_tail*(t-t0)) for t in ti[t0:T_ext]]) 
             res += a_mu.with_precomputed_K(window=window, a_fm=a_fm, t_lat=ti[t0:T_ext], Vi=V_tail, K=K[t0:T_ext], Z_ren=Z_ren, strategy=strategy)
     #-------
     return res
