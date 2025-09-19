@@ -6,12 +6,20 @@ class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
         obj = np.asarray(input_array).view(cls)
         return obj
+    
+    def N_bts(self):
+        return self.shape[0]
 
     @staticmethod
     def from_sample(x: np.ndarray, mean: np.ndarray):
         """ keeping the information about the unbiased mean """
-        assert( x.shape[1:] == mean.shape)
-        return BootstrapSamples(np.concatenate((np.atleast_1d(mean), x)))
+        mean_arr = np.atleast_1d(mean)
+        if mean_arr.shape == (1,):
+            assert( len(x.shape[1:]) == 0)
+        else:
+            assert( x.shape[1:] == mean.shape)
+        #---
+        return BootstrapSamples(np.concatenate((mean_arr, x)))
     
     def __array_finalize__(self, obj):
         if obj is None: return
@@ -28,9 +36,12 @@ class BootstrapSamples(np.ndarray):
             )
         return super().__array_function__(func, types, args, kwargs)
 
-    def mean(self, *args, **kwargs):
+    def to_numpy(self):
+        return self.view(np.ndarray)
+
+    def mean(self):
         """ bootstrap mean (biased) """
-        return np.ndarray.mean(self[1:].view(np.ndarray), *args, **kwargs)
+        return np.ndarray.mean(self[1:].view(np.ndarray), axis=0)
 
     def unbiased_mean(self):
         """ mean of the original random sample """
@@ -43,8 +54,17 @@ class BootstrapSamples(np.ndarray):
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
 
+# def bts_by_bts(fun, N_bts: int):
+#     """ 
+#     Get a result for each index of the bootstrap. 
+#     This function is preferred to manual loops,
+#     as it takes into account the extra index for the unbiased mean 
+#     """
+#     return BootstrapSamples([fun(i) for i in range(N_bts+1)])
+    
 
-def parametric_gaussian_bts(mean: float, std: float, N_bts, seed=12345):
+
+def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
     """Generate paramteric bootstrap samples from a Gaussian distribution
     
     Args:
@@ -57,7 +77,7 @@ def parametric_gaussian_bts(mean: float, std: float, N_bts, seed=12345):
         np.ndarray: Bootstrap samples
     """
     np.random.seed(seed=seed)
-    res = BootstrapSamples.from_sample(x=np.random.normal(loc=mean, scale=std, size=N_bts), mean=mean)
+    res = BootstrapSamples.from_sample(x=np.random.normal(loc=mean, scale=error, size=N_bts), mean=mean)
     return res
 #---
 
