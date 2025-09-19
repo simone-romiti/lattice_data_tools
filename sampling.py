@@ -1,117 +1,87 @@
-## resampling techniques from gauge configurations
+""" PLEASE LOOK AT THE bootstrap.py and jackknife.py """
 
-import numpy as np
+# ## resampling techniques from gauge configurations
 
-from lattice_data_tools import uwerr
+# import numpy as np
 
-def uncorrelated_confs_to_jkf(x, N_jkf):
-    Ng = x.shape[0] ## number of configurations
-    b = int(Ng/N_jkf)
-    return np.array([np.average(np.delete(x, range(i*b, (i+1)*b)), axis=0) for i in range(N_jkf)])
-####
-
-def get_std_jkf(x_jkf):
-    N_jkf = x_jkf.shape[0]
-    return np.sqrt(N_jkf-1)*np.std(x_jkf, axis=0, ddof=0)
-####
-
-def correlated_confs_to_jkf(Cg: np.ndarray, N_jkf: int, output_file=None) -> np.ndarray:
-    """Jackknife samples from array of correlated configurations
-
-    - The configurations are sampled every tau_int, (integrated autocorrelation time)
-    - The Jackknife samples are drawn from the uncorrelated configurations
-
-    Args:
-        C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
-        N_bts (int): Number of Jackknifes
-
-    Returns:
-        np.ndarray: Jackknife samples
-    """
-    Ng = Cg.shape[0] ## total number of configurations
-    tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time
-    if tauint == 0:
-        tauint = 1 ## uncorrelated data
-    ####
-    Cg_uncorr = Cg[0:Ng:tauint] ## uncorrelated values
-    return uncorrelated_confs_to_jkf(x=Cg_uncorr, N_jkf=N_jkf)
-####
+# from lattice_data_tools import uwerr
 
 
-def parametric_gaussian_bts(mean: float, std: float, N_bts, seed=12345):
-    """Generate paramteric bootstrap samples from a Gaussian distribution
+
+# def parametric_gaussian_bts(mean: float, std: float, N_bts, seed=12345):
+#     """Generate paramteric bootstrap samples from a Gaussian distribution
     
-    Args:
-        mean (float): Mean of the Gaussian distribution
-        std (float): Standard deviation of the Gaussian distribution
-        N_bts (int): Number of bootstrap samples to generate
-        seed (int): Random seed for reproducibility
+#     Args:
+#         mean (float): Mean of the Gaussian distribution
+#         std (float): Standard deviation of the Gaussian distribution
+#         N_bts (int): Number of bootstrap samples to generate
+#         seed (int): Random seed for reproducibility
     
-    Returns:
-        np.ndarray: Bootstrap samples
-    """
-    np.random.seed(seed=seed)
-    return np.random.normal(loc=mean, scale=std, size=N_bts)
-#---
+#     Returns:
+#         np.ndarray: Bootstrap samples
+#     """
+#     np.random.seed(seed=seed)
+#     return np.random.normal(loc=mean, scale=std, size=N_bts)
+# #---
 
-def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
-    """Bootstrap samples from array of data
+# def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
+#     """Bootstrap samples from array of data
     
-    generates Nb bootstrap samples from N configurations,
-    It assumes x.shape[0] == N.
+#     generates Nb bootstrap samples from N configurations,
+#     It assumes x.shape[0] == N.
     
-    Steps:
-    - Draw N samples with replacements among the x values
-    - Compute the mean. This is a bootstrap sample.
-    - Repeat Nb times. The resulting array has standard deviation of the mean (approximately) equal to the one of the original sample.
+#     Steps:
+#     - Draw N samples with replacements among the x values
+#     - Compute the mean. This is a bootstrap sample.
+#     - Repeat Nb times. The resulting array has standard deviation of the mean (approximately) equal to the one of the original sample.
     
-    Args:
-        x (np.ndarray): time series. Bootstrapping is done on 1st index
-        N_bts (int): Number of bootstraps
-        block_size (int): size of the block
+#     Args:
+#         x (np.ndarray): time series. Bootstrapping is done on 1st index
+#         N_bts (int): Number of bootstraps
+#         block_size (int): size of the block
     
-    Returns:
-        np.ndarray: Bootstrap samples
-    """
-    N = x.shape[0]
-    np.random.seed(seed=seed)
-    return np.array([np.average(x[np.random.randint(0,high=N,size=N,dtype=int)]) for i in range(N_bts)])
-####
+#     Returns:
+#         np.ndarray: Bootstrap samples
+#     """
+#     N = x.shape[0]
+#     np.random.seed(seed=seed)
+#     return np.array([np.average(x[np.random.randint(0,high=N,size=N,dtype=int)]) for i in range(N_bts)])
+# ####
 
-def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
-    """Bootstrap samples from array of correlated configurations
+# def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
+#     """Bootstrap samples from array of correlated configurations
 
-    - The configurations are sampled every tau_int, (integrated autocorrelation time)
-    - The bootstrap samples are drawn from the uncorrelated configurations
+#     - The configurations are sampled every tau_int, (integrated autocorrelation time)
+#     - The bootstrap samples are drawn from the uncorrelated configurations
 
-    Args:
-        C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
-        N_bts (int): Number of bootstraps
+#     Args:
+#         C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
+#         N_bts (int): Number of bootstraps
 
-    Returns:
-        np.ndarray: Bootstrap samples
-    """
-    Ng = Cg.shape[0] ## total number of configurations
-    tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time
-    if tauint == 0:
-        tauint = 1 ## uncorrelated data
-    ####
-    Cg_uncorr = Cg[0:Ng:tauint] ## uncorrelated values
-    return uncorrelated_confs_to_bts(x=Cg_uncorr, N_bts=N_bts, seed=seed)
-####
+#     Returns:
+#         np.ndarray: Bootstrap samples
+#     """
+#     Ng = Cg.shape[0] ## total number of configurations
+#     tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time
+#     if tauint == 0:
+#         tauint = 1 ## uncorrelated data
+#     ####
+#     Cg_uncorr = Cg[0:Ng:tauint] ## uncorrelated values
+#     return uncorrelated_confs_to_bts(x=Cg_uncorr, N_bts=N_bts, seed=seed)
+# ####
 
-if __name__ == "__main__":
-    Cg = np.array(100*[list(np.random.normal(0.0, 0.4, 50))]).flatten()
-    seed = 12345
-    N_bts = 1000
-    C_bts = correlated_confs_to_bts(Cg, N_bts=N_bts, seed=seed)
+# if __name__ == "__main__":
+#     Cg = np.array(100*[list(np.random.normal(0.0, 0.4, 50))]).flatten()
+#     seed = 12345
+#     N_bts = 1000
+#     C_bts = correlated_confs_to_bts(Cg, N_bts=N_bts, seed=seed)
 
-    print(np.average(Cg))
-    print(np.average(C_bts))
+#     print(np.average(Cg))
+#     print(np.average(C_bts))
 
-    np.random.seed(seed=seed)
-    Ng = Cg.shape[0]
-    C_bts = uncorrelated_confs_to_bts(Cg, N_bts=N_bts)
-    print(np.average(Cg))
-    print(np.average(C_bts))
-####
+#     np.random.seed(seed=seed)
+#     Ng = Cg.shape[0]
+#     C_bts = uncorrelated_confs_to_bts(Cg, N_bts=N_bts)
+#     print(np.average(Cg))
+#     print(np.average(C_bts))
+# ####
