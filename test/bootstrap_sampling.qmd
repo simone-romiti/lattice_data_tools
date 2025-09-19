@@ -86,6 +86,11 @@ E\left(\frac{1}{n} \sum_{a=1}^{n} y_a\right) = \frac{1}{n} \sum_a E(y_a) = \frac
     - One needs to see _a posteriori_ if the $N_b$ leads to statistical fluctuations that are well below the target precision. 
     - Obviously, if $N$ is too small, increasing $N_b$ doesn't help: the bootstrap samplings cannot contain more information of the original dataset.
 
+4. **In a typical analysis, how should one apply a function/combine different observables and estimate the error?**
+      _Example:_ We measure the pion and kaon mass from lattice data and we want to give a prediction of the continuum limit of their ratio.
+    - _Note:_ In general, when modifying different observables (by applying functions, combining them, etc) the distribution changes.
+    - With bootstraps however, it is sufficient to apply the functions/combine observables by doing it for each average (i.e. bootstrap-by-bootstrap). If the function is differentiable, the final result can be treated as Gaussian: for asymptotically Gaussian variables the distribution remains asymptotically Gaussian (see Delta Method: https://en.wikipedia.org/wiki/Delta_method)
+    - Thus we can estimate the "error" on the mean (i.e. statistical uncertainity) on our composite observables by treating them as Gaussian.
 
 ## Examples
 
@@ -99,7 +104,9 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('../../')
 
-from lattice_data_tools.sampling import uncorrelated_confs_to_bts
+# from lattice_data_tools.sampling import uncorrelated_confs_to_bts
+from lattice_data_tools.bootstrap import uncorrelated_confs_to_bts
+
 ```
 
 ---
@@ -119,7 +126,7 @@ x_bts = uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=1456)
 
 print("           Mean | sigma")
 print("Exact:    ", mu, "|", sigma)
-print("Bootstrap:", np.mean(x_bts), "|", np.sqrt(N)*np.std(x_bts, ddof=1))
+print("Bootstrap:", x_bts.mean(), "|", np.sqrt(N)*x_bts.error())
 ```
 
 ---
@@ -140,11 +147,11 @@ y_bts = uncorrelated_confs_to_bts(x=y, N_bts=N_bts, seed=9378)
 y2_bts = uncorrelated_confs_to_bts(x=y**2, N_bts=N_bts, seed=9378)
 
 # < (y-<y>)^2 > = <y^2> - (<y>)^2
-dy2 = y2_bts - (np.mean(y_bts))**2
+dy2 = y2_bts - (y_bts.mean())**2
 
 print("Variance")
 print("Exact: ", 1/lambda_param**2)
-print("Bootstrap:", np.mean(dy2))
+print("Bootstrap:", dy2.mean())
 ```
 
 Example on the **bootstraps and the Central Limit Theorem**:
@@ -179,7 +186,7 @@ print("Average and error on the average")
 print("================================")
 print("           x_avg | dx_avg")
 print("Exact:    ", (a+b)/2, "|", np.sqrt((b-a)**2/12)/np.sqrt(N))
-print("Bootstrap:", np.mean(x_bts), "|", np.std(x_bts, ddof=1))
+print("Bootstrap:", x_bts.mean(), "|", x_bts.mean())
 ```
 
 ---
@@ -218,12 +225,17 @@ N_bts = 1000
 x_bts = uncorrelated_confs_to_bts(x=x, N_bts=N_bts, seed=456)
 sinx2_bts = uncorrelated_confs_to_bts(x=np.sin(x**2), N_bts=N_bts, seed=456)
 
+
+plt.hist(sinx2_bts[1:], bins=int(np.sqrt(N)))
+plt.show()
+plt.close()
+
 # this is not how to do it, one shoud compute sin(x^2) first, and then bootstrap
 # the lines below show that this leads to the wrong prediction
 sinx2_bts_WRONG = np.sin(x_bts**2)
 
 print("                              Error on the mean of sin(x^2)")
 print("Original dataset:           ", np.sqrt(sinx2_var/N))
-print("Bootstrap:                  ", np.std(sinx2_bts, ddof=1))
-print("Bootstrap (WRONG APPROACH): ", np.std(sinx2_bts_WRONG, ddof=1))
+print("Bootstrap:                  ", sinx2_bts.error())
+print("Bootstrap (WRONG APPROACH): ", sinx2_bts_WRONG.error())
 ```
