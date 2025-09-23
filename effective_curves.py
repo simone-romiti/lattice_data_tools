@@ -117,7 +117,7 @@ def get_m_eff(C: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None, a
     #---
 #---
 
-def get_A_eff(C: np.ndarray, m_eff: np.ndarray, T:int, strategy: Literal["log", "cosh", "sinh"]) -> np.ndarray:
+def get_A_eff(C: np.ndarray, m_eff: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T:int = None) -> np.ndarray:
     """Effective Amplitude curve from the correlator
     
     Args:

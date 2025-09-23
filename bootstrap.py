@@ -1,12 +1,29 @@
 import numpy as np
 
 from lattice_data_tools import uwerr
+import typing
 
 class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
         obj = np.asarray(input_array).view(cls)
         return obj
     
+    def __getitem__(self, key):
+        out = super().__getitem__(key)
+
+        # Normalize key to a tuple
+        if not isinstance(key, tuple):
+            key = (key,)
+
+        # If the *first axis* is being indexed in a way that reduces/slices it
+        if isinstance(key[0], (int, slice, list, np.ndarray)):
+            return np.asarray(out)
+
+        return out
+        
+    def __array_finalize__(self, obj):
+        if obj is None: return
+
     def N_bts(self):
         return self.shape[0]
 
@@ -20,9 +37,30 @@ class BootstrapSamples(np.ndarray):
             assert( x.shape[1:] == mean.shape)
         #---
         return BootstrapSamples(np.concatenate((mean_arr, x)))
-    
-    def __array_finalize__(self, obj):
-        if obj is None: return
+
+    @staticmethod
+    def zeros(N_bts: int, shape: tuple = ()):
+        """
+        Like numpy.zeros, but with an implicit leading dimension of N_bts+1:
+        N_bts samples + the mean on the 0th axis 
+        """
+        # Ensure shape is a tuple
+        if not isinstance(shape, tuple):
+            shape = (shape,)
+        full_shape = (N_bts + 1,) + shape
+        return BootstrapSamples(np.zeros(shape=full_shape))
+
+    @staticmethod
+    def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any]):
+        # loop over the N_bts+1 values: N_bts + mean 
+        return BootstrapSamples([fun(i) for i in range(N_bts+1)])
+
+    @staticmethod
+    def run_lambda(N_bts: int, fun: typing.Callable[[int], None]):
+        for i in range(N_bts+1):
+            fun(i)
+        # Note: the loop was over the N_bts+1 values: N_bts + mean 
+        return None
 
     def __array_function__(self, func, types, args, kwargs):
         """
@@ -53,14 +91,6 @@ class BootstrapSamples(np.ndarray):
     def error(self):
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
-
-# def bts_by_bts(fun, N_bts: int):
-#     """ 
-#     Get a result for each index of the bootstrap. 
-#     This function is preferred to manual loops,
-#     as it takes into account the extra index for the unbiased mean 
-#     """
-#     return BootstrapSamples([fun(i) for i in range(N_bts+1)])
     
 
 

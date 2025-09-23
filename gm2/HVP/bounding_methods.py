@@ -1,4 +1,4 @@
-""" Bounding methods for a_\mu, for a single bootstrap sample """
+""" Bounding methods for a_\\mu, for a single bootstrap sample """
 
 import numpy as np
 from typing import Literal
@@ -9,7 +9,7 @@ from lattice_data_tools.gm2.HVP.PP_finite_volume import get_V_PP_GSmodel
 
 def ZeroTail(window : Literal["SD", "W", "LD", "full"], a_fm: float, V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, strategy="trapezoidal") -> float:
     """ 
-    Calculation of a_\mu as \int_{0}^{t_0} t^2 K(t) Z^2 V(t)
+    Calculation of a_\\mu as \\int_{0}^{t_0} t^2 K(t) Z^2 V(t)
     In other word, V(t) is replaced with 0 from t=t0 onwards
     NOTE: all quantities should be in lattice units
 
@@ -37,8 +37,8 @@ def ZeroTail(window : Literal["SD", "W", "LD", "full"], a_fm: float, V: np.ndarr
 
 def MesonPair(M_meson: float, L: float, window: Literal["SD", "W", "LD", "full"], a_fm: float, V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, strategy="trapezoidal") -> float:
     """ 
-    Calculation of a_\mu as \int_{0}^{t_0} t^2 K(t) Z^2 V(t) + \int_{t0}^{T_max} A e^{-E_{\pi\pi} t}
-    In other words, we replace the tail of the correlator with the 2 pions state with minimum momentum on the lattice: p_min=(2\pi)/L
+    Calculation of a_\\mu as \\int_{0}^{t_0} t^2 K(t) Z^2 V(t) + \\int_{t0}^{T_max} A e^{-E_{\\pi\\pi} t}
+    In other words, we replace the tail of the correlator with the 2 pions state with minimum momentum on the lattice: p_min=(2\\pi)/L
     NOTE: this is necessary because 2 pions at rest can't have total angular momentum 1, as the vector current in the correlator V(t).
 
     Args:
@@ -67,7 +67,7 @@ def MesonPair(M_meson: float, L: float, window: Literal["SD", "W", "LD", "full"]
 
 def M_eff_t0_Tail(M_eff: np.ndarray, window: Literal["SD", "W", "LD", "full"], a_fm: float, V: np.ndarray, K: np.ndarray, Z_ren: float, t0: int, strategy="trapezoidal") -> float:
     """ 
-    Calculation of a_\mu as \int_{0}^{t_0} t^2 K(t) Z^2 V(t) + \int_{t0}^{T_max} A e^{- M_eff(t0)* t}
+    Calculation of a_\\mu as \\int_{0}^{t_0} t^2 K(t) Z^2 V(t) + \\int_{t0}^{T_max} A e^{- M_eff(t0)* t}
     In other words, we replace the tail of the correlator with the state with energy equal to the effective matt at t=t0
     
     The constant "A" is chosen such that the tail matches the correlator at t0, viz. A = C(t0)*e^{+M_eff(t0)*t}
@@ -106,9 +106,9 @@ class FiniteVolume:
         V_lat: np.ndarray, K: np.ndarray, Z_ren: float, 
         strategy: str ="trapezoidal"):
         """ 
-        Calculation of a_\mu as \int_{0}^{t_0} t^2 K(t) Z^2 V_lat(t) + \int_{t0}^{T_max} t^2 K(t) V_{\pi\pi}(t)
+        Calculation of a_\\mu as \\int_{0}^{t_0} t^2 K(t) Z^2 V_lat(t) + \\int_{t0}^{T_max} t^2 K(t) V_{\\pi\\pi}(t)
         In other words, we replace the tail of the correlator with a model,
-        assuming that is gets the leading contribution from \pi\pi states.
+        assuming that is gets the leading contribution from \\pi\\pi states.
         
         All the inputs are in lattice units      
         """

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """ 
     Returns the 1d array of weights as in eq. 17 of https://arxiv.org/pdf/2411.08852
-    The inputs are the array of models (each with a \chi^2) the number of fit parameters and number of points
+    The inputs are the array of models (each with a \\chi^2) the number of fit parameters and number of points
     """
     A = ch2 + 2.0*n_par - 2.0*n_data
     w_i = np.exp(-A/2)
