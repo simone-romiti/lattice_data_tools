@@ -36,9 +36,18 @@ ey = 0.05*np.abs(y)
 guess = np.array([1.0, 1.0])
 
 fit2_result = fit_xiyey(ansatz, x, y, ey, guess)
+fit2_params = fit2_result["par"] # Extract the fitted parameters
 
-# Extract the fitted parameters
-fitted_params = fit2_result["par"]
+# correlated fit
+n_tot = x.flatten().shape[0] + y.shape[0]
+Cov_estimate = np.mean(ey)*np.eye(n_tot)
+perturbation = 0.5 * np.random.randn(n_tot, n_tot)
+Cov_estimate = Cov_estimate + perturbation
+Cov_estimate = Cov_estimate @ Cov_estimate.T
+fit2_corr_result = fit_xiyey(ansatz, x, y, ey, guess, Cov_estimate=Cov_estimate)
+fit2_corr_params = fit2_corr_result["par"] # Extract the fitted parameters
+
+
 
 # Print the true and fitted parameters
 print("===============")
@@ -49,7 +58,13 @@ print("c1_true =", c1_true)
 
 print("=================")
 print("Fitted parameters:")
-print("m_fitted =", fitted_params[0], "")
-print("c1_fitted =", fitted_params[1], "")
-# print("c2_fitted =", fitted_params[2], "")
+print("m_fitted =", fit2_params[0], "")
+print("c1_fitted =", fit2_params[1], "")
+# print("c2_fitted =", fit2_params[2], "")
 
+
+print("=================")
+print("Fitted parameters (correlated fit):")
+print("m_fitted =", fit2_corr_params[0], "")
+print("c1_fitted =", fit2_corr_params[1], "")
+# print("c2_fitted =", fit2_params[2], "")

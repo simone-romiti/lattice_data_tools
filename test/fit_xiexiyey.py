@@ -9,13 +9,13 @@ from lattice_data_tools.fit.xiexiyey import fit_xiexiyey
 # from lattice_data_tools.fit.trajectory import fit_xiexiyey as traj_fit_xiexiyey
 
 x = np.array([[-1.0, -1.0],
-              [0.0, -1.0],
+              [0.5, -1.0],
               [+1.0, -1.0],
-              [-1.0, 0.0],
-              [0.0, 0.0],
-              [+1.0, 0.0],
+              [-1.0, 0.5],
+              [0.5, 0.5],
+              [+1.0, 0.5],
               [-1.0, +1.0],
-              [0.0, +1.0],
+              [0.5, +1.0],
               [+1.0, +1.0]])
 N_pts = x.shape[0]
 ex = 0.05*np.abs(x)
@@ -27,7 +27,7 @@ def ansatz(x, p):
     return res
 #---
 
-m_true, c1_true, c2_true = 0.1, 4.0, 3.0 # exact parameters
+m_true, c1_true, c2_true = 0.5, 4.0, 3.0 # exact parameters
 p_true = np.array([m_true, c1_true, c2_true])
 
 # Evaluate the function on the noisy grid
@@ -38,17 +38,21 @@ ey = 0.05*np.abs(y)
 guess = np.array([0.5, -5.0, 2.0])
 
 # Call your fit_xiexiyey function to fit the model to the data
-fit2_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess)
+print("Uncorrelated fit")
+fit1_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess)
+fit1_params = fit1_result["par"]
 
-# Extract the fitted parameters
-fitted_params = fit2_result["par"]
+print("Correlated fit (with an invented estimate for the covariance matrix)")
+n_tot = x.flatten().shape[0] + y.shape[0]
+Cov_estimate = np.mean(ey)*np.eye(n_tot)
+perturbation = 0.5 * np.random.randn(n_tot, n_tot)
+Cov_estimate = Cov_estimate + perturbation
+Cov_estimate = Cov_estimate @ Cov_estimate.T
 
-# print("Compare the 2 fit routines (should give the same result)")
-# for fit in [fit1_result, fit2_result]:
-#     print("---")
-#     for k in ["par", "ch2"]:
-#         print(k, fit[k])
-# #-------
+# add small random noise
+fit2_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess, Cov_estimate=Cov_estimate)
+fit2_params = fit2_result["par"]
+
 
 # Print the true and fitted parameters
 print("===============")
@@ -59,7 +63,13 @@ print("c2_true =", c2_true)
 
 print("=================")
 print("Fitted parameters:")
-print("m_fitted =", fitted_params[0], "")
-print("c1_fitted =", fitted_params[1], "")
-print("c2_fitted =", fitted_params[2], "")
+print("m_fitted =", fit1_params[0], "")
+print("c1_fitted =", fit1_params[1], "")
+print("c2_fitted =", fit1_params[2], "")
+
+print("=================")
+print("Fitted parameters:")
+print("m_fitted =", fit2_params[0], "")
+print("c1_fitted =", fit2_params[1], "")
+print("c2_fitted =", fit2_params[2], "")
 

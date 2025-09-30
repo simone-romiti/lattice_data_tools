@@ -8,7 +8,8 @@ def fit_xy(
     ansatz, 
     x: np.ndarray, y: np.ndarray, 
     guess: np.ndarray, 
-    method = "BFGS"
+    method = "BFGS",
+    Cov_estimate = None
     ):
     """Fit of y=f(x), there f: \\mathbb{R}^1 \\to \\mathbb{R}^1
 
@@ -23,5 +24,11 @@ def fit_xy(
     """
     N_pts = y.shape[0]
     ey = np.full(shape=(N_pts), fill_value=1.0)
-    return fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess, method=method)
+    res = fit_xyey(
+        ansatz=ansatz, 
+        x=x, y=y, ey=ey, 
+        guess=guess, 
+        method=method,
+        Cov_estimate=Cov_estimate)
+    return res
 #---

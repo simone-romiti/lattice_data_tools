@@ -7,7 +7,8 @@ def fit_xiexiyieyi(
     ansatz, 
     x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
-    maxiter = 10000, method = "BFGS"
+    maxiter = 10000, method = "BFGS",
+    Cov_estimate = None
     ):
     """Fit of y=f(\vec{x}), there f: R^n \to R^1
     NOTE: This function is just an alias for fit_trajectory
@@ -25,6 +26,7 @@ def fit_xiexiyieyi(
         ansatz=ansatz, 
         x=x, ex=ex, y=y, ey=ey, 
         guess=guess, 
-        maxiter=maxiter, method=method)
+        maxiter=maxiter, method=method,
+        Cov_estimate=Cov_estimate)
     return res
 #---

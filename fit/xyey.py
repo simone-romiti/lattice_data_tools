@@ -8,7 +8,8 @@ def fit_xyey(
     ansatz, 
     x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
-    method = "BFGS"
+    method = "BFGS",
+    Cov_estimate = None
     ):
     """Fit of y=f(x), there f: \\mathbb{R}^1 \\to \\mathbb{R}^1
 
@@ -32,6 +33,7 @@ def fit_xyey(
         ansatz=ansatz_casted, 
         x=xp, ex=ex, y=yp, ey=eyp, 
         guess=guess, 
-        method=method)
+        method=method,
+        Cov_estimate=Cov_estimate)
     return res
 #---

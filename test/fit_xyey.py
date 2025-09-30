@@ -33,8 +33,17 @@ fit1 = old_fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
 fit2 = fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
+# correlated fit
+n_tot = x.flatten().shape[0] + y.shape[0]
+Cov_estimate = np.eye(n_tot)
+perturbation = 0.05 * np.random.randn(n_tot, n_tot)
+Cov_estimate = Cov_estimate + perturbation
+Cov_estimate = Cov_estimate @ Cov_estimate.T
+
+fit2_corr = fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess, Cov_estimate=Cov_estimate)
+
 print("Compare the 2 fit routines (should give the same result)")
-for fit in [fit1, fit2]:
+for fit in [fit1, fit2, fit2_corr]:
     print("---")
     for k in ["par", "ch2"]:
         print(k, fit[k])
