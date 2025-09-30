@@ -64,6 +64,9 @@ def fit_trajectory(
             ch2_res = ch2_x + ch2_y
             return ch2_res
     else:
+        assert(len(Cov_estimate.shape) == 2)
+        assert(Cov_estimate.shape[0] == Cov_estimate.shape[1])
+        assert(Cov_estimate.shape[0] == x.flatten().shape[0] + y.flatten().shape[0])
         # assert(np.all(ex > 0.0) and np.all(ey > 0.0)) # otherwise the  Covariance matrix is singular
         X_th = np.copy(x)
         Y_th = np.copy(y)
