@@ -91,6 +91,26 @@ class BootstrapSamples(np.ndarray):
     def error(self):
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
+    def covariance_matrix(self):
+        """ 
+        Bootstrap samples of covariance matrix estimate.
+        Note: the inner shape should be (N_var), where N_var is the number of variables
+        """
+        mu = self.unbiased_mean()
+        dx = BootstrapSamples(self-mu[np.newaxis,:])
+        res = np.cov(dx.transpose())
+        return res
+
+    def correlation_matrix(self):
+        """ 
+        Bootstrap samples of correlation matrix estimate.
+        Note: the inner shape should be (N_var), where N_var is the number of variables
+        """
+        mu = self.unbiased_mean()
+        dx = BootstrapSamples(self-mu[np.newaxis,:])
+        res = np.corrcoef(dx.transpose())
+        return res
+    #---
     
 
 
@@ -137,7 +157,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
         mean = np.mean(x)
     )
     return res
-####
+#---
 
 def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
     """Bootstrap samples from array of correlated configurations
@@ -156,11 +176,9 @@ def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=
     tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time
     if tauint == 0:
         tauint = 1 ## uncorrelated data
-    ####
+    #---
     Cg_uncorr = Cg[0:Ng:tauint] ## uncorrelated values
     return uncorrelated_confs_to_bts(x=Cg_uncorr, N_bts=N_bts, seed=seed)
-####
-
-
+#---
 
 

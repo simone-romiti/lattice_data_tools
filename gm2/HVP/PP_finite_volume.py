@@ -27,7 +27,7 @@ class PP_model:
         """
         Find the momentum k_n for each energy level n using the phase shift function delta_11,
         as in eq F2 of https://arxiv.org/pdf/2206.15084. 
-        NOTE: we bring \delta_11 to the right hand side and take the tangent of both sides.
+        NOTE: we bring \\delta_11 to the right hand side and take the tangent of both sides.
 
         Parameters
         ----------
@@ -66,7 +66,7 @@ class PP_model:
         FP2: Callable[[np.float64], np.float64], delta_11: Callable[[np.float64], np.float64],
         eps_k: np.float64
         ):
-        """ \nu_n * |A_n|^2 as in eq. 15 of https://arxiv.org/pdf/1808.00887 """
+        """ \\nu_n * |A_n|^2 as in eq. 15 of https://arxiv.org/pdf/1808.00887 """
         omega_n = omega_arr[n]
         k_n = get_k(omega=omega_arr[n], MP=self.MP)
         A = (2.0*(k_n**5))/(3.0*np.pi*(omega_n**2))
@@ -86,17 +86,17 @@ class PP_model:
         eps_der: np.float64
         ):
         """ 
-        Compute the two-pion vector correlator V_{\pi\pi}(t) as defined in equation 14 of 
+        Compute the two-pion vector correlator V_{\\pi\\pi}(t) as defined in equation 14 of 
         https://arxiv.org/pdf/1808.00887, using the provided form factor and phase shift functions.
 
             times (np.ndarray): Array of time values at which to evaluate the correlator.
             FP2 (Callable[[np.float64], np.float64]): Function returning the squared pion form factor F_\pi^2(s) for a given energy squared s.
-            delta_11 (Callable[[np.float64], np.float64]): Function returning the isospin-1, angular momentum-1 \pi\pi scattering phase shift δ_11(s) for a given energy squared s.
+            delta_11 (Callable[[np.float64], np.float64]): Function returning the isospin-1, angular momentum-1 \\pi\\pi scattering phase shift δ_11(s) for a given energy squared s.
             eps_roots (float): Tolerance for finding the roots of the quantization condition (energy levels).
             eps_der (float, optional): Tolerance for numerical derivatives used in the calculation. Defaults to 1e-12.
 
         Returns:
-            np.ndarray: The computed V_{\pi\pi}(t) correlator evaluated at the input time values.
+            np.ndarray: The computed V_{\\pi\\pi}(t) correlator evaluated at the input time values.
         """
         nuA2_n = np.array([self.get_nuA2_n(n=n, omega_arr=omega_n, FP2=FP2, delta_11=delta_11, eps_k=eps_der) for n in range(self.N_lev)])
         exp_fact = np.array([np.exp(-omega_n*t_i) for t_i in times]).transpose()
