@@ -27,6 +27,9 @@ class BootstrapSamples(np.ndarray):
     def N_bts(self):
         return self.shape[0]
 
+    def inner_shape(self):
+        return self.shape[1:]
+
     @staticmethod
     def from_sample(x: np.ndarray, mean: np.ndarray):
         """ keeping the information about the unbiased mean """
@@ -92,25 +95,20 @@ class BootstrapSamples(np.ndarray):
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
     def covariance_matrix(self):
-        """ 
-        Bootstrap samples of covariance matrix estimate.
-        Note: the inner shape should be (N_var), where N_var is the number of variables
-        """
+        """ Bootstrap samples of covariance matrix estimate. """
+        assert(len(self.inner_shape()) == 2) # inner shape must be (N_var,)[number of variables
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
         res = np.cov(dx.transpose())
         return res
 
     def correlation_matrix(self):
-        """ 
-        Bootstrap samples of correlation matrix estimate.
-        Note: the inner shape should be (N_var), where N_var is the number of variables
-        """
+        """ Bootstrap samples of correlation matrix estimate. """
+        assert(len(self.inner_shape()) == 2) # inner shape must be (N_var,)[number of variables
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
         res = np.corrcoef(dx.transpose())
         return res
-    #---
     
 
 
