@@ -23,7 +23,7 @@ ex = 0.05*np.abs(x)
 # Define the function y(x1, x2) = exp(-m * ((x1 - c)^2 + (x2 - c)^2))
 def ansatz(x, p):
     m, c1, c2 = p
-    res = m * ((x[0] - c1)**2 + (x[1] - c2)**2)
+    res = m * ((x[0] - c1)**2 + (x[1] - c2)**2)**(13/7)
     return res
 #---
 
@@ -35,22 +35,20 @@ y_exact = np.array([ansatz(x[i,:], p_true) for i in range(N_pts)])
 y = np.array([ansatz(x[i,:], p_true) for i in range(N_pts)])
 ey = 0.05*np.abs(y)
 
-guess = np.array([0.5, -5.0, 2.0])
+guess = np.array([0.8, 5.0, 2.0])
 
 # Call your fit_xiexiyey function to fit the model to the data
 print("Uncorrelated fit")
 fit1_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess)
 fit1_params = fit1_result["par"]
 
-print("Correlated fit (with an invented estimate for the covariance matrix)")
+# correlated fit
 n_tot = x.flatten().shape[0] + y.shape[0]
-Cov_estimate = np.mean(ey)*np.eye(n_tot)
-perturbation = 0.5 * np.random.randn(n_tot, n_tot)
-Cov_estimate = Cov_estimate + perturbation
-Cov_estimate = Cov_estimate @ Cov_estimate.T
+# just for testing the routine, it actually should produce the same results of the uncorrelated fit above
+Cov_inv = np.nan_to_num(np.diag(1/np.concatenate((ex.flatten(), ey))**2), nan=0.0) 
 
 # add small random noise
-fit2_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess, Cov_estimate=Cov_estimate)
+fit2_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess, Cov_inv=Cov_inv)
 fit2_params = fit2_result["par"]
 
 

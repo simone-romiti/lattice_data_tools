@@ -8,7 +8,7 @@ def fit_xiexiyey(
     x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
     method = "BFGS",
-    Cov_estimate = None,
+    Cov_inv = None,
     ):
     """Fit of y=f(\vec{x}), there f: R^n \to R^1
 
@@ -31,6 +31,6 @@ def fit_xiexiyey(
         x=x, ex=ex, y=yp, ey=eyp, 
         guess=guess, 
         method=method,
-        Cov_estimate=Cov_estimate)
+        Cov_inv=Cov_inv)
     return res
 #---

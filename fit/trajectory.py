@@ -22,7 +22,7 @@ def fit_trajectory(
     y: np.ndarray, ey: np.ndarray, 
     guess: np.ndarray, 
     method = "BFGS",
-    Cov_estimate=None
+    Cov_inv = None
     ):
     """
     Fit a function f: \\mathbb{R}^n \\to \\mathbb{R}^m with the trajectory method
@@ -36,17 +36,19 @@ def fit_trajectory(
         guess (np.ndarray): guesses for the ansatz of the fit
         maxiter (int, optional): _description_. Defaults to 10000.
         method (str, optional): _description_. Defaults to "BFGS".
-        Cov_estimate: covariance matrix estimate (e.g. from a fit on the bootstrap mean)
+        Cov_inv: inverse covariance matrix estimate (e.g. from a fit on the bootstrap mean)
 
     Returns:
         dict: Dictionary with the information about the fit
     """
     assert (x.shape[0] == y.shape[0]) ## same number of points
     N_pts = x.shape[0] # number of points
+    Nx = x.flatten().shape[0]
     ix_with_err = (ex > 0) # indices of points with error
     x_fit = np.copy(x[ix_with_err])
     ex_fit = ex[ix_with_err]
     iy_with_err = np.where(ey > 0) # indices of points with error
+    Ny = y.flatten().shape[0]
     y_fit = y[iy_with_err]
     ey_fit = ey[iy_with_err]
 
@@ -54,20 +56,21 @@ def fit_trajectory(
     N_dof = N_pts - N_par # number of degrees of freedom
 
     # chi square residual function
-    if Cov_estimate is None:
-        def ch2(p_all):
-            p_ansatz = p_all[0:N_par] # parameters of the fit only
-            p_x = p_all[N_par:] 
-            ch2_x = np.sum(((x_fit - p_x)/ex_fit)**2)
-            y_th = np.array([ansatz(x[i,:], p_ansatz) for i in range(N_pts)])[iy_with_err] # theoretical values
-            ch2_y = np.sum(((y_fit - y_th)/ey_fit)**2)
-            ch2_res = ch2_x + ch2_y
-            return ch2_res
+    def ch2_uncorr(p_all):
+        p_ansatz = p_all[0:N_par] # parameters of the fit only
+        p_x = p_all[N_par:] 
+        ch2_x = np.sum(((x_fit - p_x)/ex_fit)**2)
+        y_th = np.array([ansatz(x[i,:], p_ansatz) for i in range(N_pts)])[iy_with_err] # theoretical values
+        # print(".", (y_fit - y_th).flatten()[0:4])
+        ch2_y = np.sum(((y_fit - y_th)/ey_fit)**2)
+        ch2_res = ch2_x + ch2_y
+        return ch2_res
+    if Cov_inv is None:
+        ch2 = lambda p: ch2_uncorr(p)
     else:
-        assert(len(Cov_estimate.shape) == 2)
-        assert(Cov_estimate.shape[0] == Cov_estimate.shape[1])
-        assert(Cov_estimate.shape[0] == x.flatten().shape[0] + y.flatten().shape[0])
-        # assert(np.all(ex > 0.0) and np.all(ey > 0.0)) # otherwise the  Covariance matrix is singular
+        assert(len(Cov_inv.shape) == 2)
+        assert(Cov_inv.shape[0] == Cov_inv.shape[1])
+        assert(Cov_inv.shape[0] == Nx+Ny)
         X_th = np.copy(x)
         Y_th = np.copy(y)
         def ch2(p_all):
@@ -78,10 +81,10 @@ def fit_trajectory(
             Y_th[iy_with_err] = np.array([ansatz(X_th[i,:], p_ansatz) for i in range(N_pts)])[iy_with_err]
             dy = (y - Y_th).T
             z = np.concatenate((dx.flatten(), dy.flatten()))
-            C = Cov_estimate
-            C_inv = np.linalg.inv(C)
-            ch2 = np.sum(z @ C_inv @ z.T)
-            return ch2
+            ch2_res = np.sum(z.T @ Cov_inv @ z)
+            # print(",", dy.flatten()[0:4])
+            # ch2_uncorr_value = ch2_uncorr(p_all=p_all)
+            return ch2_res
     #-------
     guess = np.concatenate((guess, np.copy(x[ix_with_err].flatten())))
     mini = opt.minimize(fun = ch2, x0 = guess, method = method)
