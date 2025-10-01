@@ -7,6 +7,7 @@ This folder contains test scripts of the routines of the library.
 
 - _Bootstrap sampling_: 
   - `bootstrap_sampling.qmd`: quarto document discussing the bootstrap sampling with examples. Render it with `quarto render bootstrap_sampling.qmd`.
+  - `covariance_matrix_bts.py`: covariance matrix extimation from the bootstrap samples
 
 - _Function fitting routines_ :
   * `fit_xyey.py` : function of 1 variable, error on the y only

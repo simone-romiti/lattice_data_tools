@@ -25,7 +25,7 @@ class BootstrapSamples(np.ndarray):
         if obj is None: return
 
     def N_bts(self):
-        return self.shape[0]
+        return self.shape[0]-1
 
     def inner_shape(self):
         return self.shape[1:]
@@ -96,7 +96,7 @@ class BootstrapSamples(np.ndarray):
 
     def covariance_matrix(self):
         """ Bootstrap samples of covariance matrix estimate. """
-        assert(len(self.inner_shape()) == 2) # inner shape must be (N_var,)[number of variables
+        assert(len(self.inner_shape()) == 1) # inner shape must be (N_var,)[number of variables]
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
         res = np.cov(dx.transpose())
@@ -104,13 +104,28 @@ class BootstrapSamples(np.ndarray):
 
     def correlation_matrix(self):
         """ Bootstrap samples of correlation matrix estimate. """
-        assert(len(self.inner_shape()) == 2) # inner shape must be (N_var,)[number of variables
+        assert(len(self.inner_shape()) == 1) # inner shape must be (N_var,)[number of variables]
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
         res = np.corrcoef(dx.transpose())
         return res
     
+    def covariance_matrix_per_bts(self):
+        """ Bootstrap samples of correlation matrix estimate. """
+        assert(len(self.inner_shape()) == 1) # inner shape must be (N_var,)[number of variables]
+        N_var = self.inner_shape()[0]
+        mu = self.unbiased_mean()
+        dx = BootstrapSamples(self-mu[np.newaxis,:])
+        res = self.from_lambda(N_bts=self.N_bts(), fun=lambda i: [[dx[i,k1]*dx[i,k2] for k2 in range(N_var)] for k1 in range(N_var)])
+        return res
 
+    def correlation_matrix_per_bts(self):
+        """ Bootstrap samples of correlation matrix estimate. """
+        Cov = self.covariance_matrix_per_bts()
+        N_var = self.inner_shape()[0]
+        C = self.from_lambda(N_bts=self.N_bts(), fun=lambda i: [[Cov[i,k1,k2]/np.sqrt(Cov[i,k1,k1]*Cov[i,k2,k2]) for k2 in range(N_var)] for k1 in range(N_var)])
+        return C
+    
 
 def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
     """Generate paramteric bootstrap samples from a Gaussian distribution
