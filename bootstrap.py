@@ -7,7 +7,7 @@ class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
         obj = np.asarray(input_array).view(cls)
         return obj
-    
+
     def __getitem__(self, key):
         out = super().__getitem__(key)
 
@@ -54,9 +54,18 @@ class BootstrapSamples(np.ndarray):
         return BootstrapSamples(np.zeros(shape=full_shape))
 
     @staticmethod
+    def bts_list_from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any]):
+        """ 
+        loop over the N_bts+1 values: N_bts + mean. 
+        Advantage: one does not need to manually remember to do a loop over N_bts+1
+        This function is needed for those type of objects that are not necessarily numpy arrays, e.g. dict.
+        """    
+        return [fun(i) for i in range(N_bts+1)]
+
+    @staticmethod
     def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any]):
-        # loop over the N_bts+1 values: N_bts + mean 
-        return BootstrapSamples([fun(i) for i in range(N_bts+1)])
+        """ NOTE: only for numeric numpy array objects """
+        return BootstrapSamples(BootstrapSamples.bts_list_from_lambda(N_bts=N_bts, fun=fun))
 
     @staticmethod
     def run_lambda(N_bts: int, fun: typing.Callable[[int], None]):

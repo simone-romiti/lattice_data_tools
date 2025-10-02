@@ -27,7 +27,7 @@ def get_A_eff_log(C: np.ndarray, m_eff: np.ndarray) -> np.ndarray:
         m_eff (np.ndarray): effective mass curve m_eff(t)
     
     Returns:
-        np.ndarray: M_eff(t) = log(C(t)/C(t+1))
+        np.ndarray: M_eff(t) = log(C(t)/C(t+1)), A_eff = C(t)*e^{m_eff*t}
     """
     T = C.shape[0] ## temporal extent
     ti = np.array([t for t in range(T-1)])
