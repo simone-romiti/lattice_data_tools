@@ -95,9 +95,10 @@ def fit_trajectory(
 
     res["ansatz"] = ansatz
     res["N_par"] = N_par
+    res["N_pts"] = N_pts
     res["par"] = par
     res["ch2"] = ch2_value
-    res["dof"] = N_dof ## degrees of freedom
+    res["N_dof"] = N_dof ## degrees of freedom
     res["ch2_red"] = ch2_value/N_dof
     ch2_dof = float("nan")
     if N_dof > 0:
