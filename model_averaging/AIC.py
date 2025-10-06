@@ -11,6 +11,8 @@ import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
+from lattice_data_tools.bootstrap import BootstrapSamples
+
 def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """ 
     Returns the 1d array of weights as in eq. 17 of https://arxiv.org/pdf/2411.08852
@@ -54,7 +56,7 @@ def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: n
     # return P_normalized
 #---
 
-def get_P_from_bootstraps(y: np.ndarray, w: np.ndarray, lam: np.float64):
+def get_P_from_bootstraps(y: BootstrapSamples, w: np.ndarray, lam: np.float64):
     """CDFs from boostrap samples 
     
     We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
@@ -75,29 +77,32 @@ def get_P_from_bootstraps(y: np.ndarray, w: np.ndarray, lam: np.float64):
     Returns:
         dictionary with the results of this procedure
     """
-    N_bts, n_models = y.shape
+    # N_bts, n_models = y.shape
+    N_bts = y.N_bts()
+    y_rescaled = BootstrapSamples(np.copy(y))
     # producing bootstraps with same mean but rescaled uncertainty
-    y_rescaled = np.copy(y)
     if lam != 1.0:
-        y_avg = np.average(y, axis=0)
+        y_avg = y.unbiased_mean()
         sqrt_lam = np.sqrt(lam)
-        y_rescaled = np.array([y_avg[i] + sqrt_lam*(y[i,:]-y_avg[i]) for i in range(N_bts)])
+        y_rescaled = BootstrapSamples.from_lambda(N_bts=N_bts, fun = lambda i : y_avg[i] + sqrt_lam*(y[i,:]-y_avg[i]))
     #---
-    # sorting the Pi contributions according to the values of y
-    y = np.unique(y_rescaled.flatten()) ## sorted array of unique elements
-    N_pts = y.shape[0] ## total number of points
-    # weighted p.d.f. with binning 1
-    w_pi = np.zeros(shape=(N_pts, n_models))
-    sum_wk = np.sum(w)
-    for k in range(n_models):
-        yk_idx = np.where(np.isin(y, y_rescaled[:,k]))[0]
-        # the weights are normalized to 1
-        w_pi[yk_idx, k] = w[k] / sum_wk
-    #---
-    # each model contributes with N_bts points
-    wP = np.cumsum(w_pi, axis=0)/N_bts 
-    P = np.sum(wP, axis=1) # cumulating the models' contributions
-    return {"y": y, "wP": wP, "P": P}
+    y, idx_y = np.unique(y_rescaled.flatten(), return_index=True)
+    w_unique = BootstrapSamples.from_lambda(N_bts=N_bts, fun=lambda i: w).flatten()[idx_y]
+    P = np.cumsum(w_unique)/np.sum(w_unique)
+    return {"y": y, "P": P}
+    # N_pts = y.shape[0] ## total number of points
+    # # weighted p.d.f. with binning 1
+    # w_pi = np.zeros(shape=(N_pts, n_models))
+    # sum_wk = np.sum(w)
+    # for k in range(n_models):
+    #     yk_idx = np.where(np.isin(y, y_rescaled[:,k]))[0]
+    #     # the weights are normalized to 1
+    #     w_pi[yk_idx, k] = w[k] / sum_wk
+    # #---
+    # # each model contributes with N_bts points
+    # wP = np.cumsum(w_pi, axis=0)/N_bts 
+    # P = np.sum(wP, axis=1) # cumulating the models' contributions
+    # return {"y": y, "wP": wP, "P": P}
 #---
 
 def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
