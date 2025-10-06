@@ -68,3 +68,65 @@ def launch_nested_loops(key_lists: List[List], function: Callable, verbose=False
         # Call the lambda function with the current key combination
         function(*key_combination)
 #-------
+
+
+class NestedDict(defaultdict):
+    def __init__(self):
+        super().__init__(NestedDict)
+    #---
+    def to_dict(self) -> dict:
+        """Convert the nested defaultdict structure into a plain dict."""
+        return {k: (v.to_dict() if isinstance(v, NestedDict) else v)
+                for k, v in self.items()}
+    #---
+    def __repr__(self):
+        return f"NestedDict({self.to_dict()})"
+    #---
+    @staticmethod
+    def key_combinations(nested_dict: defaultdict, current_keys: List = None) -> List[List]:
+        """ Extract the key combinations for a nested dictionary"""
+        if current_keys is None:
+            current_keys = []
+        
+        key_combinations = []
+
+        for key, value in nested_dict.items():
+            # Create a new list of keys including the current key
+            new_keys = current_keys + [key]
+            
+            # If the value is a dictionary, recurse into it
+            if isinstance(value, defaultdict):
+                key_combinations.extend(extract_key_combinations(value, new_keys))
+            else:
+                # If the value is not a dictionary, append the current key combination
+                key_combinations.append(new_keys)
+
+        return key_combinations
+    #---
+    @staticmethod
+    def loop_over_key_combinations(key_combinations: List[List], fun: Callable, verbose=False) -> None:
+        """
+        Launches a nested loop based on the list of lists of string keys.
+        The list of lists can be generared, e.g. with extract_key_combinations()
+        
+        Parameters:
+        key_lists (list of lists): A list of lists where each sublist contains string keys.
+        func (lambda): A lambda function to be called with each combination of keys.
+
+        Example:
+
+        key_lists = [['A', 'B'], ['X', 'Y', 'Z']]
+        func = lambda key1, key2: print(f"Processing combination: {key1}, {key2}")
+
+        launch_nested_loops(key_lists, func)
+        """
+        assert len({len(kc) for kc in key_combinations}) <= 1 and len(key_combinations) >= 0, "Illegal loop over key combinations for NestedDict. They don't have all the same length"
+        for key_combination in key_combinations:
+            if verbose:
+                print(key_combination)
+            #---
+            # Call the lambda function with the current key combination
+            fun(*key_combination)
+        #---
+        return None
+    #---

@@ -2,6 +2,9 @@ This folder contains test scripts of the routines of the library.
 
 **Available tests**:
 
+- _Nested dictionaries_:
+  `dictionaries.py`: using a class that eases the evaluation of functions on nested dictionaries (`defaultdict`)
+
 - _Monte Carlo history_:
   - `MC_history.py`: Monte Carlo history of some made-up data.
 
