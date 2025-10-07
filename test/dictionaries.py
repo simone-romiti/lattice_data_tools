@@ -10,9 +10,12 @@ d_new = NestedDict()
 
 d_old["a"]["b"] = 1
 d_new["ciao"]["h"]["g"] = 30
-d_new["hello"]["a"] = "abcdef"
+d_new["hello"]["a"]["k"] = "abcdef"
 
 # print(d_old)
 
 key_combs = NestedDict.key_combinations(d_new)
 NestedDict.loop_over_key_combinations(key_combs, fun= lambda k1, k2, k3: print(k1, k2, k3))
+
+d2 = NestedDict()
+d2 = d_new

@@ -71,9 +71,13 @@ def launch_nested_loops(key_lists: List[List], function: Callable, verbose=False
 
 
 class NestedDict(defaultdict):
-    def __init__(self):
-        super().__init__(NestedDict)
-    #---
+    def __init__(self, *args, **kwargs):
+        # If no default factory is given, use NestedDict itself
+        if 'default_factory' not in kwargs and (len(args) == 0 or args[0] is None):
+            super().__init__(NestedDict, *args, **kwargs)
+        else:
+            super().__init__(*args, **kwargs)
+    
     def to_dict(self) -> dict:
         """Convert the nested defaultdict structure into a plain dict."""
         return {k: (v.to_dict() if isinstance(v, NestedDict) else v)
