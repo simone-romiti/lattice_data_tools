@@ -1,7 +1,11 @@
+
+import time
 import numpy as np
+import typing
+from joblib import Parallel, delayed
+
 
 from lattice_data_tools import uwerr
-import typing
 
 class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
@@ -54,24 +58,33 @@ class BootstrapSamples(np.ndarray):
         return BootstrapSamples(np.zeros(shape=full_shape))
 
     @staticmethod
-    def bts_list_from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any]):
+    def bts_list_from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool = False):
         """ 
         loop over the N_bts+1 values: N_bts + mean. 
         Advantage: one does not need to manually remember to do a loop over N_bts+1
         This function is needed for those type of objects that are not necessarily numpy arrays, e.g. dict.
-        """    
-        return [fun(i) for i in range(N_bts+1)]
+        """
+        if parallel:
+            res = Parallel(n_jobs=-1)(delayed(fun)(i) for i in  range(N_bts+1))
+        else:
+            res = [fun(i) for i in range(N_bts+1)]
+        #---
+        return res            
 
     @staticmethod
-    def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any]):
+    def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool = False):
         """ NOTE: only for numeric numpy array objects """
-        return BootstrapSamples(BootstrapSamples.bts_list_from_lambda(N_bts=N_bts, fun=fun))
+        return BootstrapSamples(BootstrapSamples.bts_list_from_lambda(N_bts=N_bts, fun=fun, parallel=parallel))
 
     @staticmethod
-    def run_lambda(N_bts: int, fun: typing.Callable[[int], None]):
-        for i in range(N_bts+1):
-            fun(i)
-        # Note: the loop was over the N_bts+1 values: N_bts + mean 
+    def run_lambda(N_bts: int, fun: typing.Callable[[int], None], parallel: bool = False):
+        # Note: the loop is over the N_bts+1 values: N_bts + mean 
+        if parallel:
+            Parallel(n_jobs=-1)(delayed(fun)(i) for i in  range(N_bts+1))
+        else:
+            for i in range(N_bts+1):
+                fun(i)
+        #-------
         return None
 
     def __array_function__(self, func, types, args, kwargs):
@@ -87,7 +100,7 @@ class BootstrapSamples(np.ndarray):
         return super().__array_function__(func, types, args, kwargs)
 
     def to_numpy(self):
-        return self.view(np.ndarray)
+        return self.view(np.ndarray) # casting back to mother class
 
     def mean(self):
         """ bootstrap mean (biased) """
@@ -98,9 +111,17 @@ class BootstrapSamples(np.ndarray):
         return self[0]
 
     def bias(self):
+        """ 
+        The bootstrap mean and the true mean differ by a bias.
+        This function can be used a posteriori to check if the bias is comparable with the statistical precision coming from the estimate of the error.
+        """
         return self.unbiased_mean() - self.mean()
 
     def error(self):
+        """ 
+        Estimator of the standard error on the mean, computed only on the bootstrap samples, 
+        i.e. for the rows 1,...,N_bts (the 0-th one is the mean over the original dataset)
+        """
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
     def covariance_matrix(self):
