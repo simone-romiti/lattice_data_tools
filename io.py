@@ -22,7 +22,12 @@ class with_yaml:
         assert(path.split('.')[-1] in ['yml', 'yaml'])
         return yaml.safe_load(open(path, 'r'))
     #---
-#---
+
+    @staticmethod
+    def dump(df, path: str):
+        assert(path.split('.')[-1] in ['yml', 'yaml'])
+        yaml.dump(df, open(path, 'w'), default_flow_style=False, indent=4)
+    #---
 
     
     
