@@ -77,14 +77,14 @@ class BootstrapSamples(np.ndarray):
         return BootstrapSamples(BootstrapSamples.bts_list_from_lambda(N_bts=N_bts, fun=fun, parallel=parallel))
 
     @staticmethod
-    def run_lambda(N_bts: int, fun: typing.Callable[[int], None], parallel: bool = False):
-        # Note: the loop is over the N_bts+1 values: N_bts + mean 
-        if parallel:
-            Parallel(n_jobs=-1)(delayed(fun)(i) for i in  range(N_bts+1))
-        else:
-            for i in range(N_bts+1):
-                fun(i)
-        #-------
+    def run_lambda(N_bts: int, fun: typing.Callable[[int], None]):
+        # Note 1: the loop is over the N_bts+1 values: N_bts + mean 
+        # Note 2: 
+        #   this function does not offer parallelization as for the method `from_lambda()` because 
+        #   the user may accidentally modify an external variable, but with joblib it does not work
+        for i in range(N_bts+1):
+            fun(i)
+        #---
         return None
 
     def __array_function__(self, func, types, args, kwargs):
