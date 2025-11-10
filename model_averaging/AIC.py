@@ -169,7 +169,10 @@ class with_CDF:
         n_models = len(y)
         y_flat, idx_y = np.unique(np.concatenate([yi.ravel() for yi in y]), return_index=True)
         w_unique = np.concatenate([np.full(shape=y[i].shape, fill_value=w[i]) for i in range(n_models)]).flatten()[idx_y]
-        P = np.cumsum(w_unique)/np.sum(w_unique)
+        P = np.cumsum(w_unique)
+        if not (w_unique==0.0).all():
+            P /= np.sum(w_unique)
+        #---
         return {"y": y_flat, "P": P}
     #---
     @staticmethod

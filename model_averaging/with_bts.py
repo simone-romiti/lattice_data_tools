@@ -28,7 +28,6 @@ class AIC:
         Returns:
             dictionary with the results of this procedure
         """
-        # N_bts, n_models = y.shape
         N_bts = y.N_bts()
         y_rescaled = BootstrapSamples(np.copy(y))
         # producing bootstraps with same mean but rescaled uncertainty
@@ -37,10 +36,13 @@ class AIC:
             sqrt_lam = np.sqrt(lam)
             y_rescaled = BootstrapSamples.from_lambda(N_bts=N_bts, fun = lambda i : y_avg[:] + sqrt_lam*(y[i,:]-y_avg[:]))
         #---
-        y, idx_y = np.unique(y_rescaled.flatten(), return_index=True)
+        y_flat, idx_y = np.unique(y_rescaled.flatten(), return_index=True)
         w_unique = BootstrapSamples.from_lambda(N_bts=N_bts, fun=lambda i: w).flatten()[idx_y]
-        P = np.cumsum(w_unique)/np.sum(w_unique)
-        return {"y": y, "P": P}
+        P = np.cumsum(w_unique)
+        if not (w_unique==0.0).all():
+            P /= np.sum(w_unique)
+        #---
+        return {"y": y_flat, "P": P}
     #---
     @staticmethod
     def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], w: Dict[str,np.ndarray], lam1: float, lam2: float):
@@ -63,6 +65,10 @@ class AIC:
                 Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
         """
         w_keys = np.array([np.sum(w[k]) for k in keys])
+        for k in keys:
+            yP_k = AIC.get_P(y=y[k], w=w[k], lam=1.0)
+            res = with_CDF.get_rescaled_y(yP_k["y"], yP_k["P"], lam=lam1)
+        #---            
         y1_list, P1_list = zip(*[(with_CDF.get_rescaled_y(yP_k["y"], yP_k["P"], lam=lam1), yP_k["P"]) for k in keys for yP_k in [AIC.get_P(y=y[k], w=w[k], lam=1.0)]])
         y2_list, P2_list = zip(*[(with_CDF.get_rescaled_y(yP_k["y"], yP_k["P"], lam=lam2), yP_k["P"]) for k in keys for yP_k in [AIC.get_P(y=y[k], w=w[k], lam=1.0)]])
         y1P1 = with_CDF.get_P(y1_list, w=w_keys)
