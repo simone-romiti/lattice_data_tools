@@ -9,7 +9,8 @@ Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
 
 import numpy as np
 from scipy.stats import norm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+from typing import List
 
 from lattice_data_tools.bootstrap import BootstrapSamples
 
@@ -90,19 +91,6 @@ def get_P_from_bootstraps(y: BootstrapSamples, w: np.ndarray, lam: np.float64):
     w_unique = BootstrapSamples.from_lambda(N_bts=N_bts, fun=lambda i: w).flatten()[idx_y]
     P = np.cumsum(w_unique)/np.sum(w_unique)
     return {"y": y, "P": P}
-    # N_pts = y.shape[0] ## total number of points
-    # # weighted p.d.f. with binning 1
-    # w_pi = np.zeros(shape=(N_pts, n_models))
-    # sum_wk = np.sum(w)
-    # for k in range(n_models):
-    #     yk_idx = np.where(np.isin(y, y_rescaled[:,k]))[0]
-    #     # the weights are normalized to 1
-    #     w_pi[yk_idx, k] = w[k] / sum_wk
-    # #---
-    # # each model contributes with N_bts points
-    # wP = np.cumsum(w_pi, axis=0)/N_bts 
-    # P = np.sum(wP, axis=1) # cumulating the models' contributions
-    # return {"y": y, "wP": wP, "P": P}
 #---
 
 def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64):
@@ -122,6 +110,8 @@ def get_mean_and_sigma2(y16, y50, y84):
     return (y_mean, sigma2_tot)
 #---
 
+
+
 def get_sigma2_contributions(
     w: np.ndarray, m: np.ndarray, sigma: np.ndarray, 
     ymin: np.float64, ymax: np.float64, eps: np.float64, 
@@ -132,7 +122,7 @@ def get_sigma2_contributions(
     w: weights
     m: means of the models
     sigma: statistical uncertainties of the models
-    ymin, ymax, eps: parameters defining the interval for numerically reproduding the CDF finely enough
+    ymin, ymax, eps: parameters defining the interval for numerically reproducing the CDF finely enough
 
     """
     y16, y50, y84 = get_y16_y50_y84(w=w, m=m, sigma=sigma, lam=lambda1, ymin=ymin, ymax=ymax, eps=eps)
@@ -144,4 +134,69 @@ def get_sigma2_contributions(
     sigma2_syst = (lambda2*sigma2_tot - lambda1*sigma2_tot_l2)/(lambda2-lambda1)
     return {"mean": y_mean, "stat": sigma2_stat, "syst": sigma2_syst}
 #---
+
+
+
+class with_CDF:
+    @staticmethod
+    def get_rescaled_y(y: np.ndarray, P: np.ndarray, lam: float):
+        y_half = y[np.where(P <= 0.50)[0][-1]]
+        y_rescaled = np.copy(y_half + np.sqrt(lam)*(y-y_half))
+        return y_rescaled
+    #---
+    @staticmethod
+    def get_P(y: List[np.ndarray], w: np.ndarray):
+        """CDFs from list of models
+        
+        We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
+        This is done as follows:
+        
+        Step 1: We consider all the y values
+        Step 2: We build the CDFs of each model, scaled by its weight (normalized to 1).
+                This is done by building, for each model k, a fictitious histogram count (with binning 1). 
+                Only for the values of "y" of the k-th model, we set the count to the weight w_k.
+        Step 3: The cumulative sums of these fictitious histogram gives the CDF 
+                in terms of the whole array of values coming from all the models.
+
+        Arguments:
+            y: list of size (n_models). Each item is an array of values of "y", whose distribution determine their CDF. The array can have different sizes.
+            w: array of length n_models
+            
+        Returns:
+            dictionary with the results of this procedure
+        """
+        assert (len(y) == w.shape[0])
+        n_models = len(y)
+        y_flat, idx_y = np.unique(np.concatenate([yi.ravel() for yi in y]), return_index=True)
+        w_unique = np.concatenate([np.full(shape=y[i].shape, fill_value=w[i]) for i in range(n_models)]).flatten()[idx_y]
+        P = np.cumsum(w_unique)/np.sum(w_unique)
+        return {"y": y_flat, "P": P}
+    #---
+    @staticmethod
+    def get_quantiles(y, P):
+        """ 
+        Dictionary of quantiles corresponding to 
+        16%, 50%, 84% of probabilities
+        """
+        return {f"{x}%": y[P <= x/100][-1] for x in [16, 50, 84]}
+    #---
+    @staticmethod
+    def get_contributions(y1: np.ndarray, y2: np.ndarray, P1: np.ndarray, P2: np.ndarray, lam1: float, lam2: float):
+        """ 
+        Contributions to the total error.
+        These are obtained by using 2 different AICs, where each time we rescaled the statistical uncertainty with lam1 and lam2 respectively.
+        NOTE: by "statistical" we mean the uncertainty of the individual models before the AIC. The latter can be the total error coming from a sub-model averaging
+        
+        This function returns:
+          - mean: 50% quantile of the total distribution
+          - sigma^2_stat: variance due to the statistical fluctuations
+          - sigma^2 syst: variance due to the systematics
+        """
+        Q1 = with_CDF.get_quantiles(y=y1, P=P1)
+        y1_mean, sigma2_tot = get_mean_and_sigma2(y16=Q1["16%"], y50=Q1["50%"], y84=Q1["84%"])
+        Q2 = with_CDF.get_quantiles(y=y2, P=P2)
+        y2_mean, sigma2_tot_l2 = get_mean_and_sigma2(y16=Q2["16%"], y50=Q2["50%"], y84=Q2["84%"])
+        sigma2_stat = (sigma2_tot_l2 - sigma2_tot)/(lam2-lam1)
+        sigma2_syst = (lam2*sigma2_tot - lam1*sigma2_tot_l2)/(lam2-lam1)
+        return {"mean": y1_mean, "stat": sigma2_stat, "syst": sigma2_syst}
 
