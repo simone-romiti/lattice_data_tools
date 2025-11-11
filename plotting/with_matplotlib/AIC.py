@@ -2,12 +2,15 @@
 import matplotlib.pyplot as plt
 # import numpy as np
 
+from lattice_data_tools.model_averaging.AIC import with_CDF 
+
 class FromBootstraps:
     @staticmethod
     def plot_cdf(y, P, title=None):
-        y16 = y[P <= 0.16][-1]
-        y50 = y[P <= 0.50][-1]
-        y84 = y[P <= 0.84][-1]
+        Q = with_CDF.get_quantiles(y=y, P=P)
+        y16 = Q["16%"]
+        y50 = Q["50%"]
+        y84 = Q["84%"]
         fig, ax = plt.subplots()
         ax.plot(y, P, color="black", label="C.D.F. from AIC")
         ax.axvline(y50, color="purple", linestyle="-", label=f"median: {y50:.4e}")

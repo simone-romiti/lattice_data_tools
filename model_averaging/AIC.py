@@ -9,6 +9,7 @@ Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
 
 import numpy as np
 from scipy.stats import norm
+from scipy.interpolate import interp1d
 # import matplotlib.pyplot as plt
 from typing import List
 
@@ -176,7 +177,7 @@ class with_CDF:
         return {"y": y_flat, "P": P}
     #---
     @staticmethod
-    def get_quantiles(y: np.ndarray, P: np.ndarray):
+    def get_quantiles(y: np.ndarray, P: np.ndarray, quantiles = [16, 50, 84]):
         """ 
         Dictionary of quantiles corresponding to 
         16%, 50%, 84% of probabilities
@@ -188,7 +189,6 @@ class with_CDF:
         P_work = np.concatenate(([0.0], P_work, [1.0]))
         y_work = np.concatenate(([y_work[0]], np.copy(y), [y_work[-1]]))
         # defining quantiles and finding the interpolated values of "y"
-        quantiles = [16, 50, 84]
         targets = np.array([q / 100 for q in quantiles], dtype=float)
         values = np.interp(targets, P_work, y_work)
         return {f"{int(q)}%": float(v) for q, v in zip(quantiles, values)}
@@ -215,7 +215,46 @@ class with_CDF:
         y1_mean, sigma2_tot_l1 = get_mean_and_sigma2(y16=Q1["16%"], y50=Q1["50%"], y84=Q1["84%"])
         Q2 = with_CDF.get_quantiles(y=y2, P=P2)
         y2_mean, sigma2_tot_l2 = get_mean_and_sigma2(y16=Q2["16%"], y50=Q2["50%"], y84=Q2["84%"])
-        sigma2_stat = (sigma2_tot_l2 - sigma2_tot_l1)/(lam2-lam1)
-        sigma2_syst = sigma2_tot_l1 - lam1*sigma2_stat
+        # sigma2_stat = (sigma2_tot_l2 - sigma2_tot_l1)/(lam2-lam1)
+        # sigma2_syst = sigma2_tot_l1 - lam1*sigma2_stat
+        sigma2_stat = (((Q2["84%"]-Q2["16%"]) - (Q1["84%"]-Q1["16%"]))/2)**2
+        sigma2_syst = (np.sqrt(sigma2_tot_l1) - np.sqrt(sigma2_stat))**2
         return {"mean": y1_mean, "tot_lam1": sigma2_tot_l1, "tot_lam2": sigma2_tot_l2, "stat": sigma2_stat, "syst": sigma2_syst}
+    @staticmethod
+    def variance_from_CDF(y, P, n_samples=10_000):
+        """
+        Estimate the variance of a variable from its CDF (y, P) by inverse transform sampling.
 
+        Parameters
+        ----------
+        y : np.ndarray
+            Sorted variable values.
+        P : np.ndarray
+            Corresponding CDF values (monotonic increasing).
+        n_samples : int, optional
+            Number of uniform samples to draw from [0, 1].
+
+        Returns
+        -------
+        float
+            Estimated variance.
+        """
+        y = np.asarray(y)
+        P = np.asarray(P)
+
+        # Ensure CDF starts at 0 and ends at 1 (pad if necessary)
+        if P[0] > 0:
+            P = np.concatenate(([0.0], P))
+            y = np.concatenate(([y[0]], y))
+        if P[-1] < 1:
+            P = np.concatenate((P, [1.0]))
+            y = np.concatenate((y, [y[-1]]))
+
+        # Sample uniformly in [0, 1]
+        u = np.random.rand(n_samples)
+
+        # Inverse CDF interpolation
+        y_sampled = np.interp(u, P, y)
+
+        # Return sample variance (unbiased)
+        return np.var(y_sampled, ddof=1)
