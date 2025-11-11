@@ -21,7 +21,7 @@ def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray):
     """
     A = ch2 + 2.0*n_par - 2.0*n_data
     w_i = np.exp(-A/2)
-    w_i /= np.sum(w_i)
+    # w_i /= np.sum(w_i)
     return w_i
 #---
 
@@ -140,7 +140,7 @@ def get_sigma2_contributions(
 class with_CDF:
     @staticmethod
     def get_rescaled_y(y: np.ndarray, P: np.ndarray, lam: float):
-        y_half = y[np.where(P <= 0.50)[0][-1]]
+        y_half = y[P <= 0.50][-1]
         y_rescaled = np.copy(y_half + np.sqrt(lam)*(y-y_half))
         return y_rescaled
     #---
@@ -176,17 +176,33 @@ class with_CDF:
         return {"y": y_flat, "P": P}
     #---
     @staticmethod
-    def get_quantiles(y, P):
+    def get_quantiles(y: np.ndarray, P: np.ndarray):
         """ 
         Dictionary of quantiles corresponding to 
         16%, 50%, 84% of probabilities
         """
-        return {f"{x}%": y[P <= x/100][-1] for x in [16, 50, 84]}
+        # copying the arrays to work on them
+        P_work = np.copy(P)
+        y_work = np.copy(y)
+        # adding left and right padding to avoid discretization errors
+        P_work = np.concatenate(([0.0], P_work, [1.0]))
+        y_work = np.concatenate(([y_work[0]], np.copy(y), [y_work[-1]]))
+        # defining quantiles and finding the interpolated values of "y"
+        quantiles = [16, 50, 84]
+        targets = np.array([q / 100 for q in quantiles], dtype=float)
+        values = np.interp(targets, P_work, y_work)
+        return {f"{int(q)}%": float(v) for q, v in zip(quantiles, values)}
     #---
     @staticmethod
     def get_contributions(y1: np.ndarray, y2: np.ndarray, P1: np.ndarray, P2: np.ndarray, lam1: float, lam2: float):
         """ 
         Contributions to the total error.
+        
+        !!! ACHTUNG !!!
+        The result may be inconsistent if one chooses the wrong values of lam1 and lam2.
+        In fact, the procedure works if (lam2*sigma^2_tot_l1 - lam1*sigma2_tot_l2) > 0. 
+        The user is expected to use the results of this function to update the value of lam2 in order to get all positive variances.
+        
         These are obtained by using 2 different AICs, where each time we rescaled the statistical uncertainty with lam1 and lam2 respectively.
         NOTE: by "statistical" we mean the uncertainty of the individual models before the AIC. The latter can be the total error coming from a sub-model averaging
         
@@ -196,10 +212,10 @@ class with_CDF:
           - sigma^2 syst: variance due to the systematics
         """
         Q1 = with_CDF.get_quantiles(y=y1, P=P1)
-        y1_mean, sigma2_tot = get_mean_and_sigma2(y16=Q1["16%"], y50=Q1["50%"], y84=Q1["84%"])
+        y1_mean, sigma2_tot_l1 = get_mean_and_sigma2(y16=Q1["16%"], y50=Q1["50%"], y84=Q1["84%"])
         Q2 = with_CDF.get_quantiles(y=y2, P=P2)
         y2_mean, sigma2_tot_l2 = get_mean_and_sigma2(y16=Q2["16%"], y50=Q2["50%"], y84=Q2["84%"])
-        sigma2_stat = (sigma2_tot_l2 - sigma2_tot)/(lam2-lam1)
-        sigma2_syst = (lam2*sigma2_tot - lam1*sigma2_tot_l2)/(lam2-lam1)
-        return {"mean": y1_mean, "stat": sigma2_stat, "syst": sigma2_syst}
+        sigma2_stat = (sigma2_tot_l2 - sigma2_tot_l1)/(lam2-lam1)
+        sigma2_syst = sigma2_tot_l1 - lam1*sigma2_stat
+        return {"mean": y1_mean, "tot_lam1": sigma2_tot_l1, "tot_lam2": sigma2_tot_l2, "stat": sigma2_stat, "syst": sigma2_syst}
 
