@@ -220,8 +220,9 @@ class with_CDF:
         sigma2_stat = (((Q2["84%"]-Q2["16%"]) - (Q1["84%"]-Q1["16%"]))/2)**2
         sigma2_syst = (np.sqrt(sigma2_tot_l1) - np.sqrt(sigma2_stat))**2
         return {"mean": y1_mean, "tot_lam1": sigma2_tot_l1, "tot_lam2": sigma2_tot_l2, "stat": sigma2_stat, "syst": sigma2_syst}
+    #---
     @staticmethod
-    def variance_from_CDF(y, P, n_samples=10_000):
+    def sample_from_CDF(y, P, n_samples=10_000):
         """
         Estimate the variance of a variable from its CDF (y, P) by inverse transform sampling.
 
@@ -255,6 +256,10 @@ class with_CDF:
 
         # Inverse CDF interpolation
         y_sampled = np.interp(u, P, y)
-
+        return y_sampled
+    #---
+    @staticmethod
+    def variance_from_CDF(y, P, n_samples=10_000):
+        y_sampled = with_CDF.sample_from_CDF(y=y, P=P, n_samples=n_samples)
         # Return sample variance (unbiased)
         return np.var(y_sampled, ddof=1)

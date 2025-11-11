@@ -47,7 +47,7 @@ class AIC:
     @staticmethod
     def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray]):
         """
-        Error budget contribution as eq. 1 of https://inspirehep.net/literature/2847988
+        Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988
         
         This function splits the contributions to the total error on the variable "y", 
         finding the contribution of a specific one corresponding to the variation of the key in "keys".
@@ -63,19 +63,21 @@ class AIC:
                 Example: y = {"model1": [y1_bts, y2_bts, ...], "model2": [y1_bts, y2_bts]}
             w (Dict[np.ndarray]): dictionary of the weights
                 Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
-            eps_thr
         """
         w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k]) for k in keys}
-        w1_keys = np.array([np.sum(w1[k]) for k in keys])
+        w1_keys = np.array([np.average(w1[k]) for k in keys])
         w1_keys_normalized = w1_keys/np.sum(w1_keys)
         y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [AIC.get_P(y=y[k], w=w1[k], lam=1.0)]])
         y1P1 = with_CDF.get_P(y1_list, w=w1_keys)
         n_models = len(y1_list)
-        sigma2_syst = with_CDF.variance_from_CDF(y=y1P1["y"], P=y1P1["P"])
         sigma2_stat = 0.0
+        sigma2_syst = 0.0 
+        y_avg = np.mean(y1P1["y"]) # with_CDF.mean_from_CDF(y=y1P1["y"], P=y1P1["P"])
         for i in range(n_models):
+            mean_i = np.mean(y1_list[i]) # with_CDF.mean_from_CDF(y=y1_list[i], P=P1_list[i])
             var_i = with_CDF.variance_from_CDF(y=y1_list[i], P=P1_list[i])
             sigma2_stat += (w1_keys_normalized[i] * var_i)
+            sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
         return {"stat": sigma2_stat, "syst": sigma2_syst, "tot": sigma2_syst+sigma2_stat}
     #---
