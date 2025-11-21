@@ -95,10 +95,16 @@ class AIC:
     @staticmethod
     def error_budget_table(Y: NestedDict, syst_names: List[str]):
         """ 
-        Computes the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
+        Computes automatically the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
+        In practice, this function loops over all systematic effects and computes the marginalized CDFs at fixed value of each systematic effect.
         
         X: nested dictionary such that the innermost level contains the BootstrapSamples for each model, the \chi^2, the number of points and number of parameters.
-        syst_names: list of strings corresponding to the contributions to isolate
+            X[model_key_1][model_key_2]...[model_key_n]["y"] = BootstrapSamples
+            X[model_key_1][model_key_2]...[model_key_n]["ch2"] = np.ndarray
+            X[model_key_1][model_key_2]...[model_key_n]["n_par"] = np.ndarray
+            X[model_key_1][model_key_2]...[model_key_n]["n_data"] = np.ndarray
+            
+        syst_names: list of strings corresponding to the contributions to isolate: This is useful to label the contributions.
         """
         all_key_combs = list(get_unique([kk[:-1] for kk in Y.get_key_combinations()])) # list of all key combinations
         n_comb_tot = len(all_key_combs) # total number of model combinations
@@ -112,6 +118,7 @@ class AIC:
             #-------
             subkeys[i] = list(set(subkeys[i])) # unique keys at depth i
         #---
+        # Main idea: we loop over all model combinations, and append the data to the lists corresponding to each systematic effect
         y_list, ch2_list, n_par_list, n_pts_list, w_list = [], [], [], [], []
         n_syst = len(syst_names)
         assert(n_syst == max_depth), "Number of systematic names must match the depth of the nested dictionary minus one"
