@@ -3,7 +3,17 @@ import numpy as np
 from typing import Dict, List
 
 from lattice_data_tools.bootstrap import BootstrapSamples
+from lattice_data_tools.dictionaries import NestedDict
 from lattice_data_tools.model_averaging.AIC import with_CDF, get_weights
+
+def get_unique(L: List) -> List:
+    unique = []
+    for l in L:
+        if l not in unique:
+            unique.append(l)
+    #-------
+    return unique
+
 
 class AIC:
     @staticmethod
@@ -47,7 +57,7 @@ class AIC:
     @staticmethod
     def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray]):
         """
-        Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988
+        Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988 (law of total variance)
         
         This function splits the contributions to the total error on the variable "y", 
         finding the contribution of a specific one corresponding to the variation of the key in "keys".
@@ -65,21 +75,78 @@ class AIC:
                 Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
         """
         w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k]) for k in keys}
-        w1_keys = np.array([np.average(w1[k]) for k in keys])
+        # distance between models not defined --> we use the median as an estimator of the marginal probability density
+        w1_keys = np.array([np.median(w1[k]) for k in keys])
         w1_keys_normalized = w1_keys/np.sum(w1_keys)
         y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [AIC.get_P(y=y[k], w=w1[k], lam=1.0)]])
         y1P1 = with_CDF.get_P(y1_list, w=w1_keys)
         n_models = len(y1_list)
         sigma2_stat = 0.0
         sigma2_syst = 0.0 
-        y_avg = np.mean(y1P1["y"]) # with_CDF.mean_from_CDF(y=y1P1["y"], P=y1P1["P"])
+        y_avg = np.median(y1P1["y"])
         for i in range(n_models):
-            mean_i = np.mean(y1_list[i]) # with_CDF.mean_from_CDF(y=y1_list[i], P=P1_list[i])
+            mean_i = np.median(y1_list[i])
             var_i = with_CDF.variance_from_CDF(y=y1_list[i], P=P1_list[i])
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
-        return {"stat": sigma2_stat, "syst": sigma2_syst, "tot": sigma2_syst+sigma2_stat}
+        return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat}
     #---
-#---
+    @staticmethod
+    def error_budget_table(Y: NestedDict, syst_names: List[str]):
+        """ 
+        Computes the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
+        
+        X: nested dictionary such that the innermost level contains the BootstrapSamples for each model, the \chi^2, the number of points and number of parameters.
+        syst_names: list of strings corresponding to the contributions to isolate
+        """
+        all_key_combs = list(get_unique([kk[:-1] for kk in Y.get_key_combinations()])) # list of all key combinations
+        n_comb_tot = len(all_key_combs) # total number of model combinations
+        max_depth = max([len(kk) for kk in all_key_combs]) # maximum depth of the dictionary
+        subkeys = [[] for _ in range(max_depth)] # subkeys at each depth. empty list, filled below
+        for i in range(max_depth):
+            """ NOTE: we don't consider the last level, which contains the data (x, ch2, n_par, n_data) """
+            for kk in all_key_combs:
+                if len(kk) >= i+1:
+                    subkeys[i].append(kk[i]) # considering only keys at depth i
+            #-------
+            subkeys[i] = list(set(subkeys[i])) # unique keys at depth i
+        #---
+        y_list, ch2_list, n_par_list, n_pts_list, w_list = [], [], [], [], []
+        n_syst = len(syst_names)
+        assert(n_syst == max_depth), "Number of systematic names must match the depth of the nested dictionary minus one"
+        idx_lists = {syst_names[i]: {k: [] for k in subkeys[i]} for i in range(n_syst)}
+        idx_lists["syst_tot"] = {k: [] for k in range(n_comb_tot)}
+        for i_c in range(n_comb_tot):
+            kk = all_key_combs[i_c]
+            Data = Y[kk]
+            y_i, ch2_i, n_par_i, n_pts_i = Data["y"], Data["ch2"], Data["n_par"], Data["n_data"]
+            w_i = get_weights(ch2=ch2_i, n_par=n_par_i, n_data=n_pts_i)
+            y_list.append(y_i)
+            ch2_list.append(ch2_i)
+            n_par_list.append(n_par_i)
+            n_pts_list.append(n_pts_i)
+            w_list.append(np.zeros_like(w_i) if np.isnan(w_i).any() else w_i) # replacing NaNs with zero weight
+            idx_lists["syst_tot"][i_c].append(i_c)
+            for i in range(n_syst):
+                idx_lists[syst_names[i]][kk[i]].append(i_c)
+        #-------
+        def get_syst_contribution(contribution):
+            get_subcase = lambda X, k: np.array([X[i] for i in idx_lists[contribution][k]]).T
+            contribution_keys = list(idx_lists[contribution].keys())
+            res = AIC.error_budget(
+                keys=contribution_keys, 
+                y = {k : BootstrapSamples(get_subcase(y_list, k)) for k in contribution_keys}, 
+                ch2 = {k : get_subcase(ch2_list, k) for k in contribution_keys},
+                n_par = {k : get_subcase(n_par_list, k) for k in contribution_keys},
+                n_data = {k : get_subcase(n_pts_list, k) for k in contribution_keys},
+                )
+            return res
+        #---
+        EBT = NestedDict()
+        for contribution in syst_names+["syst_tot"]:
+            EBT[contribution] = get_syst_contribution(contribution)
+        #---
+        return EBT
+#-------
 
