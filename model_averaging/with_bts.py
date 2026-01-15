@@ -1,10 +1,10 @@
 
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from lattice_data_tools.bootstrap import BootstrapSamples
 from lattice_data_tools.dictionaries import NestedDict
-from lattice_data_tools.model_averaging.AIC import with_CDF, get_weights
+from lattice_data_tools.model_averaging.IC import valid_IC, with_CDF, get_weights
 
 def get_unique(L: List) -> List:
     unique = []
@@ -15,7 +15,7 @@ def get_unique(L: List) -> List:
     return unique
 
 
-class AIC:
+class ModelAverage:
     @staticmethod
     def get_P(y: BootstrapSamples, w: np.ndarray, lam: np.float64):
         """CDFs from boostrap samples 
@@ -55,7 +55,7 @@ class AIC:
         return {"y": y_flat, "P": P}
     #---
     @staticmethod
-    def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray]):
+    def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray], IC: valid_IC, Nmax: Optional[int] = None):
         """
         Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988 (law of total variance)
         
@@ -63,7 +63,7 @@ class AIC:
         finding the contribution of a specific one corresponding to the variation of the key in "keys".
         
         This is done by: 
-            - Finding the AIC CDF at fixed "key", i.e. finding N_keys CDFs.
+            - Finding the ModelAverage CDF at fixed "key", i.e. finding N_keys CDFs.
             - Model averaging all of them, for 2 values of lambda, in order to isolate the contributions
             - The "statistical" error comes from all the other effects, while the  systematics is the contribution of the variation of "key"
         
@@ -74,11 +74,11 @@ class AIC:
             w (Dict[np.ndarray]): dictionary of the weights
                 Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
         """
-        w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k]) for k in keys}
+        w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k], IC=IC, Nmax=Nmax) for k in keys}
         # distance between models not defined --> we use the median as an estimator of the marginal probability density
         w1_keys = np.array([np.median(w1[k]) for k in keys])
         w1_keys_normalized = w1_keys/np.sum(w1_keys)
-        y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [AIC.get_P(y=y[k], w=w1[k], lam=1.0)]])
+        y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [ModelAverage.get_P(y=y[k], w=w1[k], lam=1.0)]])
         y1P1 = with_CDF.get_P(y1_list, w=w1_keys)
         n_models = len(y1_list)
         sigma2_stat = 0.0
@@ -93,7 +93,7 @@ class AIC:
         return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat}
     #---
     @staticmethod
-    def error_budget_table(Y: NestedDict, syst_names: List[str]):
+    def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int] = None):
         """ 
         Computes automatically the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
         In practice, this function loops over all systematic effects and computes the marginalized CDFs at fixed value of each systematic effect.
@@ -128,7 +128,7 @@ class AIC:
             kk = all_key_combs[i_c]
             Data = Y[kk]
             y_i, ch2_i, n_par_i, n_pts_i = Data["y"], Data["ch2"], Data["n_par"], Data["n_data"]
-            w_i = get_weights(ch2=ch2_i, n_par=n_par_i, n_data=n_pts_i)
+            w_i = get_weights(ch2=ch2_i, n_par=n_par_i, n_data=n_pts_i, IC=IC, Nmax=Nmax)
             y_list.append(y_i)
             ch2_list.append(ch2_i)
             n_par_list.append(n_par_i)
@@ -141,12 +141,14 @@ class AIC:
         def get_syst_contribution(contribution):
             get_subcase = lambda X, k: np.array([X[i] for i in idx_lists[contribution][k]]).T
             contribution_keys = list(idx_lists[contribution].keys())
-            res = AIC.error_budget(
+            res = ModelAverage.error_budget(
                 keys=contribution_keys, 
                 y = {k : BootstrapSamples(get_subcase(y_list, k)) for k in contribution_keys}, 
                 ch2 = {k : get_subcase(ch2_list, k) for k in contribution_keys},
                 n_par = {k : get_subcase(n_par_list, k) for k in contribution_keys},
                 n_data = {k : get_subcase(n_pts_list, k) for k in contribution_keys},
+                IC = IC,
+                Nmax = Nmax
                 )
             return res
         #---

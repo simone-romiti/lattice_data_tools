@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 # import numpy as np
 
-from lattice_data_tools.model_averaging.AIC import with_CDF 
+from lattice_data_tools.model_averaging.IC import with_CDF 
 
 class FromBootstraps:
     @staticmethod
