@@ -13,8 +13,8 @@ class FromBootstraps:
         y84 = Q["84%"]
         fig, ax = plt.subplots()
         ax.plot(y, P, color="black", label="C.D.F. from AIC")
-        ax.axvline(y50, color="purple", linestyle="-", label=f"median: {y50:.4e}")
-        ax.fill_betweenx(P, y16, y84, color="pink", alpha=0.5, label=f"16%: {y16:.4e}, {(y50-y16):.4e} \n84%: {y84:.4e}, {(y84-y50):.4e}")
+        ax.axvline(y50, color="purple", linestyle="-", label=f"median: {y50:.3e}")
+        ax.fill_betweenx([0,1], y16, y84, color="pink", alpha=0.5, label=f"16%: $y=${y16:.3e}, $\Delta y_L=${(y50-y16):.3e} \n84%: $y=${y84:.3e}, $\Delta y_R=${(y84-y50):.3e}")
         ax.set_ylabel("P(y)")
         ax.set_xlabel("y")
         title_str = "Cumulative density function from bootstraps" if title is None else title
