@@ -76,7 +76,7 @@ class ModelAverage:
         """
         w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k], IC=IC, Nmax=Nmax) for k in keys}
         # distance between models not defined --> we use the median as an estimator of the marginal probability density
-        w1_keys = np.array([np.median(w1[k]) for k in keys])
+        w1_keys = np.array([np.sum(w1[k]) for k in keys])
         w1_keys_normalized = w1_keys/np.sum(w1_keys)
         y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [ModelAverage.get_P(y=y[k], w=w1[k], lam=1.0)]])
         y1P1 = with_CDF.get_P(y1_list, w=w1_keys)
