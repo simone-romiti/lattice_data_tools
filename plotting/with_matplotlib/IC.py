@@ -12,9 +12,12 @@ class FromBootstraps:
         y50 = Q["50%"]
         y84 = Q["84%"]
         fig, ax = plt.subplots()
-        ax.plot(y, P, color="black", label="C.D.F. from AIC")
-        ax.axvline(y50, color="purple", linestyle="-", label=f"median: {y50:.3e}")
-        ax.fill_betweenx([0,1], y16, y84, color="pink", alpha=0.5, label=f"16%: $y=${y16:.3e}, $\Delta y_L=${(y50-y16):.3e} \n84%: $y=${y84:.3e}, $\Delta y_R=${(y84-y50):.3e}")
+        ax.plot(y, P, color="black", label="Model average C.D.F")
+        ax.axvline(y50, color="purple", linestyle="-", alpha=0.5, label=f"median: $y_M=${y50:.3e}")
+        ax.axvline(y16, color="purple", linestyle="--",  alpha=0.25, label=f"16%: $y_L=${y16:.3e}")
+        ax.fill_betweenx([0,1], y16, y50, color="pink", alpha=0.5, label=f"$\Delta y_L=${(y50-y16):.3e}")
+        ax.axvline(y84, color="purple", linestyle=":",  alpha=0.25, label=f"84%: $y_R=${y84:.3e}")
+        ax.fill_betweenx([0,1], y50, y84, color="pink", alpha=0.5, label=f"$\Delta y_R=${(y84-y50):.3e}")
         ax.set_ylabel("P(y)")
         ax.set_xlabel("y")
         title_str = "Cumulative density function from bootstraps" if title is None else title
