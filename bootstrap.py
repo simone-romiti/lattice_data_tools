@@ -1,5 +1,5 @@
 
-import time
+import math
 import numpy as np
 import typing
 from joblib import Parallel, delayed
@@ -216,11 +216,9 @@ def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=
         np.ndarray: Bootstrap samples
     """
     Ng = Cg.shape[0] ## total number of configurations
-    tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time
-    if tauint == 0:
-        tauint = 1 ## uncorrelated data
-    #---
-    Cg_uncorr = Cg[0:Ng:tauint] ## uncorrelated values
+    tauint = uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"] # integrated autocorrelation time
+    bin_size = 1 if tauint<0.5 else math.ceil(tauint) 
+    Cg_uncorr = Cg[0:Ng:bin_size] ## uncorrelated values
     return uncorrelated_confs_to_bts(x=Cg_uncorr, N_bts=N_bts, seed=seed)
 #---
 

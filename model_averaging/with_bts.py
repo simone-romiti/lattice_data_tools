@@ -90,7 +90,8 @@ class ModelAverage:
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
-        return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat}
+        IPR = np.sum(w1_keys_normalized**4)/(np.sum(w1_keys_normalized**2)**2) # Inverse Participation Ratio
+        return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat, "IPR": IPR}
     #---
     @staticmethod
     def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int] = None):
@@ -98,7 +99,7 @@ class ModelAverage:
         Computes automatically the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
         In practice, this function loops over all systematic effects and computes the marginalized CDFs at fixed value of each systematic effect.
         
-        X: nested dictionary such that the innermost level contains the BootstrapSamples for each model, the \chi^2, the number of points and number of parameters.
+        X: nested dictionary such that the innermost level contains the BootstrapSamples for each model, the \\chi^2, the number of points and number of parameters.
             X[model_key_1][model_key_2]...[model_key_n]["y"] = BootstrapSamples
             X[model_key_1][model_key_2]...[model_key_n]["ch2"] = np.ndarray
             X[model_key_1][model_key_2]...[model_key_n]["n_par"] = np.ndarray
