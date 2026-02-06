@@ -51,7 +51,7 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
 
     # # Plot Gamma with error bars
     plt.figure()
-    plt.errorbar(t_tauint, Gamma, yerr=dGamma, fmt='o', capsize=3)
+    plt.errorbar(t_tauint[1:], Gamma[1:], yerr=dGamma[1:], fmt='o', capsize=3)
     plt.title("Autocorrelation function")
     plt.xlabel('t')
     plt.ylabel('$\\Gamma(t)$')

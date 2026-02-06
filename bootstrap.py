@@ -174,6 +174,24 @@ def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
     return res
 #---
 
+def binning(Cg: np.ndarray, bin_size: int):
+    Ng = Cg.shape[0]
+    if bin_size == 1:
+        return np.copy(Cg) # no averaging
+    else:
+        """
+        Applying the binning, i.e. average the values in each bin an returning the result
+        
+        NOTE: 
+        the average of the output is identical to the one of the input 
+        only if the bin size is a divisor of Ng
+        """
+        N_bins = Ng//bin_size + (1 - int(Ng%bin_size == 0))
+        # print("check", bin_size, N_bins)
+        i_next = lambda i: (i+bin_size)%Ng
+        return np.array([np.mean(Cg[i:i_next(i)]) for i in range(N_bins)]) # uncorrelated values
+#-------
+
 def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     """Bootstrap samples from array of data
     
@@ -205,7 +223,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
 def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
     """Bootstrap samples from array of correlated configurations
 
-    - The configurations are sampled every tau_int, (integrated autocorrelation time)
+    - The configurations are binned (block-averaged) every bin_size (determined by tau_int: integrated autocorrelation time)
     - The bootstrap samples are drawn from the uncorrelated configurations
 
     Args:
@@ -215,11 +233,11 @@ def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=
     Returns:
         np.ndarray: Bootstrap samples
     """
-    Ng = Cg.shape[0] ## total number of configurations
     tauint = uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"] # integrated autocorrelation time
-    bin_size = 1 if tauint<0.5 else math.ceil(tauint) 
-    Cg_uncorr = Cg[0:Ng:bin_size] ## uncorrelated values
-    return uncorrelated_confs_to_bts(x=Cg_uncorr, N_bts=N_bts, seed=seed)
+    # Applying the binning, such that the \\tau_int on the output is below 0.5
+    bin_size = np.ceil(tauint)
+    Cg_binned = binning(Cg=Cg, bin_size=bin_size)
+    return uncorrelated_confs_to_bts(x=Cg_binned, N_bts=N_bts, seed=seed)
 #---
 
 
