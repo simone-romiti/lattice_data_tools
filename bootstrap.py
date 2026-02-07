@@ -187,9 +187,8 @@ def binning(Cg: np.ndarray, bin_size: int):
         only if the bin size is a divisor of Ng
         """
         N_bins = Ng//bin_size + (1 - int(Ng%bin_size == 0))
-        # print("check", bin_size, N_bins)
-        i_next = lambda i: (i+bin_size)%Ng
-        return np.array([np.mean(Cg[i:i_next(i)]) for i in range(N_bins)]) # uncorrelated values
+        i_next = lambda i: min(Ng, bin_size*(i+1))
+        return np.array([np.mean(Cg[(bin_size*i):i_next(i)]) for i in range(N_bins)]) # uncorrelated values
 #-------
 
 def uncorrelated_confs_to_bts(x, N_bts, seed=12345):

@@ -7,6 +7,91 @@ from scipy.stats import chi2
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+class GammaMethod:
+    @staticmethod
+    def get_Gamma(a: np.ndarray):
+        """ Gamma(t) as in eq. E.7 of https://arxiv.org/pdf/hep-lat/0409106 """
+        assert len(a.shape)==1
+        N = a.shape[0]
+        a_bar = np.mean(a)
+        da = (a-a_bar)
+        Gamma = np.array([np.sum(da[0:(N-t)] * da[t:N])/(N-t) for t in range(N-1)])
+        return Gamma
+    #---
+    @staticmethod
+    def get_rho(Gamma: np.ndarray):
+        """ Normalized correlation function Gamma(t)/Gamma(0) """
+        return Gamma/Gamma[0]
+    #---
+    @staticmethod
+    def get_drho(rho: np.ndarray, N: int, Lambda: int = 100):
+        drho2_sum = np.zeros(shape=(N-1))
+        for t in range(N-1):
+            N_max = min(N-t-1,t+Lambda)
+            for k in range(1, N_max):
+                drho2_sum[t] += (rho[k+t] + rho[np.abs(k-t)] - 2.0*rho[k]*rho[t])**2
+        #-------
+        drho = np.sqrt(drho2_sum/N)
+        return drho
+    @staticmethod
+    def get_W(rho, drho):
+        """ summation window W as in Eq. (E.13) of https://arxiv.org/pdf/hep-lat/0409106 """
+        W = np.argwhere(rho <= drho)[0][0]
+        return W
+    @staticmethod
+    def get_W_auto():
+        """ optimal W according to Eq. 52 of https://arxiv.org/pdf/hep-lat/0306017 """
+        pass
+    @staticmethod
+    def get_tau_int(rho: np.ndarray, W: int):
+        return (1/2) + np.cumsum(rho[1:(W+1)])
+    #---
+    @staticmethod
+    def get_dtau(tau_int: np.ndarray, N: int, W: int):
+        """ Eq. E.14 of https://arxiv.org/pdf/hep-lat/0409106 """
+        dtau2 = ((4*W + 2)/N)*(tau_int**2)
+        return np.sqrt(dtau2)
+    def uwerr_primary(data):
+        assert len(data.shape)==1
+        N = data.shape[0]
+        Gamma = GammaMethod.get_Gamma(a=data)
+        rho = GammaMethod.get_rho(Gamma=Gamma)
+        drho = GammaMethod.get_drho(rho=rho, N=N)
+        W = GammaMethod.get_W(rho=rho, drho=drho)
+        tau_int = GammaMethod.get_tau_int(rho=rho, W=W)
+        dtau_int = GammaMethod.get_dtau(tau_int=tau_int, N=N, W=W)
+        plt.errorbar(x=np.arange(tau_int.shape[0]), y=tau_int, yerr=dtau_int)
+        plt.show()
+        value = np.mean(data)
+        dvalue = np.sqrt((2*tau_int[-1])*(Gamma[0]/N))
+
+        res = {
+            "value": value,
+            "dvalue": dvalue,
+            # "ddvalue": ddvalue,
+            "tauint": tau_int[-1],
+            "dtauint": dtau_int[-1],
+            "tauint_W": tau_int,
+            "dtauint_W": dtau_int,
+            # "Wopt": Wopt,
+            # "Wmax": Wmax,
+            # "tauintofW": tauintFbb[:Wmax + 1],
+            # "dtauintofW": dtauintofW[:Wmax + 1],
+            # "Qval": Qval,
+            # "S": S,
+            "N": N,
+            # "R": R,
+            # "nrep": nrep,
+            "data": data,
+            "Gamma": rho,
+            "dGamma": drho,
+            "primary": 1,
+        }
+
+        return res
+
+
+
 def gamma_error(Gamma, N, W, Lambda):
     gamma_err = np.zeros(W + 1)
     Gamma_loc = np.copy(Gamma)
