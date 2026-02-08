@@ -191,6 +191,35 @@ def binning(Cg: np.ndarray, bin_size: int):
         return np.array([np.mean(Cg[(bin_size*i):i_next(i)]) for i in range(N_bins)]) # uncorrelated values
 #-------
 
+def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None):
+    """ 
+    Automatic binning of a Monte Carlo (MC) chain according to the autocorrelation time.
+    Until it decreases below 0.5 (within its uncertainty), we bin with increasing bin sizes:
+    1 (original MC chain), tau, 2*tau, etc.
+    
+    The function returns the binned correlator with the optimal bin size as above.
+
+        Cg (np.ndarray): MC chain (e.g. 1-dimensional "correlator" at one spacetime point, computed for each configuration)
+        output_files_pattern (str): lambda function that takes 1 argument that is the index of the binning iteration
+    """
+    i = 0
+    bin_size = 1
+    tauint_i, dtauint_i = 1, 0
+    while tauint_i-dtauint_i > 0.5:
+        """ 
+        Until \\tau_int is not below 0.5 within the uncertainty, 
+        we bin with binsizes multiple of \\tau_0
+        """
+        Cg_binned = binning(Cg=Cg, bin_size=bin_size)
+        res_tauint_i = uwerr.uwerr_primary(Cg_binned, output_file=lambda_output_file(i)) # integrated autocorrelation time
+        bin_size = math.ceil((i+1) * tauint_i) # updating bin size
+        tauint_i = res_tauint_i["tauint"]
+        dtauint_i = res_tauint_i["dtauint"]
+        i += 1
+    #---
+    return Cg_binned
+#---
+
 def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     """Bootstrap samples from array of data
     
@@ -219,7 +248,7 @@ def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     return res
 #---
 
-def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=None) -> np.ndarray:
+def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, bin_size = None, lambda_output_file=lambda i: None) -> np.ndarray:
     """Bootstrap samples from array of correlated configurations
 
     - The configurations are binned (block-averaged) every bin_size (determined by tau_int: integrated autocorrelation time)
@@ -228,14 +257,17 @@ def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, output_file=
     Args:
         C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
         N_bts (int): Number of bootstraps
+        seed (int): seed for RNG (Random Number Generator)
 
     Returns:
         np.ndarray: Bootstrap samples
     """
-    tauint = uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"] # integrated autocorrelation time
-    # Applying the binning, such that the \\tau_int on the output is below 0.5
-    bin_size = np.ceil(tauint)
-    Cg_binned = binning(Cg=Cg, bin_size=bin_size)
+    if bin_size is None:
+        # Applying optimal binning such that tau_int < 0.5
+        Cg_binned = auto_binning(Cg=Cg, lambda_output_file=lambda_output_file)
+    else:
+        Cg_binned = binning(Cg=Cg, bin_size=bin_size)
+    #---
     return uncorrelated_confs_to_bts(x=Cg_binned, N_bts=N_bts, seed=seed)
 #---
 

@@ -1,5 +1,6 @@
 ## python translation of the uwerrprimary function from "hadron": https://github.com/HISKP-LQCD/hadron
 
+import math
 import os
 import pandas as pd
 import numpy as np
@@ -7,6 +8,7 @@ from scipy.stats import chi2
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+""" EXPERIMENTAL """
 class GammaMethod:
     @staticmethod
     def get_Gamma(a: np.ndarray):
@@ -92,27 +94,41 @@ class GammaMethod:
 
 
 
-def gamma_error(Gamma, N, W, Lambda):
-    gamma_err = np.zeros(W + 1)
-    Gamma_loc = np.copy(Gamma)
-    Gamma_loc[(W+1):(2 * W + W + 2)] = 0.0
-    
-    for t in range(W + 1):
-        k = np.arange(max(1, t - W), t + W + 1)
-        gamma_err[t] = np.sum((Gamma_loc[k + t] + Gamma_loc[np.abs(k - t)] - 2 * Gamma_loc[t] * Gamma_loc[k]) ** 2)
-        gamma_err[t] = np.sqrt(gamma_err[t] / N)
+def rho_error(rho, N, W, Lambda):
+    """ Error on the normalized autocorrelation function """
+    rho_err = np.zeros(W + 1) # W values (to be filled later, see below)
+    # artificially extended version of the rho array --> the loop below is simpler to write
+    rho_loc = np.zeros(shape=(2*W+W+1))
+    # print(W, N, rho_loc[0:(W+1)].shape, np.copy(rho[0:(W+1)]).shape)
+    rho_loc[0:(W+1)] = np.copy(rho[0:(W+1)]) # first W components equal to the original ones, the others are all 0s
 
-    gamma_err[0] = 0.001
-    return gamma_err
+    # Eq. E.11 of https://arxiv.org/pdf/hep-lat/0409106 
+    # for t=0,...,W and setting Lambda=W (see assert below)
+    assert(W <= N//2) # This works only if W <= N//2
+    for t in range(1, W + 1):
+        """ 
+        NOTE: 
+        The loop should go from t=0 to t=W, 
+        but we can skip t=0 as by construction the error on \\rho is 0
+        """
+        k = np.arange(1, t + W+1)
+        # NOTE: |k-t| in the 2nd term because rho(t)=rho(-t) (see eq. E.3 of https://arxiv.org/pdf/hep-lat/0409106)
+        sum2 = np.sum((rho_loc[k + t] + rho_loc[np.abs(k - t)] - 2 * rho_loc[t] * rho_loc[k]) ** 2)
+        rho_err[t] = np.sqrt(sum2 / N)
+    #---
+    return rho_err
+#---
 
 
 def plot_uwerr_primary(u, output_file, name_obs: str):
     y = u["data"]
     N = y.shape[0]
+    value = u["value"]
+    dvalue = u["dvalue"]
     t = np.array([i for i in range(N)])
     tauint, dtauint = u["tauintofW"], u["dtauintofW"]
     N_tauint = tauint.shape[0] # number of points for which we can plot Gamma and tau with errors
-    Gamma, dGamma = u["Gamma"][0:N_tauint], u["dGamma"][0:N_tauint]
+    rho, drho = u["rho"][0:N_tauint], u["drho"][0:N_tauint]
     t_tauint = np.array([i for i in range(N_tauint)])
 
     # Create a PDF file to save the plots
@@ -123,7 +139,8 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
     plt.plot(t, y)
     plt.xlabel("t")
     plt.ylabel("y")
-    plt.title(name_obs)
+    plt.title(f"{name_obs} | $N={N}$ | $y={value:.01e} \\pm {dvalue:.01e}$")
+    plt.tight_layout()
     ppdf.savefig()
     plt.close()
 
@@ -131,15 +148,17 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
     plt.figure()
     plt.hist(y, bins=int(np.sqrt(N)), density=True)
     plt.title('Statistical distribution')
+    plt.tight_layout()
     ppdf.savefig()
     plt.close()
 
-    # # Plot Gamma with error bars
+    # # Plot \\rho(t)=\\Gamma(t)/\\Gamma(0) with error bars
     plt.figure()
-    plt.errorbar(t_tauint[1:], Gamma[1:], yerr=dGamma[1:], fmt='o', capsize=3)
+    plt.errorbar(t_tauint, rho, yerr=drho, fmt='o', capsize=3)
     plt.title("Autocorrelation function")
     plt.xlabel('t')
-    plt.ylabel('$\\Gamma(t)$')
+    plt.ylabel('$\\rho(t) = \\Gamma(t)/\\Gamma(0)$')
+    plt.tight_layout()
     ppdf.savefig()
     plt.close()
 
@@ -148,8 +167,9 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
     plt.figure()
     plt.errorbar(t_tauint, tauint, yerr=dtauint, fmt='o', capsize=3)
     plt.xlabel('t')
-    plt.ylabel('$\\tau_{{int}}$')
-    plt.title("Integrated autocorrelation time")
+    plt.ylabel('$\\tau_{\\mathrm{int}}$')
+    plt.title(f"Integrated autocorrelation time: $\\tau_{{\\mathrm{{int}}}}={np.round(u["tauint"],2)} \\pm {np.round(u["dtauint"],2)}$")
+    plt.tight_layout()
     ppdf.savefig()
     plt.close()
 
@@ -158,26 +178,21 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
 
 
 def uwerr_primary(data, nrep=None, S=1.5, output_file=None):
-    N = data.shape[0] #len(data)
-
-    if nrep is None:
-        nrep = [N]
+    N = data.shape[0] # total number of samples from the MC history
+    nrep = np.array([N]) if nrep is None else None # size of replicas
 
     if any(np.array(nrep) < 1) or sum(nrep) != N:
         raise ValueError("Error, inconsistent N and nrep!")
 
-    R = len(nrep)
-    mx = np.mean(data)
-    mxr = np.zeros(R)
-    i0 = 0
+    R = len(nrep) # number of replicase
+    mx = np.mean(data) # mean over all the MC history
+    
+    # means over the individual replicas
+    nrep_cumsum = np.concatenate(([0],np.cumsum(nrep)))
+    mxr = np.array([np.mean(data[nrep_cumsum[i]:nrep_cumsum[i+1]]) for i in range(R)])
 
-    for r in range(R):
-        i1 = i0 + nrep[r]
-        mxr[r] = np.mean(data[i0:i1])
-        i0 = i1
-
-    Fb = np.sum(mxr * nrep) / N
-    delpro = data - mx
+    Fb = np.sum(mxr * nrep) / N # weighter mean over replicas. The weights are the replica sizes
+    delpro = data - mx # relative variations with respect to the global mean
 
     if S == 0:
         Wmax = 0
@@ -188,20 +203,20 @@ def uwerr_primary(data, nrep=None, S=1.5, output_file=None):
         Gint = 0.0
         flag = True
 
-    GammaFbb = np.zeros(Wmax + 1)
-    GammaFbb[0] = np.mean(delpro ** 2)
+    GammaFbb = np.zeros(Wmax+1)
+    GammaFbb[0] = np.mean(delpro ** 2) # estimate of Gamma(t=0)
 
     if GammaFbb[0] == 0:
         raise ValueError("Error, no fluctuations!")
 
     W = 1
-    while W <= Wmax:
+    while W < Wmax+1:
         GammaFbb[W] = 0.0
         i0 = 0
 
         for r in range(R):
             i1 = i0 + nrep[r]
-            GammaFbb[W] += np.sum(delpro[i0:i1 - W] * delpro[i0 + W:i1])
+            GammaFbb[W] += np.sum(delpro[i0:(i1 - W)] * delpro[(i0 + W):i1])
             i0 = i1
 
         GammaFbb[W] /= (N - R * W)
@@ -233,7 +248,8 @@ def uwerr_primary(data, nrep=None, S=1.5, output_file=None):
         raise ValueError("Gamma pathological: error^2 < 0")
 
     GammaFbb += CFbbopt / N  # Correct for bias
-    dGamma = gamma_error(Gamma=GammaFbb, N=N, W=Wmax, Lambda=100)
+    rho = GammaFbb/GammaFbb[0] # normalized autocorrelation function (cf. line below Eq. E.10 of https://arxiv.org/pdf/hep-lat/0409106)
+    drho = rho_error(rho=rho, N=N, W=Wmax, Lambda=100) # Eq. E.10 of https://arxiv.org/pdf/hep-lat/0409106
     CFbbopt = GammaFbb[0] + 2 * np.sum(GammaFbb[1:(Wopt+1)])  # Refined estimate
     sigmaF = np.sqrt(CFbbopt / N)  # Error of F
     tauintFbb = np.cumsum(GammaFbb) / GammaFbb[0] - 0.5  # Normalized autocorrelation time
@@ -280,7 +296,8 @@ def uwerr_primary(data, nrep=None, S=1.5, output_file=None):
         "nrep": nrep,
         "data": data,
         "Gamma": GammaFbb,
-        "dGamma": dGamma,
+        "rho": rho,
+        "drho": drho,
         "primary": 1,
     }
 
