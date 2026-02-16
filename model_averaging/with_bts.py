@@ -83,14 +83,14 @@ class ModelAverage:
         n_models = len(y1_list)
         sigma2_stat = 0.0
         sigma2_syst = 0.0 
-        y_avg = np.median(y1P1["y"])
+        y_avg = np.mean(y1P1["y"])
         for i in range(n_models):
-            mean_i = np.median(y1_list[i])
+            mean_i = np.mean(y1_list[i])
             var_i = with_CDF.variance_from_CDF(y=y1_list[i], P=P1_list[i])
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
-        IPR = np.sum(w1_keys_normalized**4)/(np.sum(w1_keys_normalized**2)**2) # Inverse Participation Ratio
+        IPR = np.sum(w1_keys_normalized**2)/(np.sum(w1_keys_normalized)**2) # Inverse Participation Ratio
         return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat, "IPR": IPR}
     #---
     @staticmethod

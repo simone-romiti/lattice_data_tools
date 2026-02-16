@@ -186,8 +186,8 @@ def binning(Cg: np.ndarray, bin_size: int):
         the average of the output is identical to the one of the input 
         only if the bin size is a divisor of Ng
         """
-        N_bins = Ng//bin_size + (1 - int(Ng%bin_size == 0))
-        i_next = lambda i: min(Ng, bin_size*(i+1))
+        N_bins = Ng//bin_size # + (1 - int(Ng%bin_size == 0))
+        i_next = lambda i: bin_size*(i+1) # min(Ng, bin_size*(i+1))
         return np.array([np.mean(Cg[(bin_size*i):i_next(i)]) for i in range(N_bins)]) # uncorrelated values
 #-------
 
