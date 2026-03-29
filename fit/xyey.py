@@ -44,5 +44,57 @@ def fit_xyey(
         guess=guess, 
         method=method,
         Cov_inv=C_inv_full)
+    res["ansatz"] = ansatz
     return res
 #---
+
+
+def polynomial_fit_xyey(
+    N_deg: int,
+    x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
+    Cov_y_inv = None
+    ):
+    """ 
+    Exact formula for the fit of a polynomial of degree N_deg, with N_deg+1 parameters:
+    
+    f(x) = \\sum_{k=0}^{N_deg} \\alpha_k x^k
+    
+    The formula can be obtained after some algebra, by minimizing the chi^2 = (y - ansatz(x))^T C^{-1} (y - ansatz(x)).
+    A reference is eq. 13 of https://people.duke.edu/~hpgavin/SystemID/CourseNotes/linear-least-squares.pdf
+
+    N_deg: degree of the polynomial (--> number of parameters = N_deg+1)
+    x: 1d array of x values
+    y: 1d array of y values
+    ey: 1d array of errors on the y values
+    Cov_y_inv: if != None is an estimate of the inverse of the covariance matrix of the y points
+    """
+    assert(len(x.shape) == 1)
+    assert(len(y.shape) == 1)
+    assert(len(ey.shape) == 1)
+    assert(x.shape == y.shape)
+    assert(x.shape == ey.shape)
+    N_pts = x.shape[0] # number of points
+    N_par = (N_deg+1) # number of parameters of the fit, i.e. the number of coefficients of the polynomial
+    #---
+    C_inv = np.diag(1.0/ey**2) if Cov_y_inv is None else Cov_y_inv
+    # Vandermonde matrix, with increasing powers of x, i.e. B[i,j] = x[i]**j, with j=0,...,N_deg
+    B = np.vander(x, N=N_deg+1, increasing=True)
+    Left = (B.T) @ C_inv @ B 
+    Right = (B.T) @ C_inv @ y
+    alpha = np.linalg.inv(Left) @ Right # best fit parameters
+    #---
+    y_fit = B @ alpha # best fit values of y
+    eps = y - y_fit # residuals
+    ch2 = eps.T @ C_inv @ eps  # chi^2 of the fit
+    n_dof = N_pts - N_par # number of degrees of freedom
+    ch2_dof = ch2/n_dof  # chi^2 per degree of freedom
+    res = {
+        'ansatz': lambda x, p: np.poly1d(p[::-1])(x), # NOTE: np.poly1d takes parameters in descending order of powers
+        "N_deg": N_deg,
+        'N_par': N_par, 
+        'N_pts': N_pts,
+        'par': alpha, 
+        'ch2': ch2, 
+        'N_dof': n_dof, 
+        'ch2_dof': ch2_dof}
+    return res
