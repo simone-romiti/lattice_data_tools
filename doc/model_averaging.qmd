@@ -1,0 +1,188 @@
+---
+title: "Model Averaging"
+---
+
+Model averaging combines results from multiple fits (e.g. different
+fit ranges, different ansätze) into a single estimate with separately
+quantified statistical and systematic uncertainties.
+
+**Source file**: `model_averaging/IC.py`
+
+---
+
+## Information criteria
+
+### `get_IC`
+
+```python
+from lattice_data_tools.model_averaging.IC import get_IC
+
+A = get_IC(ch2, n_par, n_data, IC="AIC", Nmax=None)
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-get_IC`
+Main reference: [arXiv:2208.14983](https://arxiv.org/pdf/2208.14983), eqs. (62),(64),(65)
+:::
+
+Compute one of the supported information criteria for an array of models.
+All inputs are 1-D arrays of length `n_models`.
+
+| Criterion | Formula |
+|---|---|
+| `"AIC"` | $\chi^2 + 2 n_\text{par} - 2 n_\text{data}$ |
+| `"AICc"` | $\chi^2 + 2 n_\text{par}(1 + n_\text{par}) / (n_\text{data} - n_\text{par} - 1)$ |
+| `"BIC"` | $\chi^2 + n_\text{par} \ln n_\text{data}$ |
+| `"AIC_Ncut"` | $\chi^2 + 2 n_\text{par} + 2(N_\text{max} - n_\text{data})$ |
+| `"AIC_BMW"` | $\chi^2 + 2 n_\text{par} + (N_\text{max} - n_\text{data})$ |
+
+### `get_weights`
+
+```python
+from lattice_data_tools.model_averaging.IC import get_weights
+
+w = get_weights(ch2, n_par, n_data, IC="AIC")
+# w[i] = exp(-A[i] / 2)
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-get_weights`
+Reference: [arXiv:2411.08852](https://arxiv.org/pdf/2411.08852), eq. 17
+:::
+
+Returns the (unnormalised) model weights.  These weights are passed
+to the CDF-based averaging routines below.
+
+---
+
+## CDF-based error decomposition
+
+The `with_CDF` class builds the aggregate Cumulative Distribution Function
+(CDF) from the individual model distributions and extracts the statistical
+and systematic contributions to the total uncertainty.
+
+### `with_CDF.get_P`
+
+```python
+from lattice_data_tools.model_averaging.IC import with_CDF
+
+res = with_CDF.get_P(y=[arr_model1, arr_model2, ...], w=w)
+# res["y"] — sorted values
+# res["P"] — CDF values
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-with_CDF-get_P`
+:::
+
+Builds the aggregate CDF by merging value arrays from all models,
+weighting each model's contribution by `w[i]`.  Models can have
+differently-sized value arrays.
+
+### `with_CDF.get_quantiles`
+
+```python
+q = with_CDF.get_quantiles(y=res["y"], P=res["P"], quantiles=[16, 50, 84])
+# q["16%"], q["50%"], q["84%"]
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-with_CDF-get_quantiles`
+:::
+
+Returns the requested percentiles via linear interpolation on the CDF.
+The 16%, 50%, 84% quantiles correspond to $-1\sigma$, median, $+1\sigma$
+for a Gaussian.
+
+### `with_CDF.get_contributions`
+
+```python
+contrib = with_CDF.get_contributions(
+    y1, y2, P1, P2, lam1=1.0, lam2=2.0
+)
+# contrib["mean"]  — central value (50% quantile of P1)
+# contrib["stat"]  — variance due to statistical fluctuations
+# contrib["syst"]  — variance due to model systematics
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-with_CDF-get_contributions`
+:::
+
+Uses two AICs with scaled statistical uncertainties ($\lambda_1$ and
+$\lambda_2$) to disentangle:
+
+$$\sigma^2_\text{stat} = \left(\frac{\Delta_{84\%-16\%}^{(\lambda_2)} - \Delta_{84\%-16\%}^{(\lambda_1)}}{2}\right)^2$$
+
+$$\sigma^2_\text{syst} = \left(\sigma_\text{tot}^{(\lambda_1)} - \sigma_\text{stat}\right)^2$$
+
+---
+
+## Complete example
+
+```python
+import numpy as np
+from lattice_data_tools.model_averaging.IC import get_weights, with_CDF
+
+np.random.seed(42)
+n_models = 20
+
+# Simulate fits: each model returns a Gaussian sample of 200 values
+ch2    = np.random.uniform(18, 22, n_models)
+n_par  = np.full(n_models, 3)
+n_data = np.full(n_models, 20)
+means  = np.random.normal(5.0, 0.3, n_models)
+sigmas = np.full(n_models, 0.1)
+
+# Each model's "bootstrap distribution"
+y_per_model = [np.random.normal(m, s, 200) for m, s in zip(means, sigmas)]
+
+# AIC weights
+w = get_weights(ch2=ch2, n_par=n_par, n_data=n_data, IC="AIC")
+
+# Build aggregate CDF
+res1 = with_CDF.get_P(y=y_per_model, w=w)
+res2 = with_CDF.get_P(y=[with_CDF.get_rescaled_y(y, res1["P"], lam=2.0)
+                          for y in y_per_model], w=w)
+
+q = with_CDF.get_quantiles(y=res1["y"], P=res1["P"])
+contrib = with_CDF.get_contributions(
+    y1=res1["y"], P1=res1["P"],
+    y2=res2["y"], P2=res2["P"],
+    lam1=1.0, lam2=2.0
+)
+print(f"Result: {contrib['mean']:.4f}")
+print(f"  stat: ±{np.sqrt(contrib['stat']):.4f}")
+print(f"  syst: ±{np.sqrt(contrib['syst']):.4f}")
+```
+
+---
+
+## Gaussian approximation (simpler)
+
+For a simpler use case where each model provides only a mean and a Gaussian
+uncertainty (no full distribution), use the standalone functions:
+
+```python
+from lattice_data_tools.model_averaging.IC import (
+    get_weights, get_P, get_y16_y50_y84, get_mean_and_sigma2,
+    get_sigma2_contributions
+)
+
+w = get_weights(ch2=ch2, n_par=n_par, n_data=n_data, IC="AIC")
+res = get_sigma2_contributions(
+    w=w, m=means, sigma=sigmas,
+    ymin=4.0, ymax=6.0, eps=1e-4,
+    lambda1=1.0, lambda2=2.0
+)
+```
+
+::: {.column-margin}
+**Source**: `model_averaging/IC.py`
+**ID**: `IC-get_sigma2_contributions`
+:::

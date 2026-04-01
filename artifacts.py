@@ -3,6 +3,8 @@
 The idea is to exploit the fact that in the continuum limit,
 different lattice regularizations must agree,
 because they differ only by lattice artifacts
+
+.. ldt-id:: ART-module
 """
 
 import numpy as np
@@ -14,18 +16,19 @@ import matplotlib.pyplot as plt
 
 class lambda_method:
     """Minimization routines for minimizing the discretization effects with the "lambda method"
-    
-    If n observables y1(a) and y2(a) are the same in the continuum, 
-    this quantity converges to the same limit for any \lambda(a) such that 
+
+    If n observables y1(a) and y2(a) are the same in the continuum,
+    this quantity converges to the same limit for any \lambda(a) such that
     $\lim_{a\to 0} \lambda(a) = \lambda_0 < \infty$:
-    
+
     $$y_\lambda(a) = \sum_{i=1}^{n} \lambda_i(a) y_i(a) \, , \, \sum_{i} \lambda_i(a)=1$$
-    
-    This class defines routines for finding the optimal parameter \lambda(a) 
-    such that discretization effects on y_\lambda are minimal. 
+
+    This class defines routines for finding the optimal parameter \lambda(a)
+    such that discretization effects on y_\lambda are minimal.
     This is implemented by minimizing the average of the squares at each point.
     See the documentation of the for more details.
 
+    .. ldt-id:: ART-lambda_method
     """
     def __init__(self, a: np.ndarray):
         """Setting the lattice spacing values
@@ -36,8 +39,8 @@ class lambda_method:
         self.a = a
     #---
     def y1y2_lambda_fixed(
-        self, 
-        y1: np.ndarray, y2: np.ndarray, 
+        self,
+        y1: np.ndarray, y2: np.ndarray,
         method="BFGS") -> dict:
         """Finding the optimal lambda: the same for each value of the lattice spacing
 
@@ -48,6 +51,8 @@ class lambda_method:
 
         Returns:
             dict: dictionary of results
+
+        .. ldt-id:: ART-lambda_method-y1y2_lambda_fixed
         """
         assert ((self.a).shape==y1.shape) and (y1.shape==y2.shape)
         diff_a = np.diff(self.a)
@@ -73,13 +78,13 @@ class lambda_method:
             - we impose lambda=ansatz(a) for each lattice spacing "a"
             - we minimize numerically the slope of y(lambda)
 
-            NOTE: 
-            The ansatz should be chosen such that ansatz(a=0) is any finite value (e.g. 1/2 --> average of y1 and y2). 
-            In the continuum this gives the correct result. 
-            
-            Remark: 
+            NOTE:
+            The ansatz should be chosen such that ansatz(a=0) is any finite value (e.g. 1/2 --> average of y1 and y2).
+            In the continuum this gives the correct result.
+
+            Remark:
             In principle one can also minimize assuming the same lambda for each lattice spacing,
-            but this is too restrictive. What is sufficient is that lambda(a=0)=0. 
+            but this is too restrictive. What is sufficient is that lambda(a=0)=0.
             This means that we need to minimize at the level of the parameters of the lambda(a) ansatz.
 
         Args:
@@ -89,6 +94,8 @@ class lambda_method:
 
         Returns:
             dict: dictionary of results
+
+        .. ldt-id:: ART-lambda_method-y1y2_lambda_variable
         """
         a = self.a
         assert (a.shape==y1.shape) and (y1.shape==y2.shape)
@@ -117,15 +124,17 @@ class lambda_method:
             - we impose \mu=ansatz(a) for each lattice spacing "a"
             - we minimize numerically the slope of y(lambda)=y1+\mu(a)
 
-            NOTE: 
+            NOTE:
             The ansatz should be chosen such that \mu(a=0)=0
-        
+
         Args:
             y_input (np.ndarray): array of values of the observable (i.e. for each lattice spacing)
             method (str, optional): minimization routine. Defaults to "BFGS".
 
         Returns:
             dict: dictionary of results
+
+        .. ldt-id:: ART-lambda_method-y1y2_mu_variable
         """
         a = self.a
         assert (a.shape==y_input.shape)

@@ -5,14 +5,16 @@ from typing import Literal
 
 def get_m_eff_log(C: np.ndarray) -> np.ndarray:
     """Effective mass curve
-    
+
     log: log(C[t]/C[t+1])
-    
+
     Args:
         C (np.ndarray): Correlator C(t)
-    
+
     Returns:
         np.ndarray: M_eff(t) = log(C(t)/C(t+1))
+
+    .. ldt-id:: EFF-get_m_eff_log
     """
 
     T = C.shape[0] ## temporal extent
@@ -21,13 +23,15 @@ def get_m_eff_log(C: np.ndarray) -> np.ndarray:
 
 def get_A_eff_log(C: np.ndarray, m_eff: np.ndarray) -> np.ndarray:
     """Effective amplitude curve : A_eff(t) = C(t)/exp(-m_eff(t)*t)
-    
+
     Args:
         C (np.ndarray): Correlator C(t)
         m_eff (np.ndarray): effective mass curve m_eff(t)
-    
+
     Returns:
         np.ndarray: M_eff(t) = log(C(t)/C(t+1)), A_eff = C(t)*e^{m_eff*t}
+
+    .. ldt-id:: EFF-get_A_eff_log
     """
     T = C.shape[0] ## temporal extent
     ti = np.array([t for t in range(T-1)])
@@ -39,16 +43,17 @@ def get_A_eff_log(C: np.ndarray, m_eff: np.ndarray) -> np.ndarray:
 backward_signal_ansatz_dict = {+1: lambda x: np.cosh(x), -1: lambda x: np.sinh(x)}
 
 def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
-    """ 
-    
-    Effective mass including the backward signal 
+    """
+
+    Effective mass including the backward signal
     see eq. 6.57 of Gattringer & Lang
-    
-    avoid_instability: 
+
+    avoid_instability:
         flag relative to the case C(t)/C(t+1) <= 1 (statistical fluctuation)
-        if True AND t>=1, 
+        if True AND t>=1,
         M_eff(t) is replaced with the previous value M_eff(t-1)
-    
+
+    .. ldt-id:: EFF-get_m_eff_bkw
     """
     form = backward_signal_ansatz_dict[p]
     T_ext = C.shape[0] ## temporal extent
@@ -80,8 +85,10 @@ def get_m_eff_bkw(C: np.ndarray, T: int, p: int, avoid_instability=False):
 
 def get_A_eff_bkw(C: np.ndarray, m_eff: np.ndarray, T: int, p: int):
     """
-    Effective Amplitude including the backward signal 
-    see eq. 6.57 of Gattringer & Lang    
+    Effective Amplitude including the backward signal
+    see eq. 6.57 of Gattringer & Lang
+
+    .. ldt-id:: EFF-get_A_eff_bkw
     """
     T_ext = m_eff.shape[0]
     form = lambda t: np.exp(-m_eff*t) + np.exp(-m_eff*(T-t))
@@ -92,7 +99,7 @@ def get_A_eff_bkw(C: np.ndarray, m_eff: np.ndarray, T: int, p: int):
 
 def get_m_eff(C: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None, avoid_instability=False) -> np.ndarray:
     """Effective mass curve from the correlator
-    
+
     Args:
         C (np.ndarray): correlator C(t)
         strategy (str): computation strategy
@@ -102,6 +109,8 @@ def get_m_eff(C: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None, a
 
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
+
+    .. ldt-id:: EFF-get_m_eff
     """
     
     if strategy == "log":
@@ -119,11 +128,11 @@ def get_m_eff(C: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T=None, a
 
 def get_A_eff(C: np.ndarray, m_eff: np.ndarray, strategy: Literal["log", "cosh", "sinh"], T:int = None) -> np.ndarray:
     """Effective Amplitude curve from the correlator
-    
+
     Args:
         C (np.ndarray): correlator C(t)
         m_eff (np.ndarray): effective mass m_eff(t)
-        
+
         strategy (str): computation strategy
 
     Raises:
@@ -131,6 +140,8 @@ def get_A_eff(C: np.ndarray, m_eff: np.ndarray, strategy: Literal["log", "cosh",
 
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
+
+    .. ldt-id:: EFF-get_A_eff
     """
     
     if strategy == "log":
@@ -148,13 +159,15 @@ def get_A_eff(C: np.ndarray, m_eff: np.ndarray, strategy: Literal["log", "cosh",
 
 def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
     """Effective mass correction assuming $C(t) = A e^{-M t}$
-    
+
     Args:
         C0 (np.ndarray): Correlator $C(t)$
         dC (np.ndarray): Correction to the correlator $C_0(t)$
-    
+
     Returns:
         np.ndarray: `dM_eff(t) = - [R(t+1) - R(t)], where R(t) = dC(t)/C0(t)`
+
+    .. ldt-id:: EFF-get_dm_eff_log
     """
     
     R = dC/C0
@@ -162,19 +175,21 @@ def get_dm_eff_log(C0: np.ndarray, dC: np.ndarray) -> np.ndarray:
 #---
 
 def get_dm_eff_bkw(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, T: int, p: int):
-    """ 
-    
-    Effective mass correction including the backward signal 
+    """
+
+    Effective mass correction including the backward signal
     see eq. 11 of:
     https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.014502
-    
+
     C0 (np.ndarray): Correlator C(t)
     dC (np.ndarray): correction to the correlator C_0(t)
-    M0_eff (np.ndarray): 
+    M0_eff (np.ndarray):
         effective mass curve for the C_0 correlator.
-        NOTE: It is not computed automatically internally because 
-              the user may want to fix it for all "t". 
+        NOTE: It is not computed automatically internally because
+              the user may want to fix it for all "t".
               In this case, pass M0_eff as a constant array
+
+    .. ldt-id:: EFF-get_dm_eff_bkw
     """
 
     if T==None:
@@ -208,6 +223,8 @@ def get_dm_eff(C0: np.ndarray, dC: np.ndarray, M0_eff: np.ndarray, strategy: Lit
 
     Returns:
         np.ndarray: array of effective mass values M_eff(t)
+
+    .. ldt-id:: EFF-get_dm_eff
     """
     
     if strategy == "log":
@@ -229,11 +246,13 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> np.float128:
     Args:
         y_eff (np.ndarray): array of values for y_eff(t) ONLY in the plateau
         dy_eff (np.ndarray): uncertainty on y_eff(t) in that plateau interval
-        
+
         NOTE: tmin and tmax are not passed because it is assumed assumed to have slices the arrays in the plateau interval
 
     Returns:
         float: best fit value of y_eff
+
+    .. ldt-id:: EFF-fit_eff_curve
     """
     
     T = y_eff.shape[0]
@@ -245,7 +264,10 @@ def fit_eff_curve(y_eff: np.ndarray, dy_eff: np.ndarray) -> np.float128:
 
 
 def fit_eff_mass(m_eff: np.ndarray, dm_eff: np.ndarray) -> np.float128:
-    """ alias for the fit to a generic effective curve """
+    """ alias for the fit to a generic effective curve
+
+    .. ldt-id:: EFF-fit_eff_mass
+    """
     
     return fit_eff_curve(y_eff=m_eff, dy_eff=dm_eff)
 #---

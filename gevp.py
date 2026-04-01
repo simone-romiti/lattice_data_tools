@@ -5,7 +5,10 @@ import scipy
 import matplotlib.pyplot as plt
 
 def gevp(C: np.ndarray, t0 = 0):
-    """ Returns eigenvalues and eigenvectors of the GEVP (Generalized EigenValue Problem) """
+    """ Returns eigenvalues and eigenvectors of the GEVP (Generalized EigenValue Problem)
+
+    .. ldt-id:: GEVP-gevp
+    """
     assert C.shape[0] == C.shape[1]
     N, T_ext = C.shape[0], C.shape[2]
     Lam = np.array(np.zeros(shape=(N,T_ext))) # \lambda_i(t)=e^{-E_i * t}

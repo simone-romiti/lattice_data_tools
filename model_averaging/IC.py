@@ -14,6 +14,7 @@ Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
     Used in: https://arxiv.org/pdf/2411.08852, eq. 17
     ACHTUNG: Typo in https://arxiv.org/pdf/2002.12347, eq. 161: factor 2 in front of n_data is missing
 
+.. ldt-id:: IC-module
 """
 
 import numpy as np

@@ -1,0 +1,185 @@
+---
+title: "Effective Curves"
+---
+
+Effective mass and amplitude curves are standard diagnostics in lattice QCD:
+they reveal the approach to the asymptotic single-state behaviour and define
+the plateau region used to extract ground-state quantities.
+
+**Source file**: `effective_curves.py`
+
+---
+
+## Effective mass
+
+The effective mass $M_\text{eff}(t)$ is extracted from the ratio of the
+correlator at adjacent time slices.  Three strategies are available:
+
+| Strategy | Formula | Use case |
+|---|---|---|
+| `"log"` | $M_\text{eff}(t) = \ln[C(t)/C(t+1)]$ | open boundary conditions |
+| `"cosh"` | solve $\cosh[M_\text{eff}(T/2 - t)] / \cosh[M_\text{eff}(T/2 - t - 1)] = C(t)/C(t+1)$ | periodic b.c., positive parity |
+| `"sinh"` | same but with $\sinh$ | periodic b.c., negative parity |
+
+### `get_m_eff`
+
+```python
+from lattice_data_tools.effective_curves import get_m_eff
+
+m_eff = get_m_eff(C, strategy="log")             # open b.c.
+m_eff = get_m_eff(C, strategy="cosh", T=48)      # periodic b.c.
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_m_eff`
+:::
+
+Raises `ValueError` for an unrecognised strategy.
+
+### `get_m_eff_log`
+
+```python
+from lattice_data_tools.effective_curves import get_m_eff_log
+
+m_eff = get_m_eff_log(C)
+# M_eff(t) = log(C(t) / C(t+1))
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_m_eff_log`
+:::
+
+Returns an array of length $T-1$.  Values at time slices where
+$C(t)/C(t+1) \leq 0$ are set to zero.
+
+### `get_m_eff_bkw`
+
+```python
+from lattice_data_tools.effective_curves import get_m_eff_bkw
+
+m_eff = get_m_eff_bkw(C, T=48, p=+1)  # cosh ansatz
+m_eff = get_m_eff_bkw(C, T=48, p=-1)  # sinh ansatz
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_m_eff_bkw`
+:::
+
+Includes the backward-propagating signal.  See eq. 6.57 of
+*Gattringer & Lang*.  The optional `avoid_instability=True` flag replaces
+unphysical values with the previous time step's result.
+
+---
+
+## Effective amplitude
+
+Analogous functions for the amplitude $A_\text{eff}(t)$:
+
+### `get_A_eff`
+
+```python
+from lattice_data_tools.effective_curves import get_A_eff
+
+A_eff = get_A_eff(C, m_eff, strategy="log")
+A_eff = get_A_eff(C, m_eff, strategy="cosh", T=48)
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_A_eff`
+:::
+
+### `get_A_eff_log`
+
+```python
+A_eff = get_A_eff_log(C, m_eff)
+# A_eff(t) = C(t) * exp(+m_eff(t) * t)
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_A_eff_log`
+:::
+
+---
+
+## Mass correction curves
+
+For studying corrections $\delta C(t)$ to a leading correlator $C_0(t)$:
+
+### `get_dm_eff`
+
+```python
+from lattice_data_tools.effective_curves import get_dm_eff
+
+dm_eff = get_dm_eff(C0, dC, M0_eff, strategy="log")
+dm_eff = get_dm_eff(C0, dC, M0_eff, strategy="tanh", T=48)
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-get_dm_eff`
+:::
+
+Based on eq. 11 of [PhysRevD.106.014502](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.014502).
+
+---
+
+## Fitting the plateau
+
+### `fit_eff_mass`
+
+```python
+from lattice_data_tools.effective_curves import fit_eff_mass
+
+m0 = fit_eff_mass(m_eff[tmin:tmax], dm_eff[tmin:tmax])
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-fit_eff_mass`
+:::
+
+Fits the effective mass (or any effective curve) in a plateau region
+$[t_\text{min}, t_\text{max}]$ to a constant, using `scipy.optimize.curve_fit`.
+The slice `[tmin:tmax]` must be applied before calling this function.
+
+### `fit_eff_curve`
+
+```python
+from lattice_data_tools.effective_curves import fit_eff_curve
+
+val = fit_eff_curve(y_eff[tmin:tmax], dy_eff[tmin:tmax])
+```
+
+::: {.column-margin}
+**Source**: `effective_curves.py`
+**ID**: `EFF-fit_eff_curve`
+:::
+
+General-purpose plateau fitter; `fit_eff_mass` is an alias.
+
+---
+
+## Complete example
+
+```python
+import numpy as np
+from lattice_data_tools.effective_curves import get_m_eff, fit_eff_mass
+
+T  = 48
+t  = np.arange(T)
+m  = 0.25
+C  = np.cosh(m * (t - T/2))          # perfect cosh correlator
+C += np.random.normal(0, 1e-4, T)    # small noise
+
+m_eff  = get_m_eff(C, strategy="cosh", T=T)
+dm_eff = 1e-4 * np.ones_like(m_eff)  # placeholder errors
+
+tmin, tmax = 10, 20
+m0 = fit_eff_mass(m_eff[tmin:tmax], dm_eff[tmin:tmax])
+print(f"m_0 = {m0:.6f}  (exact: {m:.6f})")
+```

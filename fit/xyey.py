@@ -1,4 +1,7 @@
-"""Fit of a 1d function of 1 variable """
+"""Fit of a 1d function of 1 variable
+
+.. ldt-id:: FIT-xyey-module
+"""
 
 
 import numpy as np
@@ -22,6 +25,8 @@ def fit_xyey(
         maxiter (int, optional): _description_. Defaults to 10000.
         method (str, optional): _description_. Defaults to "BFGS".
         Cov_y_inv: if != None is an estimate of the inverse of the covariance matrix of the y points (e.g. from the bootstrap samples)
+
+    .. ldt-id:: FIT-fit_xyey
     """
     def ansatz_casted(x, p):
         return np.array([ansatz(x[0], p)])
@@ -54,11 +59,11 @@ def polynomial_fit_xyey(
     x: np.ndarray, y: np.ndarray, ey: np.ndarray, 
     Cov_y_inv = None
     ):
-    """ 
+    """
     Exact formula for the fit of a polynomial of degree N_deg, with N_deg+1 parameters:
-    
+
     f(x) = \\sum_{k=0}^{N_deg} \\alpha_k x^k
-    
+
     The formula can be obtained after some algebra, by minimizing the chi^2 = (y - ansatz(x))^T C^{-1} (y - ansatz(x)).
     A reference is eq. 13 of https://people.duke.edu/~hpgavin/SystemID/CourseNotes/linear-least-squares.pdf
 
@@ -67,6 +72,8 @@ def polynomial_fit_xyey(
     y: 1d array of y values
     ey: 1d array of errors on the y values
     Cov_y_inv: if != None is an estimate of the inverse of the covariance matrix of the y points
+
+    .. ldt-id:: FIT-polynomial_fit_xyey
     """
     assert(len(x.shape) == 1)
     assert(len(y.shape) == 1)
