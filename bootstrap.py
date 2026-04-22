@@ -36,7 +36,10 @@ class BootstrapSamples(np.ndarray):
 
     @staticmethod
     def from_sample(x: np.ndarray, mean: np.ndarray):
-        """ keeping the information about the unbiased mean """
+        """ keeping the information about the unbiased mean
+
+        .. ldt-id:: BOOT-BootstrapSamples-from_sample
+        """
         mean_arr = np.atleast_1d(mean)
         if mean_arr.shape == (1,):
             assert( len(x.shape[1:]) == 0)
@@ -49,7 +52,9 @@ class BootstrapSamples(np.ndarray):
     def zeros(N_bts: int, shape: tuple = ()):
         """
         Like numpy.zeros, but with an implicit leading dimension of N_bts+1:
-        N_bts samples + the mean on the 0th axis 
+        N_bts samples + the mean on the 0th axis
+
+        .. ldt-id:: BOOT-BootstrapSamples-zeros
         """
         # Ensure shape is a tuple
         if not isinstance(shape, tuple):
@@ -59,10 +64,12 @@ class BootstrapSamples(np.ndarray):
 
     @staticmethod
     def bts_list_from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool = False):
-        """ 
-        loop over the N_bts+1 values: N_bts + mean. 
+        """
+        loop over the N_bts+1 values: N_bts + mean.
         Advantage: one does not need to manually remember to do a loop over N_bts+1
         This function is needed for those type of objects that are not necessarily numpy arrays, e.g. dict.
+
+        .. ldt-id:: BOOT-BootstrapSamples-bts_list_from_lambda
         """
         if parallel:
             res = Parallel(n_jobs=-1)(delayed(fun)(i) for i in  range(N_bts+1))
@@ -73,7 +80,10 @@ class BootstrapSamples(np.ndarray):
 
     @staticmethod
     def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool = False):
-        """ NOTE: only for numeric numpy array objects """
+        """ NOTE: only for numeric numpy array objects
+
+        .. ldt-id:: BOOT-BootstrapSamples-from_lambda
+        """
         return BootstrapSamples(BootstrapSamples.bts_list_from_lambda(N_bts=N_bts, fun=fun, parallel=parallel))
 
     @staticmethod
@@ -89,8 +99,10 @@ class BootstrapSamples(np.ndarray):
 
     def __array_function__(self, func, types, args, kwargs):
         """
-        Block np.mean, np.std, np.average etc. 
-        The user should call the methods of this class explicitly, to avoid mistakes 
+        Block np.mean, np.std, np.average etc.
+        The user should call the methods of this class explicitly, to avoid mistakes
+
+        .. ldt-id:: BOOT-BootstrapSamples-__array_function__
         """
         if func in {np.mean, np.std, np.average}:
             raise TypeError(
@@ -103,29 +115,42 @@ class BootstrapSamples(np.ndarray):
         return self.view(np.ndarray) # casting back to mother class
 
     def mean(self):
-        """ bootstrap mean (biased) """
+        """ bootstrap mean (biased)
+
+        .. ldt-id:: BOOT-BootstrapSamples-mean
+        """
         return np.ndarray.mean(self[1:].view(np.ndarray), axis=0)
 
     def unbiased_mean(self):
-        """ mean of the original random sample """
+        """ mean of the original random sample
+
+        .. ldt-id:: BOOT-BootstrapSamples-unbiased_mean
+        """
         return self[0]
 
     def bias(self):
-        """ 
+        """
         The bootstrap mean and the true mean differ by a bias.
         This function can be used a posteriori to check if the bias is comparable with the statistical precision coming from the estimate of the error.
+
+        .. ldt-id:: BOOT-BootstrapSamples-bias
         """
         return self.unbiased_mean() - self.mean()
 
     def error(self):
-        """ 
-        Estimator of the standard error on the mean, computed only on the bootstrap samples, 
+        """
+        Estimator of the standard error on the mean, computed only on the bootstrap samples,
         i.e. for the rows 1,...,N_bts (the 0-th one is the mean over the original dataset)
+
+        .. ldt-id:: BOOT-BootstrapSamples-error
         """
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
     def covariance_matrix(self):
-        """ Bootstrap samples of covariance matrix estimate. """
+        """ Bootstrap samples of covariance matrix estimate.
+
+        .. ldt-id:: BOOT-BootstrapSamples-covariance_matrix
+        """
         assert(len(self.inner_shape()) == 1) # inner shape must be (N_var,)[number of variables]
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
@@ -133,7 +158,10 @@ class BootstrapSamples(np.ndarray):
         return res
 
     def correlation_matrix(self):
-        """ Bootstrap samples of correlation matrix estimate. """
+        """ Bootstrap samples of correlation matrix estimate.
+
+        .. ldt-id:: BOOT-BootstrapSamples-correlation_matrix
+        """
         assert(len(self.inner_shape()) == 1) # inner shape must be (N_var,)[number of variables]
         mu = self.unbiased_mean()
         dx = BootstrapSamples(self-mu[np.newaxis,:])
@@ -157,20 +185,76 @@ class BootstrapSamples(np.ndarray):
         return C
     
 
+class ParametricBootstraps:
+    @staticmethod
+    def Gaussian(mean: float, error: float, N_bts: int, seed: int):
+        """Generate parametric bootstrap samples from a Gaussian distribution
+        
+        Args:
+        mean (float): Mean of the Gaussian distribution
+        std (float): Standard deviation of the Gaussian distribution
+        N_bts (int): Number of bootstrap samples to generate
+        seed (int): Random seed for reproducibility
+        
+        Returns:
+        np.ndarray: Bootstrap samples
+        """
+        np.random.seed(seed=seed)
+        res = BootstrapSamples.from_sample(
+            x=np.random.normal(loc=mean, scale=error, size=N_bts),
+            mean=np.array(mean)
+        )
+        return res
+    #---
+    @staticmethod
+    def from_x_ex_rho(x: np.ndarray, dx: np.ndarray, rho: np.ndarray, N_bts: int, seed: int):
+        """
+        Bootstrap samples for the variables x_i,
+        from their central values and their correlation matrix rho.
+        """
+        # checking that the input arrays have the right sizes
+        assert(len(x.shape)==1)
+        assert(x.shape == dx.shape)
+        assert(x.shape[0]==rho.shape[0])
+        assert(rho.shape[0]==rho.shape[1])
+        N = x.shape[0] # number of variables
+        Cov = np.zeros(shape=(N,N)) # covariance matrix --> filling using rho_ij and errors
+        for i in range(N):
+            for j in range(N):
+                Cov[i,j] = rho[i,j]*dx[i]*dx[j] # C_ij := rho_ij * sqrt(var(X_i)*var(X_j)
+        #-------
+        # x = M y, where "y" are the uncorrelated variables (diagonal correlation matrix)
+        ey2, M = np.linalg.eigh(Cov) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
+        assert(np.all(ey2 >= 0)) #  check if Cov_ij is semi-positive definite
+        ey = np.sqrt(ey2) # errors as square roots of variances
+        y_mean = (M.T) @ x # Cov=Cov^T --> M^{-1}=M^{T}
+        y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+        import matplotlib.pyplot as plt
+        x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+        return x_bts
+#-------        
+
+    
 def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
-    """Generate paramteric bootstrap samples from a Gaussian distribution
+    """
+    Generate parametric bootstrap samples from a Gaussian distribution
     
     Args:
         mean (float): Mean of the Gaussian distribution
         std (float): Standard deviation of the Gaussian distribution
         N_bts (int): Number of bootstrap samples to generate
         seed (int): Random seed for reproducibility
-    
+
     Returns:
         np.ndarray: Bootstrap samples
+
+    .. ldt-id:: BOOT-parametric_gaussian_bts
     """
     np.random.seed(seed=seed)
-    res = BootstrapSamples.from_sample(x=np.random.normal(loc=mean, scale=error, size=N_bts), mean=mean)
+    res = BootstrapSamples.from_sample(
+        x=np.random.normal(loc=mean, scale=error, size=N_bts),
+        mean=np.array(mean)
+    )
     return res
 #---
 
@@ -192,19 +276,22 @@ def binning(Cg: np.ndarray, bin_size: int):
 #-------
 
 def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None):
-    """ 
+    """
     Automatic binning of a Monte Carlo (MC) chain according to the autocorrelation time.
     Until it decreases below 0.5 (within its uncertainty), we bin with increasing bin sizes:
     1 (original MC chain), tau, 2*tau, etc.
-    
+
     The function returns the binned correlator with the optimal bin size as above.
 
         Cg (np.ndarray): MC chain (e.g. 1-dimensional "correlator" at one spacetime point, computed for each configuration)
         output_files_pattern (str): lambda function that takes 1 argument that is the index of the binning iteration
+
+    .. ldt-id:: BOOT-auto_binning
     """
     i = 0
     bin_size = 1
     tauint_i, dtauint_i = 1, 0
+    Cg_binned = np.copy(Cg)
     while tauint_i-dtauint_i > 0.5:
         """ 
         Until \\tau_int is not below 0.5 within the uncertainty, 
@@ -222,22 +309,24 @@ def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None):
 
 def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
     """Bootstrap samples from array of data
-    
+
     generates Nb bootstrap samples from N configurations,
     It assumes x.shape[0] == N.
-    
+
     Steps:
     - Draw N samples with replacements among the x values
     - Compute the mean. This is a bootstrap sample.
     - Repeat Nb times. The resulting array has standard deviation of the mean (approximately) equal to the one of the original sample.
-    
+
     Args:
         x (np.ndarray): time series. Bootstrapping is done on 1st index
         N_bts (int): Number of bootstraps
         block_size (int): size of the block
-    
+
     Returns:
         np.ndarray: Bootstrap samples
+
+    .. ldt-id:: BOOT-uncorrelated_confs_to_bts
     """
     N = x.shape[0]
     np.random.seed(seed=seed)
@@ -261,6 +350,8 @@ def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, bin_size = N
 
     Returns:
         np.ndarray: Bootstrap samples
+
+    .. ldt-id:: BOOT-correlated_confs_to_bts
     """
     if bin_size is None:
         # Applying optimal binning such that tau_int < 0.5

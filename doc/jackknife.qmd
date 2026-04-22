@@ -1,0 +1,129 @@
+---
+title: "Jackknife Sampling"
+---
+
+The jackknife method provides unbiased estimates of the mean and standard
+error by systematically leaving out one block of configurations at a time.
+Unlike bootstrap, it produces an exact (unbiased) estimate of the mean by
+construction.
+
+**Source file**: `jackknife.py`
+
+---
+
+## The `JackknifeSamples` class
+
+`JackknifeSamples` is a subclass of `AbstractSamples` (and therefore of
+`np.ndarray`). Each row $i$ stores the mean computed from all
+configurations *except* block $i$.
+
+```python
+from lattice_data_tools.jackknife import JackknifeSamples
+```
+
+::: {.column-margin}
+**Source**: `jackknife.py`
+**ID**: `JKF-JackknifeSamples`
+:::
+
+As with `BootstrapSamples`, direct use of `np.mean`, `np.std`, and
+`np.average` is blocked.
+
+::: {.column-margin}
+**Source**: `jackknife.py`, method `__array_function__`
+**ID**: `JKF-JackknifeSamples-__array_function__`
+:::
+
+---
+
+## Statistical estimators
+
+### `.mean()`
+
+```python
+jkf.mean() -> np.ndarray
+```
+
+Jackknife mean — the arithmetic average of all jackknife samples along
+axis 0.  This is unbiased by construction.
+
+::: {.column-margin}
+**Source**: `jackknife.py`
+**ID**: `JKF-JackknifeSamples-mean`
+:::
+
+### `.error()`
+
+```python
+jkf.error() -> np.ndarray
+```
+
+Jackknife standard error:
+
+$$\delta\bar{x} = \sqrt{N_\text{jkf} - 1} \cdot \sigma_\text{jkf}$$
+
+where $\sigma_\text{jkf}$ is the standard deviation of the jackknife
+samples and $N_\text{jkf}$ is the number of samples.
+
+::: {.column-margin}
+**Source**: `jackknife.py`
+**ID**: `JKF-JackknifeSamples-error`
+:::
+
+---
+
+## Generating jackknife samples
+
+### `uncorrelated_confs_to_jkf`
+
+```python
+uncorrelated_confs_to_jkf(x, N_jkf) -> JackknifeSamples
+```
+
+Generate $N_\text{jkf}$ jackknife samples from uncorrelated data `x`.
+Configurations are divided into blocks of size $\lfloor N/N_\text{jkf} \rfloor$;
+each sample omits one block.
+
+::: {.column-margin}
+**Source**: `jackknife.py`
+**ID**: `JKF-uncorrelated_confs_to_jkf`
+:::
+
+```python
+import numpy as np
+from lattice_data_tools.jackknife import uncorrelated_confs_to_jkf
+
+data = np.random.normal(5.0, 1.0, 200)
+jkf  = uncorrelated_confs_to_jkf(data, N_jkf=20)
+print(jkf.mean(), "±", jkf.error())
+```
+
+### `correlated_confs_to_jkf`
+
+```python
+correlated_confs_to_jkf(Cg, N_jkf, output_file=None) -> JackknifeSamples
+```
+
+Same as above, but for correlated Monte Carlo chains.  The integrated
+autocorrelation time $\tau_\text{int}$ is estimated via `uwerr_primary`
+and configurations are thinned accordingly before jackknifing.
+
+::: {.column-margin}
+**Source**: `jackknife.py`
+**ID**: `JKF-correlated_confs_to_jkf`
+:::
+
+---
+
+## Bootstrap vs. Jackknife
+
+| Property | Bootstrap | Jackknife |
+|---|---|---|
+| Mean estimator | biased (`.mean()`) + unbiased (`.unbiased_mean()`) | unbiased (`.mean()`) |
+| Error estimator | std dev of replicates | $\sqrt{N-1}\,\sigma_\text{jkf}$ |
+| Autocorrelation handling | auto-binning via $\tau_\text{int}$ | thinning via $\tau_\text{int}$ |
+| Non-linear propagation | yes | yes |
+| Computational cost | $O(N_\text{bts})$ | $O(N_\text{jkf})$ |
+
+Both classes share the `AbstractSamples` interface, so code that calls
+`.mean()` and `.error()` works identically for both.

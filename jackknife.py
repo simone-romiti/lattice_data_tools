@@ -12,8 +12,10 @@ class JackknifeSamples(np.ndarray):
 
     def __array_function__(self, func, types, args, kwargs):
         """
-        Block np.mean, np.std, np.average etc. 
-        The user should call the methods of this class explicitly, to avoid mistakes 
+        Block np.mean, np.std, np.average etc.
+        The user should call the methods of this class explicitly, to avoid mistakes
+
+        .. ldt-id:: JKF-JackknifeSamples-__array_function__
         """
         if func in {np.mean, np.std, np.average}:
             raise TypeError(
@@ -23,7 +25,10 @@ class JackknifeSamples(np.ndarray):
         return super().__array_function__(func, types, args, kwargs)
 
     def mean(self, *args, **kwargs):
-        """ jackknife mean (unbiased by construction) """
+        """ jackknife mean (unbiased by construction)
+
+        .. ldt-id:: JKF-JackknifeSamples-mean
+        """
         return np.ndarray.mean(self.view(np.ndarray), *args, **kwargs)
 
     def error(self):
@@ -50,6 +55,8 @@ def correlated_confs_to_jkf(Cg: np.ndarray, N_jkf: int, output_file=None) -> Jac
 
     Returns:
         np.ndarray: Jackknife samples
+
+    .. ldt-id:: JKF-correlated_confs_to_jkf
     """
     Ng = Cg.shape[0] ## total number of configurations
     tauint = int(uwerr.uwerr_primary(Cg, output_file=output_file)["tauint"]) ## integrated autocorrelation time

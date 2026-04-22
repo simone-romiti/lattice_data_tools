@@ -1,0 +1,113 @@
+---
+title: "Nested Sampling Analysis"
+---
+
+Nested sampling is a Bayesian algorithm that computes the partition
+function $Z = \int \mathcal{L}(\theta)\,\pi(\theta)\,d\theta$ and the
+density of states $\rho(S)$, enabling thermodynamic integration and
+model comparison.
+
+**Source directory**: `nested_sampling/`
+
+---
+
+## Likelihood weights
+
+The central objects are the **phase space weights** $w_i$ (volumes of
+nested shells) and the **likelihood values** $\mathcal{L}_i$.
+
+### `get_log_wL_unnormalized`
+
+```python
+from lattice_data_tools.nested_sampling.weights import get_log_wL_unnormalized
+
+log_wL = get_log_wL_unnormalized(log_w, log_L)
+# log_wL[i] = log(w_i * L_i)
+```
+
+::: {.column-margin}
+**Source**: `nested_sampling/weights.py`
+**ID**: `NS-get_log_wL_unnormalized`
+:::
+
+### `get_log_wL_normalized`
+
+```python
+from lattice_data_tools.nested_sampling.weights import get_log_wL_normalized
+
+log_wL_norm = get_log_wL_normalized(log_wL)
+```
+
+::: {.column-margin}
+**Source**: `nested_sampling/weights.py`
+**ID**: `NS-get_log_wL_normalized`
+:::
+
+Normalises by the partition function $Z = \sum_i w_i \mathcal{L}_i$,
+computed as `scipy.special.logsumexp(log_wL)`.  Working in log-space
+avoids underflow when individual $w_i \mathcal{L}_i$ values are
+numerically zero.
+
+---
+
+## Partition function curve
+
+### `get_log_Z_curve`
+
+```python
+from lattice_data_tools.nested_sampling.weights import get_log_Z_curve
+
+log_Z_curve = get_log_Z_curve(log_wL_normalized)
+```
+
+::: {.column-margin}
+**Source**: `nested_sampling/weights.py`
+**ID**: `NS-get_log_Z_curve`
+:::
+
+Computes the cumulative sum of $w_i \mathcal{L}_i$ (normalised),
+giving the CDF of the posterior distribution as a function of the
+iteration index.  Uses `np.logaddexp` for numerical stability.
+
+---
+
+## Density of states
+
+### `get_log_rho`
+
+```python
+from lattice_data_tools.nested_sampling.weights import get_log_rho
+
+log_rho = get_log_rho(log_X, log_S)
+```
+
+::: {.column-margin}
+**Source**: `nested_sampling/weights.py`
+**ID**: `NS-get_log_rho`
+:::
+
+Computes $\log \rho(S)$, where $\rho(S) = dX/dS$ is the density of
+states and $S$ plays the role of the action (energy in statistical
+mechanics).  The derivative is evaluated numerically via
+`np.gradient(log_X, log_S)`.
+
+---
+
+## Typical workflow
+
+```python
+import numpy as np
+from lattice_data_tools.nested_sampling.weights import (
+    get_log_wL_unnormalized,
+    get_log_wL_normalized,
+    get_log_Z_curve,
+)
+
+# log_w and log_L come from the nested sampling run output
+log_wL      = get_log_wL_unnormalized(log_w, log_L)
+log_wL_norm = get_log_wL_normalized(log_wL)
+log_Z_curve = get_log_Z_curve(log_wL_norm)
+
+# Z_curve[-1] ≈ 0 (= log(1)) when fully converged
+print("Residual log(Z) at last iteration:", log_Z_curve[-1])
+```
