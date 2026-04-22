@@ -9,18 +9,22 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - href: bootstrap.qmd
-        text: Bootstrap
-      - href: jackknife.qmd
-        text: Jackknife
-      - href: fitting.qmd
-        text: Fitting
-      - href: effective_curves.qmd
-        text: Effective Curves
-      - href: gevp.qmd
-        text: GEVP
-      - text: More
+      - text: Resampling
         menu:
+          - href: bootstrap.qmd
+            text: Bootstrap sampling
+          - href: jackknife.qmd
+            text: Jackknife sampling
+      - text: Correlators
+        menu:
+          - href: effective_curves.qmd
+            text: Effective Curves
+          - href: gevp.qmd
+            text: GEVP
+      - text: Analysis
+        menu:
+          - href: fitting.qmd
+            text: Fitting
           - href: model_averaging.qmd
             text: Model Averaging
           - href: nested_sampling.qmd
