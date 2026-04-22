@@ -7,10 +7,10 @@
 *.png
 *.json
 
-# temporary files
+# Emacs temporary/lock files
+\#*\#
+.\#*
 *~
-
-
 
 
 # documentation

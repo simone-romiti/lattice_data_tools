@@ -185,9 +185,60 @@ class BootstrapSamples(np.ndarray):
         return C
     
 
-def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
-    """Generate paramteric bootstrap samples from a Gaussian distribution
+class ParametricBootstraps:
+    @staticmethod
+    def Gaussian(mean: float, error: float, N_bts: int, seed: int):
+        """Generate parametric bootstrap samples from a Gaussian distribution
+        
+        Args:
+        mean (float): Mean of the Gaussian distribution
+        std (float): Standard deviation of the Gaussian distribution
+        N_bts (int): Number of bootstrap samples to generate
+        seed (int): Random seed for reproducibility
+        
+        Returns:
+        np.ndarray: Bootstrap samples
+        """
+        np.random.seed(seed=seed)
+        res = BootstrapSamples.from_sample(
+            x=np.random.normal(loc=mean, scale=error, size=N_bts),
+            mean=np.array(mean)
+        )
+        return res
+    #---
+    @staticmethod
+    def from_x_ex_rho(x: np.ndarray, dx: np.ndarray, rho: np.ndarray, N_bts: int, seed: int):
+        """
+        Bootstrap samples for the variables x_i,
+        from their central values and their correlation matrix rho.
+        """
+        # checking that the input arrays have the right sizes
+        assert(len(x.shape)==1)
+        assert(x.shape == dx.shape)
+        assert(x.shape[0]==rho.shape[0])
+        assert(rho.shape[0]==rho.shape[1])
+        N = x.shape[0] # number of variables
+        Cov = np.zeros(shape=(N,N)) # covariance matrix --> filling using rho_ij and errors
+        for i in range(N):
+            for j in range(N):
+                Cov[i,j] = rho[i,j]*dx[i]*dx[j] # C_ij := rho_ij * sqrt(var(X_i)*var(X_j)
+        #-------
+        # x = M y, where "y" are the uncorrelated variables (diagonal correlation matrix)
+        ey2, M = np.linalg.eigh(Cov) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
+        assert(np.all(ey2 >= 0)) #  check if Cov_ij is semi-positive definite
+        ey = np.sqrt(ey2) # errors as square roots of variances
+        y_mean = (M.T) @ x # Cov=Cov^T --> M^{-1}=M^{T}
+        y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+        import matplotlib.pyplot as plt
+        x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+        return x_bts
+#-------        
 
+    
+def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
+    """
+    Generate parametric bootstrap samples from a Gaussian distribution
+    
     Args:
         mean (float): Mean of the Gaussian distribution
         std (float): Standard deviation of the Gaussian distribution
@@ -200,7 +251,10 @@ def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345):
     .. ldt-id:: BOOT-parametric_gaussian_bts
     """
     np.random.seed(seed=seed)
-    res = BootstrapSamples.from_sample(x=np.random.normal(loc=mean, scale=error, size=N_bts), mean=mean)
+    res = BootstrapSamples.from_sample(
+        x=np.random.normal(loc=mean, scale=error, size=N_bts),
+        mean=np.array(mean)
+    )
     return res
 #---
 
@@ -237,6 +291,7 @@ def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None):
     i = 0
     bin_size = 1
     tauint_i, dtauint_i = 1, 0
+    Cg_binned = np.copy(Cg)
     while tauint_i-dtauint_i > 0.5:
         """ 
         Until \\tau_int is not below 0.5 within the uncertainty, 
