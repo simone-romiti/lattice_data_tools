@@ -1,0 +1,61 @@
+"""
+Implementation of the L-CNN as described in:
+https://arxiv.org/abs/2012.12901
+
+"""
+
+import torch
+
+def get_plaquettes(U: torch.Tensor):
+    """
+    Returns the array of plaquettes, assuming periodic boundary conditions on a L^d lattice.
+    
+    U: batch of gauge configurations U^{(b)}(x, mu) as Nc \\times Nc matrices, with x=(x_1,...x_d).
+       It is passed as a multi-dimensional array U[b, L1,L2,...,Ld, d, Nc, Nc],
+       where N_c is the number of colors.
+    """
+    assert(U.is_complex()) # check that the gauge configuration is complex-valued
+    d = U.shape[-2] # number of dimensions of the lattice
+    plaqs = [] # list of plaquettes
+    # loop over the positive-oriented plaquettes
+    for mu in range(d):
+        for nu in range(mu + 1, d):
+            U_mu = U[..., mu, :, :] # U_\mu(\cdot) : all links along the direction mu
+            U_nu = U[..., nu, :, :] # U_\nu(\cdot) : all links along the direction nu
+            # Spatial dim mu is dim mu+1 in the full tensor (batch at 0)
+            U_nu_fwd = torch.roll(U_nu, -1, dims=mu + 1)
+            U_mu_fwd = torch.roll(U_mu, -1, dims=nu + 1)
+            plaqs.append(U_mu @ U_nu_fwd @ U_mu_fwd.mH @ U_nu.mH)
+    return torch.stack(plaqs, dim=-3)             # (..., n_plaq, N,N)
+    
+
+
+class LConvLayer(torch.nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, n_dims: int):
+        super().__init__()
+        self.n_dims = n_dims
+        n_dir = 2 * D + 1
+        self.alpha = torch.nn.Parameter(
+            torch.randn(out_channels, in_channels, n_dir, dtype=torch.float64) * 0.1
+        )
+        def _plaquettes(self, U: torch.Tensor) -> torch.Tensor:
+            """
+            U : (B, L,...,L, D, N,N) → (B, L,...,L, n_plaq, N,N)
+            
+            P_{x,μν} = U_{x,μ} U_{x+eμ,ν} U†_{x+eν,μ} U†_{x,ν}
+            Transforms as P → g_x P g†_x.
+            """
+            D = self.D
+            plaqs = []
+            for mu in range(D):
+                for nu in range(mu + 1, D):
+                    U_mu = U[..., mu, :, :]
+                    U_nu = U[..., nu, :, :]
+                    # Spatial dim mu is dim mu+1 in the full tensor (batch at 0)
+                    U_nu_fwd = torch.roll(U_nu, -1, dims=mu + 1)
+                    U_mu_fwd = torch.roll(U_mu, -1, dims=nu + 1)
+                    plaqs.append(U_mu @ U_nu_fwd @ U_mu_fwd.mH @ U_nu.mH)
+        return torch.stack(plaqs, dim=-3)             # (..., n_plaq, N,N)
+
+
+
