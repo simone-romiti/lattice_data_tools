@@ -1,0 +1,125 @@
+---
+title: "Lattice Artifacts — the λ-method"
+---
+
+Different lattice regularizations (e.g. twisted-mass fermions and
+Osterwalder–Seiler fermions) must agree in the continuum limit but differ
+by discretization effects at finite lattice spacing $a$.  The **λ-method**
+exploits this redundancy to construct a linear combination whose leading
+$O(a^n)$ artifacts are minimised.
+
+**Source file**: `artifacts.py`
+
+::: {.column-margin}
+**Source**: `artifacts.py`, module docstring
+**ID**: `ART-module`
+:::
+
+---
+
+## The `lambda_method` class
+
+```python
+from lattice_data_tools.artifacts import lambda_method
+
+lm = lambda_method(a=np.array([0.05, 0.07, 0.10, 0.12]))
+```
+
+::: {.column-margin}
+**Source**: `artifacts.py`
+**ID**: `ART-lambda_method`
+:::
+
+The combined observable is:
+
+$$y_\lambda(a) = \sum_{i=1}^{n} \lambda_i(a)\, y_i(a) \;,\quad \sum_i \lambda_i(a) = 1$$
+
+The class minimises the average squared slope of $y_\lambda(a)$ with
+respect to $a$, reducing discretization effects.
+
+**Constructor argument**: `a` — 1-D array of lattice spacings.
+
+---
+
+## Methods
+
+### `y1y2_lambda_fixed`
+
+```python
+res = lm.y1y2_lambda_fixed(y1, y2, method="BFGS")
+# res["lambda"]  — optimal (constant) λ
+# res["y"]       — y_λ(a) = λ*y1 + (1-λ)*y2
+# res["residue"] — minimised average squared slope
+```
+
+::: {.column-margin}
+**Source**: `artifacts.py`
+**ID**: `ART-lambda_method-y1y2_lambda_fixed`
+:::
+
+Finds the single optimal $\lambda$ that is the same for all lattice
+spacings.  Minimises:
+
+$$\overline{(\partial_a y_\lambda)^2} = \text{avg}_a\left[\left(\frac{\Delta y_\lambda}{\Delta a}\right)^2\right]$$
+
+### `y1y2_lambda_variable`
+
+```python
+res = lm.y1y2_lambda_variable(y1, y2, ansatz=lambda a, p: p[0]+p[1]*a, guess=np.array([0.5, 0.0]))
+# res["par"]     — best-fit parameters of λ(a)
+# res["lambda"]  — λ(a) evaluated at each lattice spacing
+# res["y"]       — y_λ(a)
+```
+
+::: {.column-margin}
+**Source**: `artifacts.py`
+**ID**: `ART-lambda_method-y1y2_lambda_variable`
+:::
+
+Finds $\lambda(a)$ according to a user-supplied ansatz.  The ansatz must
+satisfy $\lim_{a\to 0}\lambda(a) < \infty$, ensuring the correct
+continuum limit.
+
+### `y1y2_mu_variable`
+
+```python
+res = lm.y1y2_mu_variable(y_input, ansatz=lambda a, p: p[0]*a**2, guess=np.array([0.0]))
+# res["mu"]  — additive correction μ(a)
+# res["y"]   — y_input + μ(a)
+```
+
+::: {.column-margin}
+**Source**: `artifacts.py`
+**ID**: `ART-lambda_method-y1y2_mu_variable`
+:::
+
+Finds an additive correction $\mu(a)$ (with $\mu(0) = 0$) that
+minimises the slope of $y + \mu(a)$.
+
+---
+
+## Example
+
+```python
+import numpy as np
+from lattice_data_tools.artifacts import lambda_method
+
+a   = np.array([0.04, 0.06, 0.08, 0.10])
+# Two regularizations, both converging to the same continuum value
+y1  = 1.0 + 0.5*a + 2.0*a**2
+y2  = 1.0 - 0.3*a + 1.5*a**2
+
+lm  = lambda_method(a=a)
+res = lm.y1y2_lambda_fixed(y1, y2)
+
+print(f"optimal λ  = {res['lambda']:.4f}")
+print(f"y_λ at a→0 ≈ {res['y'][0]:.4f}  (exact: 1.0)")
+```
+
+For a $\lambda$ with $a$-dependence:
+
+```python
+ansatz = lambda ai, p: p[0] + p[1]*ai
+res    = lm.y1y2_lambda_variable(y1, y2, ansatz=ansatz, guess=np.array([0.5, 0.0]))
+print("λ(a) =", res["lambda"])
+```

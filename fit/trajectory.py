@@ -1,16 +1,18 @@
 """Routines for fitting a function $f: \\mathbb{R}^n \\to \\mathbb{R}^m$
 
-This file contains functions for fitting multi-dimensional functions 
-of many variables. This is done using the maximum likelyhood principle 
+This file contains functions for fitting multi-dimensional functions
+of many variables. This is done using the maximum likelyhood principle
 and a "trajectory method":
-the function $\\vec{y} = \\vec{f}(\\vec{x})$ is thought as 
-a trajectory $\\vec{z}(t)$ in a n+m dimensional space: 
+the function $\\vec{y} = \\vec{f}(\\vec{x})$ is thought as
+a trajectory $\\vec{z}(t)$ in a n+m dimensional space:
 
 $$z_i = x_i \\, , \\, i=1,...,n$$
 $$z_i = y_i \\, , \\, i=n+1,...,m$$
 
-The fit minimizes the distance of this trajectory 
+The fit minimizes the distance of this trajectory
 from the theoretical expectation.
+
+.. ldt-id:: FIT-trajectory-module
 """
 
 import numpy as np
@@ -40,6 +42,8 @@ def fit_trajectory(
 
     Returns:
         dict: Dictionary with the information about the fit
+
+    .. ldt-id:: FIT-fit_trajectory
     """
     assert (x.shape[0] == y.shape[0]) ## same number of points
     N_pts = x.shape[0] # number of points

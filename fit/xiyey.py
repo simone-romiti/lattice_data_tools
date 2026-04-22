@@ -1,4 +1,7 @@
-"""Fit of a 1d function of n variables """
+"""Fit of a 1d function of n variables
+
+.. ldt-id:: FIT-xiyey-module
+"""
 
 
 import numpy as np
@@ -22,6 +25,8 @@ def fit_xiyey(
         maxiter (int, optional): _description_. Defaults to 10000.
         method (str, optional): _description_. Defaults to "BFGS".
         Cov_y_inv: estimate of inverse covariance matrix of y
+
+    .. ldt-id:: FIT-fit_xiyey
     """
     def ansatz_casted(x, p):
         return np.array([ansatz(x, p)])

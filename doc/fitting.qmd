@@ -1,0 +1,172 @@
+---
+title: "Function Fitting"
+---
+
+The fitting framework centres on the **trajectory method**: fitting a
+function $f:\mathbb{R}^n \to \mathbb{R}^m$ by minimising the distance in
+the combined $(n+m)$-dimensional data space, supporting errors on both the
+independent and dependent variables.
+
+**Source directory**: `fit/`
+
+---
+
+## The trajectory method
+
+The function $\vec{y} = \vec{f}(\vec{x})$ defines a trajectory
+$\vec{z}(t)$ in $(n+m)$-dimensional space:
+
+$$z_i = x_i \;,\; i=1,\ldots,n \qquad z_i = y_i \;,\; i=n+1,\ldots,m$$
+
+The fit minimises the $\chi^2$ distance from this trajectory.  When the
+covariance matrix is supplied (`Cov_inv`), the minimisation accounts for
+correlations among data points.
+
+**Source file**: `fit/trajectory.py`
+
+::: {.column-margin}
+**Source**: `fit/trajectory.py`, module docstring
+**ID**: `FIT-trajectory-module`
+:::
+
+---
+
+## `fit_trajectory` — general interface
+
+```python
+from lattice_data_tools.fit.trajectory import fit_trajectory
+
+res = fit_trajectory(
+    ansatz,         # f(x, p): x = 1-d array, p = parameters, returns 1-d array
+    x,              # shape (N_pts, n)
+    ex,             # shape (N_pts, n) — errors on x; set to zeros if none
+    y,              # shape (N_pts, m)
+    ey,             # shape (N_pts, m)
+    guess,          # initial parameter values
+    method="BFGS",  # scipy.optimize.minimize method
+    Cov_inv=None    # optional (N_pts*n + N_pts*m)^2 inverse covariance
+)
+```
+
+::: {.column-margin}
+**Source**: `fit/trajectory.py`
+**ID**: `FIT-fit_trajectory`
+:::
+
+The returned dictionary contains:
+
+| Key | Description |
+|---|---|
+| `"par"` | Best-fit parameters |
+| `"ch2"` | $\chi^2$ at best fit |
+| `"N_dof"` | Degrees of freedom ($N_\text{pts} - N_\text{par}$) |
+| `"ch2_dof"` | $\chi^2 / N_\text{dof}$ |
+| `"N_par"` | Number of parameters |
+| `"N_pts"` | Number of data points |
+
+---
+
+## Specialised wrappers
+
+### `fit_xyey` — 1D → 1D with y-errors
+
+```python
+from lattice_data_tools.fit.xyey import fit_xyey
+```
+
+::: {.column-margin}
+**Source**: `fit/xyey.py`
+**ID**: `FIT-fit_xyey`
+:::
+
+Fits $y = f(x)$, $f:\mathbb{R}^1 \to \mathbb{R}^1$, with errors only on $y$.
+
+```python
+import numpy as np
+from lattice_data_tools.fit.xyey import fit_xyey
+
+x  = np.linspace(0, 1, 50)
+y  = np.tanh(3.0 * x) + np.random.normal(0, 0.01, 50)
+ey = np.full(50, 0.01)
+
+res = fit_xyey(
+    ansatz=lambda x, p: np.tanh(p[0] * x),
+    x=x, y=y, ey=ey,
+    guess=np.array([1.0])
+)
+print("ω =", res["par"][0], "  chi2/dof =", res["ch2_dof"])
+```
+
+Pass `Cov_y_inv` (an $N_\text{pts} \times N_\text{pts}$ matrix) to perform
+a correlated fit.
+
+### `polynomial_fit_xyey` — closed-form polynomial fit
+
+```python
+from lattice_data_tools.fit.xyey import polynomial_fit_xyey
+```
+
+::: {.column-margin}
+**Source**: `fit/xyey.py`
+**ID**: `FIT-polynomial_fit_xyey`
+:::
+
+Fits $f(x) = \sum_{k=0}^{N_\text{deg}} \alpha_k x^k$ using the exact
+closed-form solution (matrix inversion, not iterative minimisation):
+
+$$\vec{\alpha} = (B^T C^{-1} B)^{-1} B^T C^{-1} \vec{y}$$
+
+where $B_{ij} = x_i^j$ is the Vandermonde matrix.  Reference: eq. 13 of
+[linear-least-squares.pdf](https://people.duke.edu/~hpgavin/SystemID/CourseNotes/linear-least-squares.pdf).
+
+```python
+res = polynomial_fit_xyey(N_deg=2, x=x, y=y, ey=ey)
+# res["par"] = [α_0, α_1, α_2]
+```
+
+### `fit_xiyey` — nD → 1D with y-errors
+
+```python
+from lattice_data_tools.fit.xiyey import fit_xiyey
+```
+
+::: {.column-margin}
+**Source**: `fit/xiyey.py`
+**ID**: `FIT-fit_xiyey`
+:::
+
+Fits $y = f(\vec{x})$, $f:\mathbb{R}^n \to \mathbb{R}^1$, with errors only
+on $y$.  The ansatz takes a 1-D array `x` of length $n$ and returns a
+scalar.
+
+```python
+# Fit y = a*x0 + b*x1 over a 2D grid
+x  = np.array([[xi, xj] for xi in np.linspace(0,1,5) for xj in np.linspace(0,1,5)])
+y  = 2.0*x[:,0] + 3.0*x[:,1] + np.random.normal(0, 0.01, 25)
+ey = np.full(25, 0.01)
+
+res = fit_xiyey(
+    ansatz=lambda xv, p: p[0]*xv[0] + p[1]*xv[1],
+    x=x, y=y, ey=ey,
+    guess=np.array([1.0, 1.0])
+)
+```
+
+---
+
+## Performing fits on bootstrap samples
+
+The standard pattern for propagating fit parameters through bootstrap:
+
+```python
+from lattice_data_tools.bootstrap import BootstrapSamples
+from lattice_data_tools.fit.xyey import fit_xyey
+
+N_bts = 200
+
+def do_fit(i):
+    return fit_xyey(ansatz=ansatz, x=x, y=bts_y[i], ey=ey_mean, guess=guess)["par"]
+
+par_bts = BootstrapSamples.from_lambda(N_bts=N_bts, fun=do_fit)
+print("par =", par_bts.unbiased_mean(), "±", par_bts.error())
+```
