@@ -8,7 +8,7 @@ import typing
 from itertools import chain
 import torch
 
-#from lattice_data_tools.machine_learning import exponentiate_suN
+from lattice_data_tools.machine_learning import get_U_from_theta as exponentiate_suN
 
 
 def get_plaquettes(U: torch.Tensor):
