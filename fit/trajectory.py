@@ -6,8 +6,8 @@ and a "trajectory method":
 the function $\\vec{y} = \\vec{f}(\\vec{x})$ is thought as 
 a trajectory $\\vec{z}(t)$ in a n+m dimensional space: 
 
-$$z_i = x_i \, , \, i=1,...,n$$
-$$z_i = y_i \, , \, i=n+1,...,m$$
+$$z_i = x_i \\, , \\, i=1,...,n$$
+$$z_i = y_i \\, , \\, i=n+1,...,m$$
 
 The fit minimizes the distance of this trajectory 
 from the theoretical expectation.
@@ -73,7 +73,7 @@ def fit_trajectory(
         assert(Cov_inv.shape[0] == Nx+Ny)
         X_th = np.copy(x)
         Y_th = np.copy(y)
-        def ch2(p_all):
+        def ch2(p_all): 
             p_ansatz = p_all[0:N_par] # parameters of the fit only
             p_x = p_all[N_par:]
             X_th[ix_with_err] = p_x 
