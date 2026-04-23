@@ -8,7 +8,11 @@ import typing
 from itertools import chain
 import torch
 
-from lattice_data_tools.machine_learning import get_U_from_theta as exponentiate_suN
+import sys
+sys.path.append("../../")
+
+from lattice_data_tools.links.suN import get_Tr, get_ReTr, get_U_from_theta
+from lattice_data_tools.links.configuration import GaugeConfiguration
 
 
 def get_plaquettes(U: torch.Tensor):
@@ -103,7 +107,6 @@ def get_W_shifted(U: torch.tensor, U_PT: torch.tensor, W: torch.tensor):
     nK = U_PT.shape[-3] # makimum length of paraller transport along an axis
     K = (nK-1)//2 # nK = 2*K+1
     new_shape = tuple(W.shape[0:-2]) + (d,nK,) + tuple(W.shape[-2:]) # shape: (batch_size,L1,...,Ld,N_var,d,2*K+1,Nc,Nc) 
-    # W_shifted = W.unsqueeze(-3).unsqueeze(-3).expand(*new_shape) # W_\\mu(x+k*\\mu)
     W_shifted = torch.empty(new_shape, dtype=W.dtype, device=W.device)
     for k in range(-K, K+1):
         i_k = k+K
@@ -122,8 +125,8 @@ class LCNN(torch.nn.Module):
 
     def get_W(self, U: torch.tensor):
         """ List of locally transforming variables, as a tensor of shape (batch_size, n_variables, Nc,Nc) """
-        Plaq = get_plaquettes(U) # torch.flatten(get_plaquettes(U), start_dim=1, end_dim=-3) # all plaquettes. shape: (batch_size, n_plaq, Nc,Nc)
-        Poly = get_Polyakov_loops(U) # torch.flatten(get_Polyakov_loops(U), start_dim=1, end_dim=-3) # all Polyakov loops. shape: (batch_size, n_poly, Nc,Nc)
+        Plaq = get_plaquettes(U)
+        Poly = get_Polyakov_loops(U) 
         W = torch.cat((Plaq, Poly), dim=-3)
         return W
     #---
@@ -143,9 +146,6 @@ class LCNN(torch.nn.Module):
 
         """
         d = U.shape[-3] # number of dimensions
-        # batch_size = W.shape[0]
-        # N_in = W.shape[-3] # number of W objects
-        # lattice_shape = U.shape[1:-3] # shape of the lattice points grid
         W_conv = torch.zeros(*(U.shape[0:-3] +  (N_out,) + U.shape[-2:])).type(U.type())
         ParallelTransporters = get_ParallelTransporters(U=U, K=K)
         for k in range(-K, K+1):
@@ -168,6 +168,7 @@ class LCNN(torch.nn.Module):
         W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, W_shifted, U_PT.adjoint())
         return W_conv
     #---
+
     def L_Bilin(W: torch.tensor, Wprime: torch.tensor, alpha: torch.tensor):
         """
         Eq. 6 of https://arxiv.org/pdf/2012.12901
@@ -176,13 +177,16 @@ class LCNN(torch.nn.Module):
         """
         return torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
     #---
-    def L_act(self, U: torch.tensor, W: torch.tensor, act_func: typing.Callable):
+
+    def L_act(self, U: torch.tensor, W: torch.tensor, act_func: typing.Callable = lambda U, W: torch.tanh(get_ReTr(W=W))):
         """
         Eq. 7 of https://arxiv.org/pdf/2012.12901
 
+        NOTE: act_func() should be scalar-valued --> we use componentwise multiplication
         """
         return act_func(U,W) * W
     #---
+
     def L_exp(self, U: torch.tensor, W: torch.tensor, beta: torch.tensor):
         """
         Eqs. 8 and 9 of https://arxiv.org/pdf/2012.12901
@@ -193,18 +197,13 @@ class LCNN(torch.nn.Module):
         """
         # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
         W_ah = W - W.adjoint() # taking the anti-hemitian part
-        W_ah -= torch.einsum("...ii", W_ah) # subtracting the trace
+        W_ah -= get_Tr(W_ah) # subtracting the trace
         arg_exp = torch.einsum("mi,...iab->...mab", beta, W_ah)
         E = exponentiate_suN(1j*arg_exp) # eq. 9 of https://arxiv.org/pdf/2012.12901
         EU = E @ U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return EU
     #---
-    def Trace(self, W: torch.tensor):
-        """
-        Eq. 10 of https://arxiv.org/pdf/2012.12901
-        """
-        return torch.einsum("...ii", W)
- #-------
+ #---
                 
 
 
@@ -215,11 +214,16 @@ if __name__ == "__main__":
     print("===========================")
     device = torch.device("cpu")
     B = 1
-    Lmu = [12, 12, 12]
     d = 3
+    Lmu = d*[12]
     Nc = 3
     t1 = time.time()
-    U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(torch.complex64).to(device)
+    Ng = Nc**2 - 1
+    theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device) # random angles in [-\\pi,\\pi]
+    U = GaugeConfiguration.from_theta(theta)
+    # U = get_U_from_theta(theta=theta, N=Nc)
+    # U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(device).type(torch.complex64)
+    print(U.shape)
     t2 = time.time()
     print(f"{t2-t1} sec.")
     Plaq = get_plaquettes(U)
@@ -262,4 +266,8 @@ if __name__ == "__main__":
     print(W.shape)
     print(W_conv.shape)
     print("Checking the einsum implementation of the convolution")
-    print(torch.max(torch.abs(W_conv - W_conv_einsum)))
+    dW_conv = W_conv - W_conv_einsum
+    print("Absolute values")
+    dW_conv_abs = torch.abs(dW_conv)
+    print("Hello", type(dW_conv_abs))
+    print(torch.max(dW_conv_abs))

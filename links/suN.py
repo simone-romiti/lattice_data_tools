@@ -18,39 +18,78 @@ import torch
 import numpy as np
 from typing import List
 
-def get_Ng(N: int) -> int:
-    """  Returns of su(N): N^2-1 for N >= 2, 1 for U(1).    """
-    Ng = 1 if N == 1 else N * N - 1
-    return Ng
+def get_Ng(Nc: int) -> int:
+    """
+    Returns of su(Nc): Nc^2-1 for Nc >= 2, 1 for U(1).
 
-def get_generalized_GellMann_matrices_suN(N: int, device: torch.device, dtype=torch.complex128) -> torch.Tensor:
+    Nc: number of colors 
+    """
+    Ng = 1 if Nc == 1 else (Nc * Nc - 1)
+    return Ng
+#---
+
+def get_Nc(Ng: int):
+    """ Number of colors Nc given the number of generators Ng
+
+    Ng = 1 for U(1)
+    Ng = Nc^2 -1 for SU(Nc) (Nc > 1)
+    """
+    Nc = 1 if Ng==1 else int(np.sqrt(Ng+1))
+    return Nc
+#---
+
+
+def get_Tr(W: torch.tensor):
+    """
+    Eq. 10 of https://arxiv.org/pdf/2012.12901
+
+    Trace of a set of Nc \\times Nc matrices.
+
+    W: tensor of Nc \\times Nc matrices. shape: (..., Nc, Nc)    
+    """
+    return torch.einsum("...ii", W)
+#---
+
+def get_ReTr(W: torch.tensor):
+    """
+    Real part of the trace of each W object.
+
+
+    W: tensor of Nc \\times Nc matrices. shape: (..., Nc, Nc)
+    """
+    ReTr = get_Tr(W=W).real
+    return ReTr
+#---
+
+
+def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype=torch.complex128) -> torch.Tensor:
     """
     Return the N^2-1 Generalized Gell-Mann matrices as (N,N) complex
     numpy arrays.
 
     Reference: Eqs. 3,4,5 of https://arxiv.org/pdf/0806.1174
     """
-    Ng = get_Ng(N=N) # number of generators in the algebra
+    Ng = get_Ng(Nc=Nc) # number of generators in the algebra
     matrices = []
     # non-diagonal matrices
-    for j in range(0, N):
-        for k in range(j+1, N):
+    for j in range(0, Nc):
+        for k in range(j+1, Nc):
             # Symmetric GGM: eq. 3 of https://arxiv.org/pdf/0806.1174
-            lam_s = torch.zeros((N, N), dtype=dtype) 
+            lam_s = torch.zeros((Nc, Nc), dtype=dtype) 
             lam_s[j, k] = 1.0
             lam_s[k, j] = 1.0
             matrices.append(lam_s)
 
             # Antisymmetric GGM: eq 4 of https://arxiv.org/pdf/0806.1174
-            lam_a = torch.zeros((N, N), dtype=dtype) 
+            lam_a = torch.zeros((Nc, Nc), dtype=dtype) 
             lam_a[j, k] = -1j
             lam_a[k, j] = +1j
             matrices.append(lam_a)
         #---
     #---
-    for l in range(1, N):
+    for l in range(1, Nc):
         # diagonal matrices: eq. 5 of https://arxiv.org/pdf/0806.1174
-        lam_l =  np.sqrt(2.0 / (l * (l + 1))) * torch.diag(torch.tensor(l*[1.0] + [-l] + (N-l-1)*[0.0])).type(dtype)
+        lam_l =  np.sqrt(2.0 / (l * (l + 1))) * torch.diag(torch.tensor(l*[1.0] + [-l] + (Nc-l-1)*[0.0])).type(dtype)
         matrices.append(lam_l)
     #---
     GMM = torch.stack(matrices, dim=0)
@@ -58,16 +97,16 @@ def get_generalized_GellMann_matrices_suN(N: int, device: torch.device, dtype=to
     return GMM
 #---
 
-def get_generators(N: int, device: torch.device, dtype=torch.complex128) -> List[torch.Tensor]:
+def get_generators(Nc: int, device: torch.device, dtype=torch.complex128):
     """
-    Wrapper for the generators of U(1) and SU(N) matrices, properly normalized
-    The case of U(1) is returned when N==1
+    Wrapper for the generators of U(1) and SU(Nc) matrices, properly normalized
+    The case of U(1) is returned when Nc==1
     """
-    if N == 1:
+    if Nc == 1:
         # U(1): single 1×1 generator = 1/sqrt(2)   #documentation:generators_u1
         return torch.tensor([[1.0 / torch.sqrt(2)]], device=device, dtype=dtype)
     else:
-        return get_generalized_GellMann_matrices_suN(N=N, device=device, dtype=dtype) / 2.0
+        return get_generalized_GellMann_matrices_suN(Nc=Nc, device=device, dtype=dtype) / 2.0
 #-------
 
 
@@ -80,15 +119,15 @@ def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
     3. Reconstruct U = M · diag(exp(i D)) · M^{-1}.
     """
     d, M = torch.linalg.eigh(A)        # A = M diag(d) M^\\dagger, d real   #documentation:matrix_exp_diag_algorithm
-    exp_iD = torch.diag(torch.exp(1j*d)).type(M.type())  # exp(d_k) for each eigenvalue d_k
+    exp_iD = torch.diag_embed(torch.exp(1j*d)).type(M.type())  # exp(d_k) for each eigenvalue d_k
     U = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
     return U
 #---
 
 
-def get_suN_element_from_theta(theta: torch.Tensor, N: int, dtype=torch.complex128) -> torch.Tensor:
+def get_suN_element_from_theta(theta: torch.Tensor, dtype=torch.complex128) -> torch.Tensor:
     """
-    Build the su(N) algebra element  A = \\theta_a \\tau_a  (implicit sum over a)
+    Build the su(Nc) algebra element  A = \\theta_a \\tau_a  (implicit sum over a)
 
     Parameters
     ----------
@@ -98,26 +137,26 @@ def get_suN_element_from_theta(theta: torch.Tensor, N: int, dtype=torch.complex1
 
     Returns
     -------
-    A : (N,N) complex torch.Tensor
+    A : (Nc,Nc) complex torch.Tensor
     """
-    Ng = theta.shape[0]
-    assert(Ng == get_Ng(N=N))
-    tau = get_generators(N, device=theta.device, dtype=dtype)
-    A = torch.einsum("a,aij->ij", theta.type(tau.type()), tau)
+    Ng = theta.shape[-1]
+    Nc = get_Nc(Ng=Ng)
+    tau = get_generators(Nc, device=theta.device, dtype=dtype)
+    A = torch.einsum("...a,aij->...ij", theta.type(tau.type()), tau)
     return A
 #---
 
-def get_U_from_theta(theta: torch.Tensor, N: int, dtype=torch.complex128):
+def get_U_from_theta(theta: torch.Tensor, dtype=torch.complex128):
     """ Element of the group SU(N), computed as exp(i*theta_a*tau_a) """
-    A = get_suN_element_from_theta(theta=theta,N=N,dtype=dtype)
+    A = get_suN_element_from_theta(theta=theta,dtype=dtype)
     U = get_exp_iA(A)
     return U
 #---
 
 if __name__ == "__main__":
-    N = 3 # number of colors
-    Ng = get_Ng(N=N) # number of generators
+    Nc = 3 # number of colors
+    Ng = get_Ng(Nc=Nc) # number of generators
     theta = torch.rand(Ng)
-    U = get_U_from_theta(theta=theta, N=N)
+    U = get_U_from_theta(theta=theta)
     Udag = U.adjoint()
-    print(torch.allclose(U @ Udag, torch.eye(N).type(U.type())))
+    print(torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
