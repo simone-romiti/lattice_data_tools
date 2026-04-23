@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import sys
 sys.path.append("../../")
-from lattice_data_tools.links.suN import get_Nc, get_Ng, get_U_from_theta, get_generators
+from lattice_data_tools.links.suN import get_Nc, get_Ng, get_U_from_theta, get_theta_from_U, get_generators
 
 
 class color_matrices(torch.Tensor):
@@ -131,45 +131,28 @@ class GaugeConfiguration(color_matrices):
     @staticmethod
     def from_theta(theta: torch.Tensor) -> "GaugeConfiguration":
         """
-        Build U_mu(x) = exp(i * theta^a_mu(x) * tau_a)
+        Build U_\\mu(x) = exp(i * \\theta^a_\\mu(x) * tau_a)
         theta: shape (B, L1, ..., Ld, d, Ng)
         """
         return GaugeConfiguration(get_U_from_theta(theta=theta))
 
     def to_theta(self) -> torch.Tensor:
         """
-        Returns the theta_a such that U = exp(i * theta_a * tau_a).
+        Returns the theta^a_\\mu(x)  such that U_\\mu(x) = exp(i * \\theta^a_\\mu(x) * tau_a)
+
+        U: shape (B, L1, ..., Ld, d, Nc, Nc)
 
         Algorithm:
-          1. Diagonalize:  U = V * D * V†
+          1. Diagonalize:  U = V * D * V^\\dagger
           2. A = -i * log(D)  (element-wise on the diagonal eigenvalues)
-          3. Reconstruct: A = V * diag(-i*log(eigs)) * V†
-          4. theta_a = 2 * Tr(tau_a @ A),   using Tr(tau_a tau_b) = (1/2) delta_{ab}
+          3. Reconstruct: H = V @ A @ V^\\dagger = -i log(U) 
+          4. theta_a = 2 * Tr(tau_a @ H),   using Tr(\\tau_a \\tau_b) = (1/2) \\delta_{ab}
 
-        Returns: theta_a  shape: (B, L1, ..., Ld, d, Ng). Ng=number of generators of the su(Nc) Lie algebra
+        Returns: \\theta_a
+           shape: (B, L1, ..., Ld, d, Ng).
+           Ng=number of generators of the su(Nc) Lie algebra
         """
-        Nc = self.Nc
-        # generators shape: (Ng, Nc, Nc)
-        tau_a = get_generators(Nc=Nc, device=self.device, dtype=self.dtype)
-
-        # Step 1 — eigendecomposition: eigenvalues on the unit circle
-        eigenvalues, V = torch.linalg.eig(self.as_subclass(torch.Tensor))
-        # eigenvalues: (..., Nc),  V: (..., Nc, Nc)
-
-        # Step 2 — A = -i * log(D), reconstruct full Hermitian matrix
-        A_diag = -1j * torch.log(eigenvalues)          # (..., Nc)
-        # A = V diag(A_diag) V†
-        A = (V * A_diag.unsqueeze(-2)) @ V.adjoint()   # (..., Nc, Nc)
-
-        # Step 3 — theta_a = 2 Tr(tau_a A)
-        # Broadcast tau_a over the batch/lattice/direction dimensions
-        # tau_a: (Ng, Nc, Nc) → (1,...,1, Ng, Nc, Nc)
-        # A:     (...,         Nc, Nc) → (..., 1, Nc, Nc)
-        tau_A = tau_a @ A.unsqueeze(-3)                 # (..., Ng, Nc, Nc)
-        theta = 2.0 * torch.diagonal(tau_A, dim1=-2, dim2=-1).sum(dim=-1)  # (..., Ng)
-
-        # Imaginary part is numerical noise; return real values
-        return theta.real
+        return get_theta_from_U(U=self)
 
     def hotstart(self, seed: int):
         """
@@ -189,7 +172,6 @@ class GaugeConfiguration(color_matrices):
         real_part = torch.randn(self.shape, dtype=self.imag.dtype, device=self.device) # imaginary part
         Z = (real_part + 1j*imag_part)/np.sqrt(2.0)
         Q, R = torch.linalg.qr(Z) # QR decomposition: https://en.wikipedia.org/wiki/QR_decomposition
-        print(Q.shape, R.shape)
         diag = torch.diagonal(R, dim1=-2, dim2=-1) # (..., Nc) --> extracts R_ii
         signs = diag / diag.abs() # R_ii / |R_ii|
         Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
@@ -203,14 +185,20 @@ class GaugeConfiguration(color_matrices):
 if __name__ == "__main__":
     device = torch.device("cpu")
     B = 1
-    d = 2
-    Lmu = d * [12]
-    Nc = 3
+    d = 1
+    Lmu = d * [1]
+    Nc = 2
     Ng = get_Ng(Nc=Nc)
     # random angles in [-\pi, \pi]
-    theta = -torch.pi + (2 * torch.pi) * torch.rand(B, *Lmu, d, Ng)
+    theta = -torch.pi + (2 * torch.pi) * torch.rand(B, *Lmu, d, Ng).type(torch.float64)
+    print(theta.dtype)
     print(theta.shape)
     U = GaugeConfiguration.from_theta(theta)
+    theta_prime = U.to_theta()
+    U_prime = GaugeConfiguration.from_theta(theta_prime)
+    print("Getting theta from U")
+    print(torch.max(torch.abs(U - U_prime)))
+    print(torch.allclose(U, U_prime))    
     U.hotstart(seed=12345)
     print(type(U))
     print("Shape of the gauge configuration")

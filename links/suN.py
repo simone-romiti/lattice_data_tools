@@ -4,7 +4,7 @@ Routines for elements of the su(N) Lie algebra using Generalized Gell-Mann matri
 Commutation relations: [tau_a, tau_b]  = i f_{abc} tau_c
 Number of generators of the Lie algebra: N^2-1.
 Basis: Generalized Gell-Mann matrices
-Normalization: Tr(tau_a tau_b) = 2 \\delta_{ab}
+Normalization: Tr(tau_a tau_b) = 2 \\delta_{ab} (eq. A3 of https://arxiv.org/pdf/0806.1174)
 
 Special cases:
 - U(1)  : only one generator: τ = 1/sqrt{2}
@@ -104,7 +104,7 @@ def get_generators(Nc: int, device: torch.device, dtype=torch.complex128):
     """
     if Nc == 1:
         # U(1): single 1×1 generator = 1/sqrt(2)   #documentation:generators_u1
-        return torch.tensor([[1.0 / torch.sqrt(2)]], device=device, dtype=dtype)
+        return torch.tensor([[1.0 / np.sqrt(2)]], device=device, dtype=dtype)
     else:
         return get_generalized_GellMann_matrices_suN(Nc=Nc, device=device, dtype=dtype) / 2.0
 #-------
@@ -125,7 +125,7 @@ def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
 #---
 
 
-def get_suN_element_from_theta(theta: torch.Tensor, dtype=torch.complex128) -> torch.Tensor:
+def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     """
     Build the su(Nc) algebra element  A = \\theta_a \\tau_a  (implicit sum over a)
 
@@ -141,22 +141,46 @@ def get_suN_element_from_theta(theta: torch.Tensor, dtype=torch.complex128) -> t
     """
     Ng = theta.shape[-1]
     Nc = get_Nc(Ng=Ng)
-    tau = get_generators(Nc, device=theta.device, dtype=dtype)
-    A = torch.einsum("...a,aij->...ij", theta.type(tau.type()), tau)
+    theta_complex = theta + 1j*torch.zeros_like(theta) # casting to complex to determine the type of the tau_a and combine them together
+    tau = get_generators(Nc, device=theta_complex.device, dtype=theta_complex.dtype)
+    A = torch.einsum("...a,aij->...ij", theta_complex, tau)
     return A
 #---
 
-def get_U_from_theta(theta: torch.Tensor, dtype=torch.complex128):
+def get_U_from_theta(theta: torch.Tensor):
     """ Element of the group SU(N), computed as exp(i*theta_a*tau_a) """
-    A = get_suN_element_from_theta(theta=theta,dtype=dtype)
+    A = get_suN_element_from_theta(theta=theta)
     U = get_exp_iA(A)
     return U
 #---
 
+def get_theta_from_U(U: torch.Tensor) -> torch.Tensor:
+    """
+    Returns the theta_a such that U = exp(i * theta_a * tau_a).
+    
+    Algorithm:
+        1. Diagonalize:  U = V * D * V^\\dagger
+        2. A = -i * log(D)  (element-wise on the diagonal eigenvalues)
+        3. Reconstruct: H = V @ A @ V^\\dagger = -i log(U) 
+        4. theta_a = 2 * Tr(tau_a @ H),   using Tr(\\tau_a \\tau_b) = 2 \\delta_{ab} (eq. A3 of https://arxiv.org/pdf/0806.1174)
+
+    Returns: theta_a  shape: (B, L1, ..., Ld, d, Ng). Ng=number of generators of the su(Nc) Lie algebra
+    """
+    Nc = U.shape[-1] # number of colors
+    tau_a = get_generators(Nc=Nc, device=U.device, dtype=U.dtype).type(U.type()) # generators shape: (Ng, Nc, Nc)
+    d, V = torch.linalg.eig(U.as_subclass(torch.Tensor))  # eigenvalues: (..., Nc),  V: (..., Nc, Nc)
+    A = torch.diag_embed(-1j * torch.log(d)) # shape: (...,Nc,Nc)
+    H = V @ A @ V.adjoint() # V A V^\\dagger. shape: (...,Nc,Nc)
+    theta = torch.einsum("aij,...ji->...a", tau_a, H) / 2.0 # Tr(\\tau_a*H)/2 = (\\tau_a^{ij}*H^{ji})/2. shape (...,Ng)
+    # H_new = 1j*torch.einsum("a...,...a->...a", tau_a, theta)
+    # print(H/H_new)
+    return theta.real # \\theta_a are real --> discarding imaginary part
+
+
 if __name__ == "__main__":
     Nc = 3 # number of colors
     Ng = get_Ng(Nc=Nc) # number of generators
-    theta = torch.rand(Ng)
+    theta = torch.rand(Ng).type(torch.float64) # precision is important
     U = get_U_from_theta(theta=theta)
     Udag = U.adjoint()
     print(torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
