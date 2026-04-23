@@ -1,17 +1,16 @@
 """
-Routines for elements of the su(N) Lie algebra using Generalized Gell-Mann matrices.
+Routines for elements of the su(N) Lie algebra using Generalized Gell-Mann matrices: Sec. III.A of https://arxiv.org/pdf/0806.1174 .
 
 Commutation relations: [tau_a, tau_b]  = i f_{abc} tau_c
 Number of generators of the Lie algebra: N^2-1.
 Basis: Generalized Gell-Mann matrices
-Normalization: Tr(tau_a tau_b) = 2 \\delta_{ab} (eq. A3 of https://arxiv.org/pdf/0806.1174)
+Normalization: Tr(tau_a tau_b) = \\delta_{ab} / 2
 
 Special cases:
 - U(1)  : only one generator: τ = 1/sqrt{2}
 - SU(2) : \\tau_a = \\sigma_a/2  (half-Pauli matrices).
 - SU(3) : \\tau_a = \\lambda_a/2  (half-Gell-Mann matrices).
 
-Reference for Generalize Gell-Mann matrices: https://arxiv.org/pdf/0806.1174
 """
 
 import torch
@@ -49,6 +48,12 @@ def get_Tr(W: torch.tensor):
     """
     return torch.einsum("...ii", W)
 #---
+
+def subtract_trace(W: torch.tensor):
+    Nc = W.shape[-1]
+    W_traceless = W - get_Tr(W).unsqueeze(-1) * torch.eye(Nc, dtype=W.dtype, device=W.device)
+    return W_traceless
+
 
 def get_ReTr(W: torch.tensor):
     """
@@ -101,12 +106,15 @@ def get_generators(Nc: int, device: torch.device, dtype=torch.complex128):
     """
     Wrapper for the generators of U(1) and SU(Nc) matrices, properly normalized
     The case of U(1) is returned when Nc==1
+
+    Note: Eq. A3 of https://arxiv.org/pdf/0806.1174 is normalized such that Tr(\\tau_a \\tau_b)= 2*\\delta_{ab}
+          Here we normalize them such that: Tr(\\tau_a \\tau_b)= \\delta_{ab}/2
     """
     if Nc == 1:
         # U(1): single 1×1 generator = 1/sqrt(2)   #documentation:generators_u1
-        return torch.tensor([[1.0 / np.sqrt(2)]], device=device, dtype=dtype)
+        return torch.tensor([1.0 / np.sqrt(2)], device=device, dtype=dtype).unsqueeze(-1).unsqueeze(-1)
     else:
-        return get_generalized_GellMann_matrices_suN(Nc=Nc, device=device, dtype=dtype) / 2.0
+        return get_generalized_GellMann_matrices_suN(Nc=Nc, device=device, dtype=dtype) / 2.0 # our normalization
 #-------
 
 
@@ -143,44 +151,29 @@ def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     Nc = get_Nc(Ng=Ng)
     theta_complex = theta + 1j*torch.zeros_like(theta) # casting to complex to determine the type of the tau_a and combine them together
     tau = get_generators(Nc, device=theta_complex.device, dtype=theta_complex.dtype)
+    print(theta_complex.shape, tau.shape)
     A = torch.einsum("...a,aij->...ij", theta_complex, tau)
     return A
 #---
 
 def get_U_from_theta(theta: torch.Tensor):
-    """ Element of the group SU(N), computed as exp(i*theta_a*tau_a) """
+    """
+    Element of the group SU(N), computed as U(\\theta_a)=exp(i*theta_a*tau_a)
+
+    !!! NOTES !!!:
+      1. The inverse function does not exist, as the map U(\\theta_a) is not injective.
+      2. For an arbitrary Nc, the different angles have in general different periodicities, so you can't globally restrict to a fixed interval for all of them
+    """
     A = get_suN_element_from_theta(theta=theta)
     U = get_exp_iA(A)
     return U
 #---
 
-def get_theta_from_U(U: torch.Tensor) -> torch.Tensor:
-    """
-    Returns the theta_a such that U = exp(i * theta_a * tau_a).
-    
-    Algorithm:
-        1. Diagonalize:  U = V * D * V^\\dagger
-        2. A = -i * log(D)  (element-wise on the diagonal eigenvalues)
-        3. Reconstruct: H = V @ A @ V^\\dagger = -i log(U) 
-        4. theta_a = 2 * Tr(tau_a @ H),   using Tr(\\tau_a \\tau_b) = 2 \\delta_{ab} (eq. A3 of https://arxiv.org/pdf/0806.1174)
-
-    Returns: theta_a  shape: (B, L1, ..., Ld, d, Ng). Ng=number of generators of the su(Nc) Lie algebra
-    """
-    Nc = U.shape[-1] # number of colors
-    tau_a = get_generators(Nc=Nc, device=U.device, dtype=U.dtype).type(U.type()) # generators shape: (Ng, Nc, Nc)
-    d, V = torch.linalg.eig(U.as_subclass(torch.Tensor))  # eigenvalues: (..., Nc),  V: (..., Nc, Nc)
-    A = torch.diag_embed(-1j * torch.log(d)) # shape: (...,Nc,Nc)
-    H = V @ A @ V.adjoint() # V A V^\\dagger. shape: (...,Nc,Nc)
-    theta = torch.einsum("aij,...ji->...a", tau_a, H) / 2.0 # Tr(\\tau_a*H)/2 = (\\tau_a^{ij}*H^{ji})/2. shape (...,Ng)
-    # H_new = 1j*torch.einsum("a...,...a->...a", tau_a, theta)
-    # print(H/H_new)
-    return theta.real # \\theta_a are real --> discarding imaginary part
-
 
 if __name__ == "__main__":
     Nc = 3 # number of colors
     Ng = get_Ng(Nc=Nc) # number of generators
-    theta = torch.rand(Ng).type(torch.float64) # precision is important
+    theta = -torch.pi + (2 * torch.pi) * torch.rand(Ng).type(torch.float64)
     U = get_U_from_theta(theta=theta)
     Udag = U.adjoint()
-    print(torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
+    print("Unitarity of U:", torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))

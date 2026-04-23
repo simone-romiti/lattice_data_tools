@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import sys
 sys.path.append("../../")
-from lattice_data_tools.links.suN import get_Nc, get_Ng, get_U_from_theta, get_theta_from_U, get_generators
+from lattice_data_tools.links.suN import get_Ng, get_U_from_theta
 
 
 class color_matrices(torch.Tensor):
@@ -133,26 +133,11 @@ class GaugeConfiguration(color_matrices):
         """
         Build U_\\mu(x) = exp(i * \\theta^a_\\mu(x) * tau_a)
         theta: shape (B, L1, ..., Ld, d, Ng)
+
+        NOTE: inverse function does not exist --> see implementation
         """
         return GaugeConfiguration(get_U_from_theta(theta=theta))
-
-    def to_theta(self) -> torch.Tensor:
-        """
-        Returns the theta^a_\\mu(x)  such that U_\\mu(x) = exp(i * \\theta^a_\\mu(x) * tau_a)
-
-        U: shape (B, L1, ..., Ld, d, Nc, Nc)
-
-        Algorithm:
-          1. Diagonalize:  U = V * D * V^\\dagger
-          2. A = -i * log(D)  (element-wise on the diagonal eigenvalues)
-          3. Reconstruct: H = V @ A @ V^\\dagger = -i log(U) 
-          4. theta_a = 2 * Tr(tau_a @ H),   using Tr(\\tau_a \\tau_b) = (1/2) \\delta_{ab}
-
-        Returns: \\theta_a
-           shape: (B, L1, ..., Ld, d, Ng).
-           Ng=number of generators of the su(Nc) Lie algebra
-        """
-        return get_theta_from_U(U=self)
+    #---
 
     def hotstart(self, seed: int):
         """
@@ -185,28 +170,19 @@ class GaugeConfiguration(color_matrices):
 if __name__ == "__main__":
     device = torch.device("cpu")
     B = 1
-    d = 1
-    Lmu = d * [1]
-    Nc = 2
+    d = 4
+    Lmu = d * [12]
+    Nc = 3
     Ng = get_Ng(Nc=Nc)
     # random angles in [-\pi, \pi]
     theta = -torch.pi + (2 * torch.pi) * torch.rand(B, *Lmu, d, Ng).type(torch.float64)
-    print(theta.dtype)
-    print(theta.shape)
     U = GaugeConfiguration.from_theta(theta)
-    theta_prime = U.to_theta()
-    U_prime = GaugeConfiguration.from_theta(theta_prime)
-    print("Getting theta from U")
-    print(torch.max(torch.abs(U - U_prime)))
-    print(torch.allclose(U, U_prime))    
     U.hotstart(seed=12345)
-    print(type(U))
-    print("Shape of the gauge configuration")
-    print(U.shape)
     Udag = U.adjoint()
-    print(type(Udag))
-    print("Checking the unitarity")
-    print(torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
+    print("Type and shape of the gauge configuration")
+    print("U:", type(U), U.shape)
+    print("Udag:", type(Udag), U.shape)
+    print("Unitarity check:", torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
     print("B=", U.batch_size)
     print("Lattice shape: ", U.lattice_shape)
     print("d=", U.n_dims)
