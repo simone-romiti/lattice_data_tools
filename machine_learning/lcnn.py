@@ -215,11 +215,11 @@ if __name__ == "__main__":
     device = torch.device("cpu")
     B = 1
     d = 3
-    Lmu = d*[12]
+    Lmu = d*[8]
     Nc = 3
     t1 = time.time()
     Ng = Nc**2 - 1
-    theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device) # random angles in [-\\pi,\\pi]
+    theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device).type(torch.float64) # random angles in [-\\pi,\\pi]
     U = GaugeConfiguration.from_theta(theta)
     # U = get_U_from_theta(theta=theta, N=Nc)
     # U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(device).type(torch.complex64)
@@ -270,4 +270,5 @@ if __name__ == "__main__":
     print("Absolute values")
     dW_conv_abs = torch.abs(dW_conv)
     print("Hello", type(dW_conv_abs))
+    print(torch.max(torch.abs(W_conv)))
     print(torch.max(dW_conv_abs))

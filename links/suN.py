@@ -150,7 +150,7 @@ def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     Ng = theta.shape[-1]
     Nc = get_Nc(Ng=Ng)
     theta_complex = theta + 1j*torch.zeros_like(theta) # casting to complex to determine the type of the tau_a and combine them together
-    tau = get_generators(Nc, device=theta_complex.device, dtype=theta_complex.dtype)
+    tau = get_generators(Nc, device=theta_complex.device, dtype=theta_complex.dtype).to(theta_complex.device)
     print(theta_complex.shape, tau.shape)
     A = torch.einsum("...a,aij->...ij", theta_complex, tau)
     return A
