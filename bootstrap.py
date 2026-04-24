@@ -207,30 +207,45 @@ class ParametricBootstraps:
         return res
     #---
     @staticmethod
-    def from_x_ex_rho(x: np.ndarray, dx: np.ndarray, rho: np.ndarray, N_bts: int, seed: int):
+    def from_x_dx_Cov(x: np.ndarray, dx: np.ndarray, Cov: np.ndarray, N_bts: int, seed: int, with_Cholesky=False):
         """
         Bootstrap samples for the variables x_i,
-        from their central values and their correlation matrix rho.
+        from their central values and their covariance matrix Cov.
         """
         # checking that the input arrays have the right sizes
         assert(len(x.shape)==1)
         assert(x.shape == dx.shape)
-        assert(x.shape[0]==rho.shape[0])
-        assert(rho.shape[0]==rho.shape[1])
+        assert(x.shape[0]==Cov.shape[0])
+        assert(Cov.shape[0]==Cov.shape[1])
         N = x.shape[0] # number of variables
-        Cov = np.zeros(shape=(N,N)) # covariance matrix --> filling using rho_ij and errors
-        for i in range(N):
-            for j in range(N):
-                Cov[i,j] = rho[i,j]*dx[i]*dx[j] # C_ij := rho_ij * sqrt(var(X_i)*var(X_j)
-        #-------
-        # x = M y, where "y" are the uncorrelated variables (diagonal correlation matrix)
-        ey2, M = np.linalg.eigh(Cov) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
-        assert(np.all(ey2 >= 0)) #  check if Cov_ij is semi-positive definite
-        ey = np.sqrt(ey2) # errors as square roots of variances
-        y_mean = (M.T) @ x # Cov=Cov^T --> M^{-1}=M^{T}
-        y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
-        import matplotlib.pyplot as plt
-        x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+        if with_Cholesky:
+            """ using Cholesky decomposition """
+            L = np.linalg.cholesky(Cov) # L such that Cov = L * L^T
+            y_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+            x_bts = BootstrapSamples(np.array([x + L @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+            return x_bts
+        else:
+            # x = M y, where "y" are the uncorrelated variables (diagonal correlation matrix)
+            ey2, M = np.linalg.eigh(Cov) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
+            assert(np.all(ey2 >= 0)) #  check if Cov_ij is semi-positive definite
+            ey = np.sqrt(ey2) # errors as square roots of variances
+            y_mean = (M.T) @ x # Cov=Cov^T --> M^{-1}=M^{T}
+            y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+            x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+            return x_bts
+    #-------
+    @staticmethod
+    def from_x_dx_rho(x: np.ndarray, dx: np.ndarray, rho: np.ndarray, N_bts: int, seed: int):
+        """ correlated bootstrap using means, errors and correlation matrix \\rho """
+        N = x.shape[0] # number of variables
+        # using Cholesky decomposition
+        rhorhoT = (rho @ (rho.T)).round(decimals=15) # positive definite by construction, numerically safe
+        ey4, M = np.linalg.eigh(rhorhoT)
+        D = np.diag(np.sqrt(ey4))
+        rho_rooted = M @ D @ M.T
+        L = np.linalg.cholesky(rho_rooted) # L such that Cov = L * L^T
+        y_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+        x_bts = BootstrapSamples(np.array([x + dx * (L @ y_bts[i,:])  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
         return x_bts
 #-------        
 

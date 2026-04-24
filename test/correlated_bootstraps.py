@@ -25,12 +25,19 @@ rho_exact = np.array([
 
 x_mean = np.array([10.0, 20.0, 30.0]) # mean values of the variables x_i
 ex =     np.array([3.0, 6.0, 9.0]) # errors on the x_i
-N_bts = 1000 # number of bootstraps
+N_bts = 10000 # number of bootstraps
+
+
+Cov_exact = np.array([[rho_exact[i,j]*ex[i]*ex[j]  for j in range(3)] for i in range(3)])
+
 
 # bootstrap samples of the observables x_i, correlated according to rho
-x_bts = ParametricBootstraps.from_x_ex_rho(x=x_mean, dx=ex, rho=rho_exact, N_bts=N_bts, seed=RNG_seed)
+x_bts = ParametricBootstraps.from_x_dx_rho(x=x_mean, dx=ex, rho=rho_exact, N_bts=N_bts, seed=RNG_seed)
+
+ex_bts = x_bts.error()
 
 rho_estimated = x_bts.correlation_matrix() # correlation matrix estimated from the generated bootstraps
+Cov_estimated = np.array([[rho_estimated[i,j]*ex_bts[i]*ex_bts[j]  for j in range(3)] for i in range(3)])
 
 
 print("Exact correlation matrix:")
@@ -38,6 +45,16 @@ print(rho_exact)
 
 print("Correlation matrix estimated from the generated samples")
 print(rho_estimated)
+
+print("----")
+
+
+print("Exact Covariance matrix:")
+print(Cov_exact)
+
+print("Covariance matrix estimated from the generated samples")
+print(Cov_estimated)
+
 
 print("Increase N_bts in the code in order to see the convergence of rho_estimated to rho_exact")
 
