@@ -27,33 +27,46 @@ x_mean = np.array([10.0, 20.0, 30.0]) # mean values of the variables x_i
 ex =     np.array([3.0, 6.0, 9.0]) # errors on the x_i
 N_bts = 10000 # number of bootstraps
 
-
-Cov_exact = np.array([[rho_exact[i,j]*ex[i]*ex[j]  for j in range(3)] for i in range(3)])
-
-
-# bootstrap samples of the observables x_i, correlated according to rho
-x_bts = ParametricBootstraps.from_x_dx_rho(x=x_mean, dx=ex, rho=rho_exact, N_bts=N_bts, seed=RNG_seed)
-
-ex_bts = x_bts.error()
-
-rho_estimated = x_bts.correlation_matrix() # correlation matrix estimated from the generated bootstraps
-Cov_estimated = np.array([[rho_estimated[i,j]*ex_bts[i]*ex_bts[j]  for j in range(3)] for i in range(3)])
-
-
 print("Exact correlation matrix:")
 print(rho_exact)
-
-print("Correlation matrix estimated from the generated samples")
-print(rho_estimated)
-
 print("----")
 
 
+# bootstrap samples of the observables x_i, correlated according to rho
+for method in ["Cholesky", "eigen"]:
+    print(method)
+    x_bts = ParametricBootstraps.correlated_from_rho(x_mean=x_mean, x_error=ex, rho=rho_exact, N_bts=N_bts, seed=RNG_seed, method=method)
+    ex_bts = x_bts.error()
+
+    rho_estimated = x_bts.correlation_matrix() # correlation matrix estimated from the generated bootstraps
+    # Cov_estimated = np.array([[rho_estimated[i,j]*ex_bts[i]*ex_bts[j]  for j in range(3)] for i in range(3)]) 
+
+    print("Correlation matrix estimated from the generated samples")
+    print(rho_estimated)
+
+    
+
+print("===================")
+
+Cov_exact = np.array([[rho_exact[i,j]*ex[i]*ex[j]  for j in range(3)] for i in range(3)])
+
 print("Exact Covariance matrix:")
 print(Cov_exact)
+print("---")
 
 print("Covariance matrix estimated from the generated samples")
-print(Cov_estimated)
+# bootstrap samples of the observables x_i, correlated according to rho
+for method in ["Cholesky", "eigen"]:
+    print(method)
+    x_bts = ParametricBootstraps.correlated_from_covariance(x_mean=x_mean, x_error=ex, Cov=Cov_exact, N_bts=N_bts, seed=RNG_seed, method=method)
+    ex_bts = x_bts.error()
+
+    Cov_estimated = x_bts.covariance_matrix() # covariance matrix estimated from the generated bootstraps
+    # Cov_estimated = np.array([[Cov_estimated[i,j]*ex_bts[i]*ex_bts[j]  for j in range(3)] for i in range(3)]) 
+
+    print(Cov_estimated)
+
+    
 
 
 print("Increase N_bts in the code in order to see the convergence of rho_estimated to rho_exact")

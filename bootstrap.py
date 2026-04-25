@@ -207,46 +207,129 @@ class ParametricBootstraps:
         return res
     #---
     @staticmethod
-    def from_x_dx_Cov(x: np.ndarray, dx: np.ndarray, Cov: np.ndarray, N_bts: int, seed: int, with_Cholesky=False):
+    def correlated_from_covariance(
+            x_mean: np.ndarray, x_error: np.ndarray, Cov: np.ndarray,
+            N_bts: int, seed: int,
+            method=typing.Literal["eigen","Cholesky"]):
         """
-        Bootstrap samples for the variables x_i,
-        from their central values and their covariance matrix Cov.
+        Multivariate bootstrap samples generation for the variables x_i,
+        from their central values x_mean, errors x_err and their covariance matrix Cov.
+
+        N_bts: number of output bootstrap samples
+        seed: seed of random number generator
+        method: "eigen" for diagonalization of "Cov", or "Cholesky" if using the decomposition of "Cov"
+
+        NOTE:
+        The problem is well posed if Cov is symmetric and semi-positive definite.
+        Numerically it might not be the case because of:
+        - noise --> solved by rooting: using Cov_rooted=sqrt(C @ C^T). This ensures that all lambda_k >= 0
+        - entries differing by several orders of magnitude --> numerical instability, not solvable.
+          Use analogous function that uses correlation matrix for more stability.
+        
         """
         # checking that the input arrays have the right sizes
-        assert(len(x.shape)==1)
-        assert(x.shape == dx.shape)
-        assert(x.shape[0]==Cov.shape[0])
+        assert(len(x_mean.shape)==1)
+        assert(x_mean.shape == x_error.shape)
+        assert(x_mean.shape[0]==Cov.shape[0])
         assert(Cov.shape[0]==Cov.shape[1])
-        N = x.shape[0] # number of variables
-        if with_Cholesky:
-            """ using Cholesky decomposition """
-            L = np.linalg.cholesky(Cov) # L such that Cov = L * L^T
-            y_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
-            x_bts = BootstrapSamples(np.array([x + L @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+        N = x_mean.shape[0] # number of variables
+        CovCovT = (Cov @ (Cov.T)) # semi-positive definite by construction, numerically safe
+        lam4, M = np.linalg.eigh(CovCovT) 
+        D = np.diag(np.sqrt(lam4)) # apply the rooting
+        Cov_rooted = M @ D @ M.T # sqrt(rho @ rho.T)
+        if method=="Cholesky":
+            """
+            Multivariate with Cholesky decomposition: Cov = L @ L^T = L @ 1 @ L^T
+
+            NOTEs:
+            - The covariance matrix is the same for both "x_i" and "\\delta x_i = ( x_i-E(x_i) )".
+            - The Cholesky decomposition finds the change of basis with the uncorrelated \\Delta z_i, that have 0 mean and variance 1:
+            - When generating the bootstraps for the uncorrelated variables, we have to choose different RNG seeds to ensure decorrelation
+
+              dx = L @ dz
+            
+            """
+            L = np.linalg.cholesky(Cov_rooted) # L such that Cov = L * L^T
+            dz_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # bootstraps for \\delta z. Different seed ensure decorrelation
+            x_bts = BootstrapSamples(np.array([x_mean + L @ dz_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
             return x_bts
-        else:
-            # x = M y, where "y" are the uncorrelated variables (diagonal correlation matrix)
-            ey2, M = np.linalg.eigh(Cov) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
+        elif method == "eigen":
+            """
+            Multivariate by diagonalization of the covariance matrix: Cov_x = M @ Cov_y @ M^T
+
+            NOTE: x = M @ y, where y are the uncorrelated variables (Cov_y diagonal)
+            """
+            ey2, M = np.linalg.eigh(Cov_rooted) # var(Y_i) and M_ij such that Cov=M*D*(M^T), with D=diag(var(Y_i))
             assert(np.all(ey2 >= 0)) #  check if Cov_ij is semi-positive definite
             ey = np.sqrt(ey2) # errors as square roots of variances
-            y_mean = (M.T) @ x # Cov=Cov^T --> M^{-1}=M^{T}
+            y_mean = (M.T) @ x_mean # Cov=Cov^T --> M^{-1}=M^{T}
             y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
             x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
             return x_bts
     #-------
     @staticmethod
-    def from_x_dx_rho(x: np.ndarray, dx: np.ndarray, rho: np.ndarray, N_bts: int, seed: int):
-        """ correlated bootstrap using means, errors and correlation matrix \\rho """
-        N = x.shape[0] # number of variables
-        # using Cholesky decomposition
-        rhorhoT = (rho @ (rho.T)).round(decimals=15) # positive definite by construction, numerically safe
-        ey4, M = np.linalg.eigh(rhorhoT)
-        D = np.diag(np.sqrt(ey4))
-        rho_rooted = M @ D @ M.T
-        L = np.linalg.cholesky(rho_rooted) # L such that Cov = L * L^T
-        y_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
-        x_bts = BootstrapSamples(np.array([x + dx * (L @ y_bts[i,:])  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
-        return x_bts
+    def correlated_from_rho(
+            x_mean: np.ndarray, x_error: np.ndarray, rho: np.ndarray,
+            N_bts: int, seed: int,
+            method=typing.Literal["eigen","Cholesky"],
+            decimals:int =15):
+        """
+        Multivariate bootstrap samples generation for the variables x_i,
+        from their central values x_mean, errors x_err and their correlation matrix rho.
+
+        We can use the same methods as for the covariance matrix "C", because:
+        \\rho = S^{-1} @ C @ S^{-1} , where: S_{ij} = \\sigma_i \\delta_{ij} (S is a diagonal matrix)
+        More details on how to adapt them in the docstrings below).
+
+        N_bts: number of output bootstrap samples
+        seed: seed of random number generator
+        method: "eigen" for diagonalization of "rho", or "Cholesky" if using the decomposition of "rho"
+
+        NOTE:
+        The problem is well posed if \\rho is symmetric and semi-positive definite.
+        Numerically it might not be the case because of:
+        - noise --> solved by rooting: using rho_rooted=sqrt(\\rho @ \\rho^T). This ensures that all lambda_k >= 0
+        - entries differing by several orders of magnitude --> numerical instability, not solvable.
+          Use analogous function that uses correlation matrix for more stability.
+        
+        """ 
+        # checking that the input arrays have the right sizes
+        assert(len(x_mean.shape)==1)
+        assert(x_mean.shape == x_error.shape)
+        assert(x_mean.shape[0]==rho.shape[0])
+        assert(rho.shape[0]==rho.shape[1])
+        N = x_mean.shape[0] # number of variables
+        # rooting \\rho
+        rhorhoT = (rho @ (rho.T)).round(decimals=15) # semi-positive definite by construction, numerically safe
+        lam4, M = np.linalg.eigh(rhorhoT) 
+        D = np.diag(np.sqrt(lam4)) # apply the rooting
+        rho_rooted = M @ D @ M.T # sqrt(rho @ rho.T)
+        if method=="Cholesky":
+            """
+            Multivariate with Cholesky decomposition: rho = L @ L^T = L @ 1 @ L^T
+
+            (see docstring above: C = S @ rho @ S and S=S^T)
+            \\rho = L @ L^T --> C = (S @ L) @ (S @ L)^T --> dx = (S @ L) @ dz 
+            """
+            L = np.linalg.cholesky(rho_rooted) # L such that Cov = L * L^T
+            dz_bts = np.array([ParametricBootstraps.Gaussian(mean=0.0, error=1.0, N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+            # NOTE: dx * (L @ dz_bts[i,:]) = S @ L @ dz[i,:]
+            x_bts = BootstrapSamples(np.array([x_mean + x_error * (L @ dz_bts[i,:])  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+            return x_bts
+        elif method=="eigen":
+            """
+            Multivariate with diagonalization of \\rho.
+
+            (see docstring above: C = S @ rho @ S and S=S^T)
+            \\rho = M @ D @ M^T --> C = (S @ M) @ D @ (S @ M)^T --> x = (S @ M) @ y --> y = M^T @ S^{-1} @ x
+            """
+            ey2, M = np.linalg.eigh(rho_rooted) # eigenvalues and matrix of eigenvectors of \\rho
+            assert(np.all(ey2 >= 0)) #  check if rho_ij is semi-positive definite
+            ey = np.sqrt(ey2) # errors as square roots of variances
+            y_mean = (M.T) @ (x_mean/x_error) #  (M^T @ S^{-1} @ x)_{ij} = M^T_{ik} * (x_mean[k]/x_error[k])
+            y_bts = np.array([ParametricBootstraps.Gaussian(mean=y_mean[i], error=ey[i], N_bts=N_bts, seed=seed+i) for i in range(N)]).T # parametric bootstraps for the uncorrelated variables --> different RNG seeds
+            x_bts = BootstrapSamples(np.array([M @ y_bts[i,:]  for i in range(N_bts+1)])) # bootstrap samples for the correlated data
+            return x_bts
 #-------        
 
     
