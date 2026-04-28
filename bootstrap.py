@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 
 
 from lattice_data_tools import uwerr
+from lattice_data_tools import statistics
 
 class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
@@ -146,8 +147,14 @@ class BootstrapSamples(np.ndarray):
         """
         return np.std(self[1:].view(np.ndarray), axis=0, ddof=1)
 
+    def with_rescaled_error(self, A: float):
+        """ Rescale the error by a factor A: \\sigma --> A*\\sigma """
+        mu = self.unbiased_mean()
+        res = mu + A*(self - mu)
+        return res
+
     def covariance_matrix(self):
-        """ Bootstrap samples of covariance matrix estimate.
+        """ Estimate of covariance matrix from the bootstrap samples
 
         .. ldt-id:: BOOT-BootstrapSamples-covariance_matrix
         """
@@ -158,7 +165,7 @@ class BootstrapSamples(np.ndarray):
         return res
 
     def correlation_matrix(self):
-        """ Bootstrap samples of correlation matrix estimate.
+        """ Estimate of correlation matrix from the bootstrap samples
 
         .. ldt-id:: BOOT-BootstrapSamples-correlation_matrix
         """
@@ -290,7 +297,9 @@ class ParametricBootstraps:
         Numerically it might not be the case because of:
         - noise --> solved by rooting: using rho_rooted=sqrt(\\rho @ \\rho^T). This ensures that all lambda_k >= 0
         - entries differing by several orders of magnitude --> numerical instability, not solvable.
-          Use analogous function that uses correlation matrix for more stability.
+
+        - Using the correlation matrix mitigates the orders of magnitude difference (eigenvalues go from -1 to 1) --> more stable compared to covariance matrix.
+        - We further stabilize the semi-positive definiteness by imposing that the eigenvalues of \\rho @ \\rho.T are above \\epsilon=10^{-decimals}
         
         """ 
         # checking that the input arrays have the right sizes
@@ -300,10 +309,7 @@ class ParametricBootstraps:
         assert(rho.shape[0]==rho.shape[1])
         N = x_mean.shape[0] # number of variables
         # rooting \\rho
-        rhorhoT = (rho @ (rho.T)).round(decimals=15) # semi-positive definite by construction, numerically safe
-        lam4, M = np.linalg.eigh(rhorhoT) 
-        D = np.diag(np.sqrt(lam4)) # apply the rooting
-        rho_rooted = M @ D @ M.T # sqrt(rho @ rho.T)
+        rho_rooted = statistics.rooting(rho, decimals=decimals)
         if method=="Cholesky":
             """
             Multivariate with Cholesky decomposition: rho = L @ L^T = L @ 1 @ L^T
@@ -405,7 +411,7 @@ def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None):
     return Cg_binned
 #---
 
-def uncorrelated_confs_to_bts(x, N_bts, seed=12345):
+def uncorrelated_confs_to_bts(x, N_bts, seed: int):
     """Bootstrap samples from array of data
 
     generates Nb bootstrap samples from N configurations,

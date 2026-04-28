@@ -48,14 +48,16 @@ class NestedDict(defaultdict):
         else:
             super().__setitem__(key, value)
     #---
-    def get_key_combinations(self, parent_keys=None) -> List:
+    def get_key_combinations(self, parent_keys=None, max_depth=None, current_depth=0) -> List:
         """
-        Recursively extract all key combinations from a nested dictionary.
-        
+        Recursively extract all key combinations from a nested dictionary,
+        with optional depth limiting.
+
         Args:
-            d (dict): Nested dictionary.
             parent_keys (list): Used internally for recursion.
-        
+            max_depth (int, optional): Maximum depth to traverse.
+            current_depth (int): Current recursion depth (internal).
+
         Returns:
             list[list[str]]: List of key paths.
         """
@@ -65,10 +67,23 @@ class NestedDict(defaultdict):
         combos = []
         for k, v in self.items():
             new_keys = parent_keys + [k]
+
+            # If we've reached max depth, stop descending
+            if max_depth is not None and current_depth >= max_depth - 1:
+                combos.append(new_keys)
+                continue
+
             if isinstance(v, NestedDict):
-                combos.extend(v.get_key_combinations(new_keys))
+                combos.extend(
+                    v.get_key_combinations(
+                        new_keys,
+                        max_depth=max_depth,
+                        current_depth=current_depth + 1
+                    )
+                )
             else:
                 combos.append(new_keys)
+
         return combos
     #---
     @staticmethod

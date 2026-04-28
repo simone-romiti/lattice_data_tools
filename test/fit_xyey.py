@@ -32,7 +32,6 @@ ey = noise
 guess = np.array([0.0])
 fit1 = old_fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
-
 fit2 = fit_xyey(ansatz=ansatz, x=x, y=y, ey=ey, guess=guess)
 
 # correlated fit

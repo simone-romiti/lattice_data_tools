@@ -5,6 +5,8 @@ from typing import Dict, List, Optional
 from lattice_data_tools.bootstrap import BootstrapSamples
 from lattice_data_tools.dictionaries import NestedDict
 from lattice_data_tools.model_averaging.IC import valid_IC, with_CDF, get_weights
+import lattice_data_tools.statistics as statistics
+
 
 def get_unique(L: List) -> List:
     unique = []
@@ -75,7 +77,7 @@ class ModelAverage:
                 Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
         """
         w1 = {k: get_weights(ch2=ch2[k], n_par=n_par[k], n_data=n_data[k], IC=IC, Nmax=Nmax) for k in keys}
-        # distance between models not defined --> we use the median as an estimator of the marginal probability density
+        # distance between models not defined --> we use the mean as an estimator of the marginal probability density
         w1_keys = np.array([np.sum(w1[k]) for k in keys])
         w1_keys_normalized = w1_keys/np.sum(w1_keys)
         y1_list, P1_list = zip(*[(yP_k["y"], yP_k["P"]) for k in keys for yP_k in [ModelAverage.get_P(y=y[k], w=w1[k], lam=1.0)]])
@@ -84,14 +86,16 @@ class ModelAverage:
         sigma2_stat = 0.0
         sigma2_syst = 0.0 
         y_avg = np.mean(y1P1["y"])
+        mean = 0.0
         for i in range(n_models):
             mean_i = np.mean(y1_list[i])
-            var_i = with_CDF.variance_from_CDF(y=y1_list[i], P=P1_list[i])
+            mean += w1_keys_normalized[i] * mean_i
+            var_i = statistics.variance_from_CDF(y=y1_list[i], P=P1_list[i])
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
         IPR = np.sum(w1_keys_normalized**2)/(np.sum(w1_keys_normalized)**2) # Inverse Participation Ratio
-        return {"y": y1P1["y"], "P": y1P1["P"], "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat, "IPR": IPR}
+        return {"y": y1P1["y"], "P": y1P1["P"], "mean": mean, "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat, "IPR": IPR}
     #---
     @staticmethod
     def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int] = None):

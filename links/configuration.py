@@ -166,6 +166,13 @@ class GaugeConfiguration(color_matrices):
         self = GaugeConfiguration(U)
         return None
 
+    def gauge_transformation(self, V):
+        """
+        Apply a gauge transformation to this object:
+
+        U_\\mu(x) \\to V(x) @ U_\\mu(x) @ V^\\dagger(x+\\mu)
+        """
+    
 
 if __name__ == "__main__":
     device = torch.device("cpu")

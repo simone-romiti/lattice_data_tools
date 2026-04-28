@@ -1,7 +1,7 @@
 """
 Model averaging of lattice determinations using custom Information Criteria (e.g. Akaike Information Criterion, AIC).
 
-Each criterion is based on the values of the \chi^2 residual, number of parameters and number of data points.
+Each criterion is based on the values of the \\chi^2 residual, number of parameters and number of data points.
 
 Conventions here:
     - "AIC"  :=  chi2 + 2 * n_par - 2 * n_data,
@@ -22,6 +22,7 @@ from scipy.stats import norm
 from typing import List, Optional, Literal
 
 from lattice_data_tools.bootstrap import BootstrapSamples
+import lattice_data_tools.statistics as statistics
 
 valid_IC_list = ["AIC", "AICc", "BIC", "AIC_Ncut", "AIC_BMW"]
 valid_IC = Literal[*valid_IC_list]
@@ -269,45 +270,3 @@ class with_CDF:
         sigma2_syst = (np.sqrt(sigma2_tot_l1) - np.sqrt(sigma2_stat))**2
         return {"mean": y1_mean, "tot_lam1": sigma2_tot_l1, "tot_lam2": sigma2_tot_l2, "stat": sigma2_stat, "syst": sigma2_syst}
     #---
-    @staticmethod
-    def sample_from_CDF(y, P, n_samples=10_000):
-        """
-        Estimate the variance of a variable from its CDF (y, P) by inverse transform sampling.
-
-        Parameters
-        ----------
-        y : np.ndarray
-            Sorted variable values.
-        P : np.ndarray
-            Corresponding CDF values (monotonic increasing).
-        n_samples : int, optional
-            Number of uniform samples to draw from [0, 1].
-
-        Returns
-        -------
-        float
-            Estimated variance.
-        """
-        y = np.asarray(y)
-        P = np.asarray(P)
-
-        # Ensure CDF starts at 0 and ends at 1 (pad if necessary)
-        if P[0] > 0:
-            P = np.concatenate(([0.0], P))
-            y = np.concatenate(([y[0]], y))
-        if P[-1] < 1:
-            P = np.concatenate((P, [1.0]))
-            y = np.concatenate((y, [y[-1]]))
-
-        # Sample uniformly in [0, 1]
-        u = np.random.rand(n_samples)
-
-        # Inverse CDF interpolation
-        y_sampled = np.interp(u, P, y)
-        return y_sampled
-    #---
-    @staticmethod
-    def variance_from_CDF(y, P, n_samples=10_000):
-        y_sampled = with_CDF.sample_from_CDF(y=y, P=P, n_samples=n_samples)
-        # Return sample variance (unbiased)
-        return np.var(y_sampled, ddof=1)

@@ -1,11 +1,11 @@
-"""Abstract base class for statistical resampling arrays.
+"""
+Abstract base class for statistical resampling arrays.
 
 Defines the common interface for ``BootstrapSamples`` and ``JackknifeSamples``.
 Both subclasses are NumPy ndarray subclasses that hold resampled data and
 enforce the use of their own ``mean()`` and ``error()`` estimators instead of
 the standard NumPy equivalents.
 
-.. ldt-id:: SAMP-module
 """
 
 from abc import ABCMeta, abstractmethod

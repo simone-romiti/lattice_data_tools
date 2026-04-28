@@ -2,6 +2,11 @@
 Implementation of the L-CNN as described in:
 https://arxiv.org/abs/2012.12901
 
+TODO:
+- check gauge covariance (random gauge transformation)
+- implement L-CNN in one go
+- compare with line 198 of https://gitlab.com/openpixi/lge-cnn/-/blob/master/lge_cnn/nn/layers.py?ref_type=heads
+
 """
 
 import typing
@@ -225,19 +230,19 @@ if __name__ == "__main__":
     # U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(device).type(torch.complex64)
     print(U.shape)
     t2 = time.time()
-    print(f"{t2-t1} sec.")
+    print(f"t2-t1: {t2-t1} sec.")
     Plaq = get_plaquettes(U)
     t3 = time.time()
-    print(f"{t3-t2} sec.")
+    print(f"t3-t2: {t3-t2} sec.")
     Poly = get_Polyakov_loops(U)
     t4 = time.time()
-    print(f"{t4-t3} sec.")
+    print(f"t4-t3: {t4-t3} sec.")
     lcnn1 = LCNN()
     t5 = time.time()
-    print(f"{t5-t4} sec.")
+    print(f"t5-t4: {t5-t4} sec.")
     W = lcnn1.get_W(U=U)
     t6 = time.time()
-    print(f"{t6-t5} sec.")
+    print(f"t6-t5: {t6-t5} sec.")
     N_in = W.shape[-3]
     N_out = 100
     K = 5
@@ -245,19 +250,19 @@ if __name__ == "__main__":
     omega = torch.rand(N_out, N_in, d, 2*K+1, dtype=U.dtype, device=U.device)
     #omega = omega.type(U.type())
     t7 = time.time()
-    print(f"{t7-t6} sec.")
+    print(f"t7-t6: {t7-t6} sec.")
     U_PT = get_ParallelTransporters(U=U, K=K)
     t8 = time.time()
-    print(f"{t8-t7} sec.")
+    print(f"t8-t7: {t8-t7} sec.")
     W_shifted = get_W_shifted(U=U, U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
     t9 = time.time()
-    print(f"{t9-t8} sec.")
+    print(f"t9-t8: {t9-t8} sec.")
     W_conv = lcnn1.L_conv(U=U, W=W, omega=omega, K=K, N_out=N_out)
     t10 = time.time()
-    print(f"{t10-t9} sec.")
+    print(f"t10-t9: {t10-t9} sec.")
     W_conv_einsum = lcnn1.L_conv_einsum(U=U, W=W, omega=omega, K=K)
     t11 = time.time()
-    print(f"{t11-t10} sec.")
+    print(f"t11-t10: {t11-t10} sec.")
     print(f"N_in={N_in}, N_out={N_out}, K={K}")
     print(U.shape)
     print(Plaq.shape)
