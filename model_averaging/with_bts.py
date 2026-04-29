@@ -57,7 +57,7 @@ class ModelAverage:
         return {"y": y_flat, "P": P}
     #---
     @staticmethod
-    def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray], IC: valid_IC, Nmax: Optional[int] = None):
+    def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray], IC: valid_IC, Nmax: Optional[int] = None, seed: int = 1234):
         """
         Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988 (law of total variance)
         
@@ -90,7 +90,7 @@ class ModelAverage:
         for i in range(n_models):
             mean_i = np.mean(y1_list[i])
             mean += w1_keys_normalized[i] * mean_i
-            var_i = statistics.variance_from_CDF(y=y1_list[i], P=P1_list[i])
+            var_i = statistics.variance_from_CDF(y=y1_list[i], P=P1_list[i], seed=seed)
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---
@@ -98,7 +98,7 @@ class ModelAverage:
         return {"y": y1P1["y"], "P": y1P1["P"], "mean": mean, "sigma2_stat": sigma2_stat, "sigma2_syst": sigma2_syst, "sigma2_tot": sigma2_syst+sigma2_stat, "IPR": IPR}
     #---
     @staticmethod
-    def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int] = None):
+    def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int] = None, seed: int = 1234):
         """ 
         Computes automatically the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
         In practice, this function loops over all systematic effects and computes the marginalized CDFs at fixed value of each systematic effect.
@@ -153,7 +153,8 @@ class ModelAverage:
                 n_par = {k : get_subcase(n_par_list, k) for k in contribution_keys},
                 n_data = {k : get_subcase(n_pts_list, k) for k in contribution_keys},
                 IC = IC,
-                Nmax = Nmax
+                Nmax = Nmax,
+                seed = seed
                 )
             return res
         #---
