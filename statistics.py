@@ -4,7 +4,7 @@ General routines for statistical analysis
 
 import numpy as np
 
-def sample_from_CDF(y, P, n_samples=10_000):
+def sample_from_CDF(y, P, seed: int, n_samples: int =10_000):
     """
     Sample points y_sampled from the numerical histogram of the interpolated cumulative distribution P(y).
     
@@ -39,6 +39,7 @@ def sample_from_CDF(y, P, n_samples=10_000):
         y = np.concatenate((y, [y[-1]]))
 
     # Sample uniformly in [0, 1]
+    np.random.seed(seed)
     u = np.random.rand(n_samples)
 
     # Inverse CDF interpolation
@@ -46,9 +47,9 @@ def sample_from_CDF(y, P, n_samples=10_000):
     return y_sampled
 #---
 
-def variance_from_CDF(y, P, n_samples=10_000):
+def variance_from_CDF(y, P, seed: int, n_samples: int=10_000):
     """ unbiased estimator of sample variance from CDF histogram """
-    y_sampled = sample_from_CDF(y=y, P=P, n_samples=n_samples)
+    y_sampled = sample_from_CDF(y=y, P=P, seed=seed, n_samples=n_samples)
     return np.var(y_sampled, ddof=1) # Return sample variance (unbiased)
 
 
