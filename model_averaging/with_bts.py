@@ -54,7 +54,7 @@ class ModelAverage:
         if not (w_unique==0.0).all():
             P /= np.sum(w_unique)
         #---
-        return {"y": y_flat, "P": P}
+        return {"w_normalized": w_unique, "y": y_flat, "P": P}
     #---
     @staticmethod
     def error_budget(keys: List[str], y: Dict[str,BootstrapSamples], ch2: Dict[str,np.ndarray], n_par: Dict[str,np.ndarray], n_data: Dict[str,np.ndarray], IC: valid_IC, Nmax: Optional[int] = None, seed: int = 1234):
