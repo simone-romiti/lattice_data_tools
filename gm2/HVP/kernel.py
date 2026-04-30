@@ -3,14 +3,7 @@
 import numpy as np
 import typing
 import scipy
-
-# def integral_01(f, N: int):
-#     """ \\int_0^1 dy f(y) """
-#     eps = 1.0 / float(N)
-#     y = np.array([i*eps for i in range(N)]) + (eps/2)
-#     print(" ", np.trapz(y), eps)
-#     return eps*np.trapz(f(y))
-# #---
+from numba import njit
 
 
 def integral_01(f, N: int, method : typing.Literal["trapezoid", "rectangles", "Simpson"] = "trapezoid"):
@@ -22,7 +15,7 @@ def integral_01(f, N: int, method : typing.Literal["trapezoid", "rectangles", "S
     elif method=="rectangles":
         return eps*np.sum(f(y))
     elif method=="Simpson":
-        return scipy.integrate(y=y, dx=eps)
+        return scipy.integrate.simpson(f(y), x=y)
 #---
 
 

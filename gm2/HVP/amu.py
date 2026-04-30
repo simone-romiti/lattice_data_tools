@@ -8,7 +8,7 @@ from lattice_data_tools.constants import alpha_EM
 
 def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: float, strategy="trapezoidal"):
     """ 
-    a_\mu as in eq. 1 of https://inspirehep.net/literature/2615948
+    a_\\mu as in eq. 1 of https://inspirehep.net/literature/2615948
     
     ti : array of times in lattice units, e.g. [1,2,3,...]
     Vi : values of the (bare) correlator at each ti (already including the charge factors)
@@ -21,7 +21,7 @@ def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: floa
     integrand = t2*K*Vi
     res = 0.0
     if strategy == "trapezoidal":
-        res = np.trapz(integrand)
+        res = np.trapezoid(integrand)
     elif strategy == "rectangles":
         res = np.sum(integrand)
     elif strategy == "simpson":
@@ -35,7 +35,7 @@ def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: floa
 
 
 def get_amu(m: float, ti: np.ndarray, Vi: np.ndarray, N_int: int, strategy="trapezoidal"):
-    """ a_\mu from get_amu_precomp_K(), but computing the Kernel on the fly for each "t" """
+    """ a_\\mu from get_amu_precomp_K(), but computing the Kernel on the fly for each "t" """
     K = np.array([kernel.K(mt=m*t, N=N_int) for t in ti])
     return get_amu_precomp_K(ti=ti, Vi=Vi, K=K, strategy=strategy)
 ####
