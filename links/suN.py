@@ -169,6 +169,34 @@ def get_U_from_theta(theta: torch.Tensor):
     return U
 #---
 
+def apply_hotstart(U, seed: int):
+    """
+    Initialize gauge links to random SU(Nc) elements,
+    following the recipe of page 11 of https://arxiv.org/pdf/math-ph/0609050
+
+    Each link matrix is constructed by:
+      1. Drawing an Nc×Nc random complex matrix.
+      2. Applying row-wise Gram-Schmidt orthonormalization -> U(Nc) matrix.
+      3. Dividing the first row by the Nc-th root of det(U) -> SU(Nc) matrix.
+
+    Returns: configuration of links. shape: (..., Nc, Nc)
+    """
+    torch.manual_seed(seed) # seeting the RNG seed for reproducibility
+    # generating a random complex matrix
+    imag_part = torch.randn(U.shape, dtype=U.real.dtype, device=U.device) # real part
+    real_part = torch.randn(U.shape, dtype=U.imag.dtype, device=U.device) # imaginary part
+    Z = (real_part + 1j*imag_part)/np.sqrt(2.0)
+    Q, R = torch.linalg.qr(Z) # QR decomposition: https://en.wikipedia.org/wiki/QR_decomposition
+    diag = torch.diagonal(R, dim1=-2, dim2=-1) # (..., Nc) --> extracts R_ii
+    signs = diag / diag.abs() # R_ii / |R_ii|
+    Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
+    Qprime = Q @ Lam
+    detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
+    U = Q / detQprime # Q is unitary, we need to impose det(U)==1
+    self = GaugeConfiguration(U)
+    return None
+#---
+
 
 if __name__ == "__main__":
     Nc = 3 # number of colors

@@ -5,10 +5,10 @@ import numpy as np
 import torch
 import sys
 sys.path.append("../../")
-from lattice_data_tools.links.suN import get_Ng, get_U_from_theta
+import lattice_data_tools.links.suN as suN
 
 
-class color_matrices(torch.Tensor):
+class ColorMatrix(torch.Tensor):
     """
     Tensor representing a configuration of color matrices:
     (B, L1, ..., Ld, d, ..., Nc, Nc)
@@ -29,9 +29,9 @@ class color_matrices(torch.Tensor):
         if kwargs is None:
             kwargs = {}
         ret = super().__torch_function__(func, types, args, kwargs)
-        if isinstance(ret, color_matrices):
+        if isinstance(ret, ColorMatrix):
             src = next((a for a in torch.utils._pytree.tree_leaves(args)
-                        if isinstance(a, color_matrices)), None)
+                        if isinstance(a, ColorMatrix)), None)
             if src is not None:
                 ret._lattice_shape = src._lattice_shape
                 ret._d = src._d
@@ -40,16 +40,16 @@ class color_matrices(torch.Tensor):
 
     def dim(self):
         raise AttributeError(
-            "'color_matrices' intentionally disables .dim(). "
+            "'ColorMatrix' intentionally disables .dim(). "
             "Use .n_dims for the number of lattice dimensions, "
             "or .as_subclass(torch.Tensor).dim() for the tensor rank."
         )
 
     def __mul__(self, other):
-        raise TypeError("'color_matrices' disables '*'. Use '@' for matrix multiplication.")
+        raise TypeError("'ColorMatrix' disables '*'. Use '@' for matrix multiplication.")
 
     def __rmul__(self, other):
-        raise TypeError("'color_matrices' disables '*'. Use '@' for matrix multiplication.")
+        raise TypeError("'ColorMatrix' disables '*'. Use '@' for matrix multiplication.")
 
     _DOWNCAST_OPS = {
         torch.Tensor.__add__,
@@ -103,7 +103,7 @@ class color_matrices(torch.Tensor):
         pass
 
 
-class GaugeConfiguration(color_matrices):
+class GaugeConfiguration(ColorMatrix):
     """
     Tensor representing a gauge configuration (in the fundamental representation) with shape:
     (B, L1, ..., Ld, d, Nc, Nc)
@@ -126,7 +126,7 @@ class GaugeConfiguration(color_matrices):
     @property
     def Ng(self):
         """Number of generators of the Lie algebra: Nc^2 - 1 for SU(Nc)."""
-        return get_Ng(Nc=self.Nc)
+        return suN.get_Ng(Nc=self.Nc)
 
     @staticmethod
     def from_theta(theta: torch.Tensor) -> "GaugeConfiguration":
@@ -136,43 +136,40 @@ class GaugeConfiguration(color_matrices):
 
         NOTE: inverse function does not exist --> see implementation
         """
-        return GaugeConfiguration(get_U_from_theta(theta=theta))
+        return GaugeConfiguration(suN.get_U_from_theta(theta=theta))
     #---
 
-    def hotstart(self, seed: int):
-        """
-        Initialize gauge links to random SU(Nc) elements,
-        following the recipe of page 11 of https://arxiv.org/pdf/math-ph/0609050
-
-        Each link matrix is constructed by:
-          1. Drawing an Nc×Nc random complex matrix.
-          2. Applying row-wise Gram-Schmidt orthonormalization → U(Nc) matrix.
-          3. Dividing the first row by the Nc-th root of det(U) → SU(Nc) matrix.
-
-        Returns: GaugeConfiguration  shape: (B, L1, ..., Ld, d, Nc, Nc)
-        """
-        torch.manual_seed(seed) # seeting the RNG seed for reproducibility
-        # generating a random complex matrix
-        imag_part = torch.randn(self.shape, dtype=self.real.dtype, device=self.device) # real part
-        real_part = torch.randn(self.shape, dtype=self.imag.dtype, device=self.device) # imaginary part
-        Z = (real_part + 1j*imag_part)/np.sqrt(2.0)
-        Q, R = torch.linalg.qr(Z) # QR decomposition: https://en.wikipedia.org/wiki/QR_decomposition
-        diag = torch.diagonal(R, dim1=-2, dim2=-1) # (..., Nc) --> extracts R_ii
-        signs = diag / diag.abs() # R_ii / |R_ii|
-        Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
-        Qprime = Q @ Lam
-        detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
-        U = Q / detQprime # Q is unitary, we need to impose det(U)==1
-        self = GaugeConfiguration(U)
+    def hotstart(self, seed: int) -> None:
+        suN.apply_hotstart(seed=seed)
         return None
 
-    def gauge_transformation(self, V):
+    def Left_gauge_transformation(self, V: torch.Tensor):
         """
-        Apply a gauge transformation to this object:
+        Apply a LEFT gauge transformation to this object:
 
-        U_\\mu(x) \\to V(x) @ U_\\mu(x) @ V^\\dagger(x+\\mu)
+        U_\\mu(x) \\to V(x) @ U_\\mu(x)
+
+        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
         """
-    
+        self = V.unqueeze(-1).expand(*(self.shape)) @ self
+    #---
+    def Right_gauge_transformation(self, V: torch.Tensor):
+        """
+        Apply a LEFT gauge transformation to this object:
+
+        U_\\mu(x) \\to U_\\mu(x) @ V(x + \\mu)^\\dagger
+
+        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
+        """
+        for mu in range(self.n_dims):
+            V_xpmu = torch.roll(torch.roll(V, -1, dims=1+nu)) # V(x + \\mu)^\\dagger
+            self = self @ V_xpmu.adjoint()
+    #---
+    def gauge_transformation(V: torch.Tensor):
+        self.Left_gauge_transformation(V=V)
+        self.Right_gauge_transformation(V=V)
+    #---
+        
 
 if __name__ == "__main__":
     device = torch.device("cpu")
@@ -180,7 +177,7 @@ if __name__ == "__main__":
     d = 4
     Lmu = d * [12]
     Nc = 3
-    Ng = get_Ng(Nc=Nc)
+    Ng = suN.get_Ng(Nc=Nc)
     # random angles in [-\pi, \pi]
     theta = -torch.pi + (2 * torch.pi) * torch.rand(B, *Lmu, d, Ng).type(torch.float64)
     U = GaugeConfiguration.from_theta(theta)
@@ -209,3 +206,8 @@ if __name__ == "__main__":
     except AttributeError as e:
         print(f"U.dim() correctly raised AttributeError: {e}")
     #---
+    print("Applying gauge transformations")
+    V = suN.apply_hotstart(U[...,0,:,:].clone())
+    U.gauge_transformation(V=V)
+    
+    

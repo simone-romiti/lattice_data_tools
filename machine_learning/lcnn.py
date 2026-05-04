@@ -18,120 +18,21 @@ sys.path.append("../../")
 
 from lattice_data_tools.links.suN import get_Tr, get_ReTr, get_U_from_theta
 from lattice_data_tools.links.configuration import GaugeConfiguration
-
-
-def get_plaquettes(U: torch.Tensor):
-    """
-    Returns the array of plaquettes, assuming periodic boundary conditions on a L^d lattice.
-    
-    U: batch of gauge configurations U^{(b)}(x, mu) as Nc \\times Nc matrices, with x=(x_1,...x_d).
-       It is passed as a multi-dimensional array U[b, L1,L2,...,Ld, d, Nc, Nc],
-       where N_c is the number of colors.
-    """
-    assert(U.is_complex()) # check that the gauge configuration is complex-valued
-    d = U.shape[-3] # number of dimensions of the lattice
-    plaqs = []
-    # loop over the positive-oriented plaquettes
-    for mu in range(d):
-        for nu in range(mu + 1, d):
-            U_mu = U[..., mu, :, :] # U_\\mu(\cdot) : all links along the direction \\mu
-            U_nu = U[..., nu, :, :] # U_\\nu(\cdot) : all links along the direction \\nu
-            # Spatial dim \\mu is dim \\mu+1 in the full tensor (batch at 0)
-            U_mu_fwd = torch.roll(U_mu, -1, dims=1+nu) # U_\\mu(x + \\nu): shifting **backwards**
-            U_nu_fwd = torch.roll(U_nu, -1, dims=1+mu) # U_\\nu(x + \\mu): shifting **backwards**
-            P_munu = U_mu @ U_nu_fwd @ U_mu_fwd.adjoint() @ U_nu.adjoint() # U_\\mu(x)*U_\\nu(x+\mu)*U_\\mu(x+\\nu)^\dagger*U_\\mu(x)^\dagger
-            plaqs.append(P_munu) # appending the plaquette to the list
-    #-------
-    plaqs = torch.stack(plaqs, dim=-3)
-    return plaqs
-#---
-
-
-def get_Polyakov_loops(U: torch.Tensor):
-    """
-    Computes the Polyakov loops for each direction mu.
-    
-    U: [batch, L1, L2, ..., Ld, d, Nc, Nc]
-    Returns: A tensor of shape [batch, L1, ..., Ld, d, Nc, Nc] 
-             where the L_mu dimension is reduced or contains the loop.
-             Commonly, it returns [batch, (transverse_dims), d, Nc, Nc].
-    """
-    assert(U.is_complex())
-    d = U.shape[-3] # number of dimensions
-    lattice_shape = U.shape[1:-3] # shape of the lattice points grid
-    Poly = U.clone() # copy of the links. In the loop, each is extended to its Polyakov loop
-    for mu in range(d):
-        L_mu = lattice_shape[mu] # extension of the lattice over the \\mu-th direction
-        for k in range(1, L_mu):
-            Poly[..., mu, :, :] @= torch.roll(U, -k, dims=1+mu)[..., mu, :,:] # P_\\mu(x) --> P_\\mu(x)*U_\\mu(x+mu)
-    #-------
-    return Poly
-#---
-
-def get_ParallelTransporters(U: torch.tensor, K: int):
-    """
-    Returns the array of the parallel transporters \\prod_{i=0}^{j} U_\\mu(x+i*\\mu) , j=0,...,k
-
-    Namely, the ones corresponding to a parallel transport along an axis, for up to "k" steps in the lattice spacing.
-    """
-    assert(U.is_complex())
-    lattice_shape = U.shape[1:-3] # shape of the lattice points grid
-    assert all(K <= Lmu for Lmu in lattice_shape) # the parallel transporters for |k|>L_\mu would be a redundancy
-    d = U.shape[-3] # number of dimensions
-    # array of parallel transporters V_{\mu,i}(x)
-    # i=-K,...,K --> 2*K+1 components
-    # I extend the original configuration and iteratively build the parallel transporters for each \\mu and "k"
-    new_shape = tuple(U.shape[0:-2]) + (2*K+1,) + tuple(U.shape[-2:]) # shape: (batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
-    ParallelTransporters = U.unsqueeze(-3).expand(*new_shape).clone()
-    for mu in range(d):
-        # loop over k=-K,...,-1,+1,...,K.
-        # NOTE: k=K corresponds to the link U_\mu(x): a parallel transport over 1 lattice site
-        for k in range(1, K+1):
-            i_bkw = K-k # index of the backward parallel transporter
-            i_fwd = K+k # index of the forward parallel transporter
-            # U_shift = torch.roll(ParallelTransporters, -k, dims=1+mu) # U_{\\mu}(x+k*\\mu)
-            PT_k_bkw = ParallelTransporters[..., mu, i_bkw, :, :]
-            PT_k_bkw = ParallelTransporters[..., mu, i_bkw+1, :, :] @ PT_k_bkw # iterative contruction
-            PT_k_fwd = ParallelTransporters[..., mu, i_fwd, :, :]
-            PT_k_fwd = ParallelTransporters[..., mu, i_fwd-1, :, :] @ PT_k_fwd # iterative contruction
-    #-------
-    return ParallelTransporters
-#---    
-
-
-def get_W_shifted(U: torch.tensor, U_PT: torch.tensor, W: torch.tensor):
-    """
-    Returns W_\\mu(x+k*\\mu), as a tensor of shape  (batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
-
-    U: gauge configuration. shape:  (batch_size,L1,...,Ld,d,Nc,Nc)
-    U_PT: parallel transporters. shape:  (batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
-    W: locally gauge-transforming variables. shape  (batch_size,L1,...,Ld, N_var, Nc,Nc)
-    
-    """
-    d = U.shape[-3] # number of dimensions
-    nK = U_PT.shape[-3] # makimum length of paraller transport along an axis
-    K = (nK-1)//2 # nK = 2*K+1
-    new_shape = tuple(W.shape[0:-2]) + (d,nK,) + tuple(W.shape[-2:]) # shape: (batch_size,L1,...,Ld,N_var,d,2*K+1,Nc,Nc) 
-    W_shifted = torch.empty(new_shape, dtype=W.dtype, device=W.device)
-    for k in range(-K, K+1):
-        i_k = k+K
-        for mu in range(d):
-            W_shifted[...,mu,i_k,:,:] = torch.roll(W, shifts=-k, dims=1+mu) # W_\\mu(x+k*\\mu)
-    #-------
-    return W_shifted
-#---
-
+from lattice_data_tools.links.loops import WilsonLoopsGenerator
+from lattice_data_tools.links.parallel_transport import get_ParallelTransporters, get_W_shifted
 
 
 class LCNN(torch.nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, U: GaugeConfiguration) -> None:
         super().__init__()
+        self.U = U
+        self.loops_generator = WilsonLoopsGenerator(U)
     #---
 
     def get_W(self, U: torch.tensor):
         """ List of locally transforming variables, as a tensor of shape (batch_size, n_variables, Nc,Nc) """
-        Plaq = get_plaquettes(U)
-        Poly = get_Polyakov_loops(U) 
+        Plaq = self.loops_generator.plaquettes()
+        Poly = self.loops_generator.Polyakov_loops() 
         W = torch.cat((Plaq, Poly), dim=-3)
         return W
     #---
@@ -226,18 +127,19 @@ if __name__ == "__main__":
     Ng = Nc**2 - 1
     theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device).type(torch.float64) # random angles in [-\\pi,\\pi]
     U = GaugeConfiguration.from_theta(theta)
+    loops_generator = WilsonLoopsGenerator(U=U)
     # U = get_U_from_theta(theta=theta, N=Nc)
     # U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(device).type(torch.complex64)
     print(U.shape)
     t2 = time.time()
     print(f"t2-t1: {t2-t1} sec.")
-    Plaq = get_plaquettes(U)
+    Plaq = loops_generator.plaquettes()
     t3 = time.time()
     print(f"t3-t2: {t3-t2} sec.")
-    Poly = get_Polyakov_loops(U)
+    Poly = loops_generator.Polyakov_loops()
     t4 = time.time()
     print(f"t4-t3: {t4-t3} sec.")
-    lcnn1 = LCNN()
+    lcnn1 = LCNN(U=U)
     t5 = time.time()
     print(f"t5-t4: {t5-t4} sec.")
     W = lcnn1.get_W(U=U)
