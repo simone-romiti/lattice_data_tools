@@ -28,4 +28,6 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest test/ -v --tb=short
+          cd test
+          pytest ./Luescher_condition.py  -v --tb=short
+          pytest ./covariance_matrix_bts.py  -v --tb=short
