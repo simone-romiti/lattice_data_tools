@@ -154,7 +154,7 @@ def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.flo
 #---
 
 def get_mean_and_sigma2(y16, y50, y84):
-    """ Returns mean and variance from the percentiles """
+    """ Returns mean and variance from the percentiles (assuming the distribution is Gaussian) """
     y_mean = y50
     sigma2_tot = ((y84-y16)/2.0)**2.0
     return (y_mean, sigma2_tot)

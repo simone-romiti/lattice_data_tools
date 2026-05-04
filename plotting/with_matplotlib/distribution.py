@@ -10,19 +10,19 @@ class DistributionPlotter:
         self.fix = fix
         self.ax = ax
 
-    def cdf(self, x: np.ndarray, color='blue'):
+    def cdf(self, x: np.ndarray, color='blue', label=None):
         assert x.ndim == 1, "x should be a 1D array of values"
         N = x.shape[0]
         sorted_x = np.sort(x)
         cdf_values = np.arange(1, N+1) / N
         #
-        (self.ax).plot(sorted_x, cdf_values, color=color)
+        (self.ax).plot(sorted_x, cdf_values, color=color, label=label)
     #---
 
-    def pdf(self, x: np.ndarray, bins=typing.Literal["sqrtN"], color='blue'):
+    def pdf(self, x: np.ndarray, bins=typing.Literal["sqrtN"], color='blue', label=None):
         assert x.ndim == 1, "x should be a 1D array of values"
         N = x.shape[0]
         if bins == "sqrtN":
             bins = int(np.sqrt(N))
-        (self.ax).hist(x, bins=bins, density=True, color=color, alpha=0.7)
+        (self.ax).hist(x, bins=bins, density=True, color=color, alpha=0.7, label=label)
     #---
