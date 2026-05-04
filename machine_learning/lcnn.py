@@ -13,9 +13,6 @@ import typing
 from itertools import chain
 import torch
 
-import sys
-sys.path.append("../../")
-
 from lattice_data_tools.links.suN import get_Tr, get_ReTr, get_U_from_theta
 from lattice_data_tools.links.configuration import GaugeConfiguration
 from lattice_data_tools.links.loops import WilsonLoopsGenerator
@@ -23,21 +20,33 @@ from lattice_data_tools.links.parallel_transport import get_ParallelTransporters
 
 
 class LCNN(torch.nn.Module):
-    def __init__(self, U: GaugeConfiguration) -> None:
+    def __init__(self, U: GaugeConfiguration, K: int) -> None:
+        """
+        U: tensor representing a gauge configuration. shape: (batchsize, L1,...Ld, d, Nc, Nc)
+        K: cf. eq. 5 of https://arxiv.org/pdf/2012.12901
+        N_in, N_out: cf. eq. 6 of https://arxiv.org/pdf/2012.12901
+
+        """
         super().__init__()
         self.U = U
-        self.loops_generator = WilsonLoopsGenerator(U)
+        self.WLG = WilsonLoopsGenerator(U)
+        self.K = K # K <= k <= K in the parallel transporters of length "k"
     #---
-
-    def get_W(self, U: torch.tensor):
-        """ List of locally transforming variables, as a tensor of shape (batch_size, n_variables, Nc,Nc) """
-        Plaq = self.loops_generator.plaquettes()
-        Poly = self.loops_generator.Polyakov_loops() 
-        W = torch.cat((Plaq, Poly), dim=-3)
-        return W
+    def get_W(self):
+        """
+        List of locally transforming variables,
+        as a tensor of shape (batch_size, n_variables, Nc,Nc)
+        """
+        Plaq = self.WLG.plaquettes()
+        Poly = self.WLG.Polyakov_loops() 
+        return torch.cat((Plaq, Poly), dim=-3)
     #---
-    
-    def L_conv(self, U: torch.tensor, W: torch.tensor, omega: torch.tensor, K: int, N_out: int):
+    def get_Wprime(self, U: torch.Tensor, U_PT: torch.Tensor,  W: torch.Tensor):
+        """ W' as in eq. 11 of https://arxiv.org/pdf/2012.12901 """
+        Wprime = get_W_shifted(U=U, U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
+        return Wprime        
+    #---
+    def apply_L_conv(self, U: torch.Tensor, W: torch.Tensor, omega: torch.Tensor, K: int, N_out: int):
         """
         Eq. 5 of https://arxiv.org/pdf/2012.12901
 
@@ -53,7 +62,7 @@ class LCNN(torch.nn.Module):
         """
         d = U.shape[-3] # number of dimensions
         W_conv = torch.zeros(*(U.shape[0:-3] +  (N_out,) + U.shape[-2:])).type(U.type())
-        ParallelTransporters = get_ParallelTransporters(U=U, K=K)
+        ParallelTransporters = get_ParallelTransporters(U=U, K=self.K)
         for k in range(-K, K+1):
             i_k = k+K
             for mu in range(d):
@@ -63,19 +72,14 @@ class LCNN(torch.nn.Module):
         #-------
         return W_conv
     #---
-
-    def L_conv_einsum(self, U: torch.tensor, W: torch.tensor, omega: torch.tensor, K: int):
+    def L_conv(self, U: torch.Tensor, U_PT: torch.Tensor, Wprime: torch.Tensor, omega: torch.Tensor, K: int):
         """
-        Same as L_conv(), but using Einstein summation.
-        It is slower that L_conv(), because it needs to compute W_shifted, which have to be allocated
+        Eq. 5 of https://arxiv.org/pdf/2012.12901, using Wprime as in eq. 11.
         """
-        U_PT = get_ParallelTransporters(U=U, K=K)
-        W_shifted = get_W_shifted(U=U, U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
-        W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, W_shifted, U_PT.adjoint())
+        W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, Wprime, U_PT.adjoint())
         return W_conv
     #---
-
-    def L_Bilin(W: torch.tensor, Wprime: torch.tensor, alpha: torch.tensor):
+    def L_Bilin(W: torch.Tensor, Wprime: torch.Tensor, alpha: torch.Tensor):
         """
         Eq. 6 of https://arxiv.org/pdf/2012.12901
         
@@ -83,8 +87,7 @@ class LCNN(torch.nn.Module):
         """
         return torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
     #---
-
-    def L_act(self, U: torch.tensor, W: torch.tensor, act_func: typing.Callable = lambda U, W: torch.tanh(get_ReTr(W=W))):
+    def L_act(self, U: torch.Tensor, W: torch.Tensor, act_func: typing.Callable = lambda U, W: torch.tanh(get_ReTr(W=W))):
         """
         Eq. 7 of https://arxiv.org/pdf/2012.12901
 
@@ -92,8 +95,7 @@ class LCNN(torch.nn.Module):
         """
         return act_func(U,W) * W
     #---
-
-    def L_exp(self, U: torch.tensor, W: torch.tensor, beta: torch.tensor):
+    def L_exp(self, U: torch.Tensor, W: torch.Tensor, beta: torch.Tensor):
         """
         Eqs. 8 and 9 of https://arxiv.org/pdf/2012.12901
         beta: parameters. shape: (d, N_ch)
@@ -109,73 +111,18 @@ class LCNN(torch.nn.Module):
         EU = E @ U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return EU
     #---
+    def all_layers(self, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable):
+        U_PT = get_ParallelTransporters(U=U, K=self.K)
+        W = self.get_W() # set of locally transforming variables
+        Wprime = self.get_Wprime(U=self.U, W=W) # W' as in eq. 11 of https://arxiv.org/pdf/2012.12901
+        W_conv = self.L_conv(U=self.U, U_PT=U_PT, Wprime=Wprime, omega=omega, K=self.K) # W after eq. 5 of https://arxiv.org/pdf/2012.12901
+        W_bilin = self.L_Bilin(Wprime=Wprime, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
+        W_act = self.L_act(U=U, W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
+        EU = self.L_exp(U=self.U, W=W_act, beta=beta)
+        return EU
  #---
                 
 
 
-if __name__ == "__main__":
-    import time
-    print("===========================")
-    print("L-CNN implementation script")
-    print("===========================")
-    device = torch.device("cpu")
-    B = 1
-    d = 3
-    Lmu = d*[8]
-    Nc = 3
-    t1 = time.time()
-    Ng = Nc**2 - 1
-    theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device).type(torch.float64) # random angles in [-\\pi,\\pi]
-    U = GaugeConfiguration.from_theta(theta)
-    loops_generator = WilsonLoopsGenerator(U=U)
-    # U = get_U_from_theta(theta=theta, N=Nc)
-    # U = torch.randn(B, *Lmu[0:d], d, Nc, Nc).to(device).type(torch.complex64)
-    print(U.shape)
-    t2 = time.time()
-    print(f"t2-t1: {t2-t1} sec.")
-    Plaq = loops_generator.plaquettes()
-    t3 = time.time()
-    print(f"t3-t2: {t3-t2} sec.")
-    Poly = loops_generator.Polyakov_loops()
-    t4 = time.time()
-    print(f"t4-t3: {t4-t3} sec.")
-    lcnn1 = LCNN(U=U)
-    t5 = time.time()
-    print(f"t5-t4: {t5-t4} sec.")
-    W = lcnn1.get_W(U=U)
-    t6 = time.time()
-    print(f"t6-t5: {t6-t5} sec.")
-    N_in = W.shape[-3]
-    N_out = 100
-    K = 5
-    # omega = torch.rand(N_out, N_in, d, 2*K+1) # convolution coefficients
-    omega = torch.rand(N_out, N_in, d, 2*K+1, dtype=U.dtype, device=U.device)
-    #omega = omega.type(U.type())
-    t7 = time.time()
-    print(f"t7-t6: {t7-t6} sec.")
-    U_PT = get_ParallelTransporters(U=U, K=K)
-    t8 = time.time()
-    print(f"t8-t7: {t8-t7} sec.")
-    W_shifted = get_W_shifted(U=U, U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
-    t9 = time.time()
-    print(f"t9-t8: {t9-t8} sec.")
-    W_conv = lcnn1.L_conv(U=U, W=W, omega=omega, K=K, N_out=N_out)
-    t10 = time.time()
-    print(f"t10-t9: {t10-t9} sec.")
-    W_conv_einsum = lcnn1.L_conv_einsum(U=U, W=W, omega=omega, K=K)
-    t11 = time.time()
-    print(f"t11-t10: {t11-t10} sec.")
-    print(f"N_in={N_in}, N_out={N_out}, K={K}")
-    print(U.shape)
-    print(Plaq.shape)
-    print(Poly.shape)
-    print(U_PT.shape)
-    print(W.shape)
-    print(W_conv.shape)
-    print("Checking the einsum implementation of the convolution")
-    dW_conv = W_conv - W_conv_einsum
-    print("Absolute values")
-    dW_conv_abs = torch.abs(dW_conv)
-    print("Hello", type(dW_conv_abs))
-    print(torch.max(torch.abs(W_conv)))
-    print(torch.max(dW_conv_abs))
+    
+    

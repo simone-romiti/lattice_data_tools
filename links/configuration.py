@@ -3,8 +3,6 @@
 from abc import abstractmethod
 import numpy as np
 import torch
-import sys
-sys.path.append("../../")
 import lattice_data_tools.links.suN as suN
 
 
@@ -101,6 +99,60 @@ class ColorMatrix(torch.Tensor):
     @abstractmethod
     def validate(self):
         pass
+    #---
+    def Left_gauge_transformation(self, V: torch.Tensor) -> None:
+        """
+        Apply a LEFT gauge transformation to this object:
+
+        U_\\mu(x) \\to V(x) @ U_\\mu(x)
+
+        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
+        """
+        self.copy_(V.unsqueeze(-3).expand(*(self.shape)) @ self)
+        return None
+    #---
+    def Right_gauge_transformation(self, V: torch.Tensor) -> None:
+        """
+        Apply a LEFT gauge transformation to this object:
+
+        U_\\mu(x) \\to U_\\mu(x) @ V(x + \\mu)^\\dagger
+
+        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
+        """
+        for mu in range(self.n_dims):
+            V_xpmu = torch.roll(input=V, shifts=-1, dims=1+mu) # V(x + \\mu)^\\dagger
+            self[...,mu,:,:] = (self[...,mu,:,:] @ V_xpmu.adjoint())
+        #---
+        return None
+    #---
+    def gauge_transformation(self, V: torch.Tensor) -> None:
+        self.Left_gauge_transformation(V=V)
+        self.Right_gauge_transformation(V=V)
+        return None
+    #---
+    def random_gauge_transformation(self, seed: int) -> None:
+        V = self[...,0,:,:].clone() # same shape of U
+        suN.apply_hotstart(V, seed=seed) # setting V to be a random transformation
+        self.gauge_transformation(V=V)
+        return None
+    #---
+    def local_transformation(self, V: torch.Tensor) -> None:
+        """
+        Local gauge transformation:
+
+        U_\\mu(x) \\to V(x) U_\\mu(x) @ V(x)^\\dagger
+        
+        """
+        self.copy_(V[...,None,:,:] @ self) #  V(x) U_\\mu(x) 
+        self.copy_(self @ V[...,None,:,:]) #  V(x) U_\\mu(x) V(x)^\\dagger
+        return None
+    #---
+    def random_local_transformation(self, seed: int) -> None:
+        V = self[...,0,:,:].clone() # same shape of U
+        suN.apply_hotstart(V, seed=seed) # setting V to be a random transformation
+        self.local_transformation(V=V)
+        return None
+    #---
 
 
 class GaugeConfiguration(ColorMatrix):
@@ -124,7 +176,7 @@ class GaugeConfiguration(ColorMatrix):
             raise ValueError(f"Invalid shape {self.shape}, expected {expected}")
 
     @property
-    def Ng(self):
+    def Ng(self) -> int:
         """Number of generators of the Lie algebra: Nc^2 - 1 for SU(Nc)."""
         return suN.get_Ng(Nc=self.Nc)
 
@@ -140,74 +192,10 @@ class GaugeConfiguration(ColorMatrix):
     #---
 
     def hotstart(self, seed: int) -> None:
-        suN.apply_hotstart(seed=seed)
+        suN.apply_hotstart(U=self, seed=seed)
         return None
 
-    def Left_gauge_transformation(self, V: torch.Tensor):
-        """
-        Apply a LEFT gauge transformation to this object:
+#---
 
-        U_\\mu(x) \\to V(x) @ U_\\mu(x)
-
-        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
-        """
-        self = V.unqueeze(-1).expand(*(self.shape)) @ self
-    #---
-    def Right_gauge_transformation(self, V: torch.Tensor):
-        """
-        Apply a LEFT gauge transformation to this object:
-
-        U_\\mu(x) \\to U_\\mu(x) @ V(x + \\mu)^\\dagger
-
-        V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
-        """
-        for mu in range(self.n_dims):
-            V_xpmu = torch.roll(torch.roll(V, -1, dims=1+nu)) # V(x + \\mu)^\\dagger
-            self = self @ V_xpmu.adjoint()
-    #---
-    def gauge_transformation(V: torch.Tensor):
-        self.Left_gauge_transformation(V=V)
-        self.Right_gauge_transformation(V=V)
-    #---
-        
-
-if __name__ == "__main__":
-    device = torch.device("cpu")
-    B = 1
-    d = 4
-    Lmu = d * [12]
-    Nc = 3
-    Ng = suN.get_Ng(Nc=Nc)
-    # random angles in [-\pi, \pi]
-    theta = -torch.pi + (2 * torch.pi) * torch.rand(B, *Lmu, d, Ng).type(torch.float64)
-    U = GaugeConfiguration.from_theta(theta)
-    U.hotstart(seed=12345)
-    Udag = U.adjoint()
-    print("Type and shape of the gauge configuration")
-    print("U:", type(U), U.shape)
-    print("Udag:", type(Udag), U.shape)
-    print("Unitarity check:", torch.allclose(U @ Udag, torch.eye(Nc).type(U.type())))
-    print("B=", U.batch_size)
-    print("Lattice shape: ", U.lattice_shape)
-    print("d=", U.n_dims)
-    print("n_links=", U.n_links)
-    print("Nc=", U.Nc)
-    # behaviour checks
-    print("\n behaviour checks \n")
-    print("U + U type:", type(U+U))
-    print("U - U type:", type(U-U))
-    print("U @ Udag type:", type(U @ Udag))
-    try:
-        _ = U * U
-    except TypeError as e:
-        print(f"U * U correctly raised TypeError: {e}")
-    try:
-        _ = U.dim()
-    except AttributeError as e:
-        print(f"U.dim() correctly raised AttributeError: {e}")
-    #---
-    print("Applying gauge transformations")
-    V = suN.apply_hotstart(U[...,0,:,:].clone())
-    U.gauge_transformation(V=V)
     
     

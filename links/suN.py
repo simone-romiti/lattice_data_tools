@@ -169,7 +169,7 @@ def get_U_from_theta(theta: torch.Tensor):
     return U
 #---
 
-def apply_hotstart(U, seed: int):
+def apply_hotstart(U: torch.Tensor, seed: int):
     """
     Initialize gauge links to random SU(Nc) elements,
     following the recipe of page 11 of https://arxiv.org/pdf/math-ph/0609050
@@ -179,7 +179,8 @@ def apply_hotstart(U, seed: int):
       2. Applying row-wise Gram-Schmidt orthonormalization -> U(Nc) matrix.
       3. Dividing the first row by the Nc-th root of det(U) -> SU(Nc) matrix.
 
-    Returns: configuration of links. shape: (..., Nc, Nc)
+    Returns: configuration of links. shape: (..., Nc, Nc).
+             The first components of the shape are deduced from the shape of U.
     """
     torch.manual_seed(seed) # seeting the RNG seed for reproducibility
     # generating a random complex matrix
@@ -192,9 +193,20 @@ def apply_hotstart(U, seed: int):
     Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
     Qprime = Q @ Lam
     detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
-    U = Q / detQprime # Q is unitary, we need to impose det(U)==1
-    self = GaugeConfiguration(U)
+    U.copy_(Q / detQprime) # Q is just unitary, we need to impose det(U)==1
     return None
+#---
+
+def gen_random_gauge_transformation(shape: torch.Size, dtype: torch.dtype, seed: int):
+    """
+    Returns a tensor of links V that generate a gauge transformation,
+    using the provided shape.
+
+    U_\\mu(x) --> V(x) U_\\mu(x) V^{\\dagger}(x+\\mu) , \\forall x,\\mu
+    """
+    V = torch.zeros(size=shape, dtype=dtype)
+    apply_hotstart(U=V, seed=seed)
+    return V
 #---
 
 
