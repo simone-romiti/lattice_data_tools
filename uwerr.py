@@ -1,4 +1,6 @@
-## python translation of the uwerrprimary function from "hadron": https://github.com/HISKP-LQCD/hadron
+"""
+Python translation of the uwerrprimary function from "hadron": https://github.com/HISKP-LQCD/hadron
+"""
 
 import math
 import os
@@ -166,9 +168,9 @@ def plot_uwerr_primary(u, output_file, name_obs: str):
     t_tauint = np.array([i for i in range(tauint.shape[0])])
     plt.figure()
     plt.errorbar(t_tauint, tauint, yerr=dtauint, fmt='o', capsize=3)
-    plt.xlabel('t')
+    plt.xlabel('$t$')
     plt.ylabel('$\\tau_{\\mathrm{int}}$')
-    plt.title(f"Integrated autocorrelation time: $\\tau_{{\\mathrm{{int}}}}={np.round(u["tauint"],2)} \\pm {np.round(u["dtauint"],2)}$")
+    plt.title(f'Integrated autocorrelation time: $\\tau_{{\\mathrm{{int}}}}={np.round(u["tauint"],2)} \\pm {np.round(u["dtauint"],2)}$')
     plt.tight_layout()
     ppdf.savefig()
     plt.close()
