@@ -55,12 +55,11 @@ class LCNN(torch.nn.Module):
           W: parallel transporters.  shape=(batch_size, L1,...,Ld, N_var, Nc,Nc)
 
         Return:
-          W_prime: parallel-transported W. shape=((batch_size, N_var, Nc,Nc))
+          W_prime: parallel-transported W. shape=(batch_size, L1,...,Ld, d, 2*K+1, N_var, Nc,Nc)
 
         """
         W_shifted = get_W_shifted(U=self.U, W=W, K=self.K) # W_\\mu(x+k*\\mu)
-        print(W_shifted.shape)
-        W_prime = torch.einsum("... m k a b, ... i m k b c, ... m k c d -> ... i m k a d", U_PT, W_shifted, U_PT.adjoint())
+        W_prime = torch.einsum("... m k a b, ... i m k b c, ... m k c d -> ... m k i a d", U_PT, W_shifted, U_PT.adjoint())
         return W_prime        
     #---
     def apply_L_conv(self, U: GaugeConfiguration, W: torch.Tensor, omega: torch.Tensor, K: int, N_out: int):
@@ -93,18 +92,32 @@ class LCNN(torch.nn.Module):
         """
         Eq. 5 of https://arxiv.org/pdf/2012.12901, using Wprime as in eq. 11.
 
-        omega: shape=(N_out,N_in,d,2K+1)
+          omega: convolution parameters. shape=(N_out,N_in,d,2K+1)
+          Wprime: parallel transported W. shape=(batch_size, L1,...,Ld, N_var, d, 2*K+1, Nc,Nc)
+
+        Returns:
+          W_conv: shape=(batchsize,L1,...,Ld,N_out,Nc,Nc)
         """
-        W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, Wprime, U_PT.adjoint())
+        # W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, Wprime, U_PT.adjoint())
+        W_conv = LocallyGaugeCovariant(torch.einsum("ijmk,...mkjab->...iab", omega, Wprime))
         return W_conv
     #---
-    def L_Bilin(W: torch.Tensor, Wprime: torch.Tensor, alpha: torch.Tensor):
+    def L_Bilin(self, W: torch.Tensor, Wprime: torch.Tensor, alpha: torch.Tensor):
         """
         Eq. 6 of https://arxiv.org/pdf/2012.12901
+        NOTE: In this layer, the W' are evaluated for no shift --> any \\mu and  shift index "K", corresponding to k=0 steps
+
+        Input:
+          alpha: parameters of the layer. shape: (N_out,N_in1, N_in2)
+          W: locally transforming objects. shape=(batchsize, L1,...,Ld, N_in1, Nc, Nc)
+          Wprime_x: locally transforming objects. shape=(batchsize, L1,...,Ld, N_in2, Nc, Nc)
+
+        Returns:
+          W_bilin: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
         
-        alpha: parameters. shape: (N_out,N_in1, N_in2)
         """
-        return torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
+        W_bilin = torch.einsum("ijk,...jac,...mkcb->...iab", alpha, W, Wprime)
+        return W_bilin
     #---
     def L_act(self, U: GaugeConfiguration, W: torch.Tensor, act_func: typing.Callable):
         """
@@ -140,11 +153,12 @@ class LCNN(torch.nn.Module):
         U_PT = get_ParallelTransporters(U=self.U, K=self.K)
         W = self.get_W() # set of locally transforming variables
         Wprime = self.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
-        res = LocallyGaugeCovariant(torch.flatten(Wprime, start_dim=-5, end_dim=-3))
-        return res
         W_conv = self.L_conv(U=self.U, U_PT=U_PT, Wprime=Wprime, omega=omega, K=self.K) # W after eq. 5 of https://arxiv.org/pdf/2012.12901
-        Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
-        W_bilin = self.L_Bilin(W=W_conv, Wprime=Wprime_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
+        # Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
+        ## in Eq. 6, W' is just W (k=0 in eq. III.11)
+        W_bilin = self.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
+        res = LocallyGaugeCovariant(W_bilin)
+        return res
         W_act = self.L_act(U=U, W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(U=self.U, W=W_act, beta=beta)
         return EU

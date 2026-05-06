@@ -61,22 +61,20 @@ print("Gauge covariance of parallel transporters:", torch.allclose(U_PT1, U_PT3,
 
 
 W1 = lcnn1.get_W()
-N_ch = W1.shape[-3]
-N_in1, N_in2, N_out = 5, 7, 11
+Wprime1 = lcnn1.get_Wprime(U_PT=U_PT1, W=W1)
+Nch_in = W1.shape[-3]
+Nch_out = 17
 
-omega = torch.rand(*(N_out,N_ch,d,2*K+1))
-alpha = torch.rand(*(N_out,N_in1,N_in2))
-beta =  torch.rand(*(d,N_ch))
-EU1 = lcnn1.all_layers(omega=omega, alpha=alpha, beta=beta)
+Nout = 23
+Nin1 = Nch_out
+Nin2 = Nin1
+omega = torch.rand(*(Nch_out,Nch_in,d,2*K+1)).type(U.type())
+alpha = torch.rand(*(Nout,Nin1,Nin2)).type(U.type())
+beta =  torch.rand(*(d,Nout)).type(U.type())
 
-EU1.gauge_transformation(V=V)
-U.gauge_transformation(V=V)
-EU2 = lcnn1.all_layers(omega=omega, alpha=alpha, beta=beta)
+LocallyGaugeCovariant.check_gauge_covariance(U=U, V=V, fun=lambda U_conf: LCNN(U=U_conf,K=K).all_layers(omega=omega, alpha=alpha, beta=beta))
 
-print("Gauge covariance for all layers:", torch.allclose(EU1, EU2, atol=1e-15))
 quit()
-
-
 
 W_shifted = get_W_shifted(U=U, W=W, K=1)
 
