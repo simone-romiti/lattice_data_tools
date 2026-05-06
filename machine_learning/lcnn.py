@@ -14,7 +14,7 @@ import typing
 from itertools import chain
 import torch
 
-from lattice_data_tools.links.suN import get_Tr, get_ReTr, get_U_from_theta
+import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration, LocallyGaugeCovariant
 from lattice_data_tools.links.loops import WilsonLoopsGenerator
 from lattice_data_tools.links.parallel_transport import get_ParallelTransporters, get_W_shifted
@@ -116,18 +116,21 @@ class LCNN(torch.nn.Module):
           W_bilin: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
         
         """
-        W_bilin = torch.einsum("ijk,...jac,...mkcb->...iab", alpha, W, Wprime)
+        print(W.shape, Wprime.shape)
+        W_bilin = torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
         return W_bilin
     #---
-    def L_act(self, U: GaugeConfiguration, W: torch.Tensor, act_func: typing.Callable):
+    def L_act(self, W: torch.Tensor, act_fun: typing.Callable):
         """
         Eq. 7 of https://arxiv.org/pdf/2012.12901
 
-        NOTE: act_func() should be scalar-valued --> we use componentwise multiplication
+        NOTE: act_fun() should be scalar-valued --> we use componentwise multiplication
         """
-        return act_func(U,W) * W
+        f_U = act_fun(self.U,W).unsqueeze(dim=-1).unsqueeze(dim=-1).to_tensor()
+        res = f_U * W.to_tensor() # componentwise operation, not matrix multiplication 
+        return res
     #---
-    def L_exp(self, U: GaugeConfiguration, W: torch.Tensor, beta: torch.Tensor):
+    def L_exp(self, W: torch.Tensor, beta: torch.Tensor):
         """
         Eqs. 8 and 9 of https://arxiv.org/pdf/2012.12901
         beta: parameters. shape: (d, N_ch)
@@ -138,13 +141,14 @@ class LCNN(torch.nn.Module):
         """
         # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
         W_ah = W - W.adjoint() # taking the anti-hemitian part
-        W_ah -= get_Tr(W_ah) # subtracting the trace
+        Nc = self.U.Nc # number of colors
+        W_ah -= torch.einsum("...,ab->...ab", suN.get_Tr(W_ah), torch.eye(Nc))/Nc # subtracting the trace
         arg_exp = torch.einsum("mi,...iab->...mab", beta, W_ah)
-        E = exponentiate_suN(1j*arg_exp) # eq. 9 of https://arxiv.org/pdf/2012.12901
-        EU = E @ U # eq. 8 of https://arxiv.org/pdf/2012.12901
+        E = suN.get_exp_iA(arg_exp) # eq. 9 of https://arxiv.org/pdf/2012.12901
+        EU = E @ self.U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return EU
     #---
-    def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable = lambda U, W: get_ReTr(W=W)):
+    def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable = lambda U, W: suN.get_ReTr(W=W)):
         """
           omega: shape=(N_out,N_in,d,2K+1)
           alpha: shape=(N_out,N_in1,N_in2)
@@ -157,11 +161,12 @@ class LCNN(torch.nn.Module):
         # Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
         ## in Eq. 6, W' is just W (k=0 in eq. III.11)
         W_bilin = self.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
-        res = LocallyGaugeCovariant(W_bilin)
-        return res
-        W_act = self.L_act(U=U, W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
-        EU = self.L_exp(U=self.U, W=W_act, beta=beta)
-        return EU
+        W_act = self.L_act(W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
+        EU = self.L_exp(W=W_act, beta=beta)
+        # print(EU @ EU.adjoint())
+        print(torch.linalg.det(EU))
+        W_res = LCNN(U=EU, K=self.K).get_W() 
+        return W_res
  #---
                 
 
