@@ -160,13 +160,28 @@ def get_U_from_theta(theta: torch.Tensor):
     """
     Element of the group SU(N), computed as U(\\theta_a)=exp(i*theta_a*tau_a)
 
+    Input:
+      - theta: array of angles. shape=(...,Ng)
+
+    Returns:
+      - U: array of links. shape=(...,Nc,Nc)
+
     !!! NOTES !!!:
       1. The inverse function does not exist, as the map U(\\theta_a) is not injective.
       2. For an arbitrary Nc, the different angles have in general different periodicities, so you can't globally restrict to a fixed interval for all of them
     """
-    A = get_suN_element_from_theta(theta=theta)
-    U = get_exp_iA(A)
+    A = get_suN_element_from_theta(theta=theta) # \\theta_a \\tau_a
+    U = get_exp_iA(A) # e^{i*A}
     return U
+#---
+
+def apply_coldstart(U: torch.Tensor):
+    """
+    Initialize gauge links to identity matrices of size Nc \\times Nc
+    """
+    Nc = U.shape[-1]
+    U.copy_(torch.eye(Nc).expand(*U.shape[0:-2], Nc, Nc))
+    return None
 #---
 
 def apply_hotstart(U: torch.Tensor, seed: int):

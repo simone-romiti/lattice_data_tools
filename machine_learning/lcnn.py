@@ -3,8 +3,9 @@ Implementation of the L-CNN as described in:
 https://arxiv.org/abs/2012.12901
 
 TODO:
-- check gauge covariance (random gauge transformation)
-- implement L-CNN in one go
+- check gauge covariance on all layers (random gauge transformation)
+- implement Bilinear+Convolution single layer
+- add unity and daggers to the set of W
 - compare with line 198 of https://gitlab.com/openpixi/lge-cnn/-/blob/master/lge_cnn/nn/layers.py?ref_type=heads
 
 """
@@ -14,7 +15,7 @@ from itertools import chain
 import torch
 
 from lattice_data_tools.links.suN import get_Tr, get_ReTr, get_U_from_theta
-from lattice_data_tools.links.configuration import GaugeConfiguration
+from lattice_data_tools.links.configuration import GaugeConfiguration, LocallyGaugeCovariant
 from lattice_data_tools.links.loops import WilsonLoopsGenerator
 from lattice_data_tools.links.parallel_transport import get_ParallelTransporters, get_W_shifted
 
@@ -34,19 +35,35 @@ class LCNN(torch.nn.Module):
     #---
     def get_W(self):
         """
-        List of locally transforming variables,
-        as a tensor of shape (batch_size, n_variables, Nc,Nc)
+        List of locally transforming variables.
+
+        Returns: tensor of shape (batch_size, L1,...,Ld, N_var, Nc,Nc),
+          where N_var is the total number of variables considered
+        
         """
         Plaq = self.WLG.plaquettes()
         Poly = self.WLG.Polyakov_loops() 
         return torch.cat((Plaq, Poly), dim=-3)
     #---
-    def get_Wprime(self, U: torch.Tensor, U_PT: torch.Tensor,  W: torch.Tensor):
-        """ W' as in eq. 11 of https://arxiv.org/pdf/2012.12901 """
-        Wprime = get_W_shifted(U=U, U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
-        return Wprime        
+    def get_Wprime(self, U_PT: torch.Tensor, W: torch.Tensor):
+        """
+        W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
+
+        Input:
+          U: gauge configuration. shape=(batch_size,L1,...,Ld,d,Nc,Nc)
+          U_PT: parallel transporters.  shape=(batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
+          W: parallel transporters.  shape=(batch_size, L1,...,Ld, N_var, Nc,Nc)
+
+        Return:
+          W_prime: parallel-transported W. shape=((batch_size, N_var, Nc,Nc))
+
+        """
+        W_shifted = get_W_shifted(U=self.U, W=W, K=self.K) # W_\\mu(x+k*\\mu)
+        print(W_shifted.shape)
+        W_prime = torch.einsum("... m k a b, ... i m k b c, ... m k c d -> ... i m k a d", U_PT, W_shifted, U_PT.adjoint())
+        return W_prime        
     #---
-    def apply_L_conv(self, U: torch.Tensor, W: torch.Tensor, omega: torch.Tensor, K: int, N_out: int):
+    def apply_L_conv(self, U: GaugeConfiguration, W: torch.Tensor, omega: torch.Tensor, K: int, N_out: int):
         """
         Eq. 5 of https://arxiv.org/pdf/2012.12901
 
@@ -72,9 +89,11 @@ class LCNN(torch.nn.Module):
         #-------
         return W_conv
     #---
-    def L_conv(self, U: torch.Tensor, U_PT: torch.Tensor, Wprime: torch.Tensor, omega: torch.Tensor, K: int):
+    def L_conv(self, U: GaugeConfiguration, U_PT: torch.Tensor, Wprime: torch.Tensor, omega: torch.Tensor, K: int):
         """
         Eq. 5 of https://arxiv.org/pdf/2012.12901, using Wprime as in eq. 11.
+
+        omega: shape=(N_out,N_in,d,2K+1)
         """
         W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, Wprime, U_PT.adjoint())
         return W_conv
@@ -87,7 +106,7 @@ class LCNN(torch.nn.Module):
         """
         return torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
     #---
-    def L_act(self, U: torch.Tensor, W: torch.Tensor, act_func: typing.Callable = lambda U, W: torch.tanh(get_ReTr(W=W))):
+    def L_act(self, U: GaugeConfiguration, W: torch.Tensor, act_func: typing.Callable):
         """
         Eq. 7 of https://arxiv.org/pdf/2012.12901
 
@@ -95,13 +114,14 @@ class LCNN(torch.nn.Module):
         """
         return act_func(U,W) * W
     #---
-    def L_exp(self, U: torch.Tensor, W: torch.Tensor, beta: torch.Tensor):
+    def L_exp(self, U: GaugeConfiguration, W: torch.Tensor, beta: torch.Tensor):
         """
         Eqs. 8 and 9 of https://arxiv.org/pdf/2012.12901
         beta: parameters. shape: (d, N_ch)
 
         U: gauge configuration: (batch, L1, ..., Ld, d, Nc, Nc)
         W: N_ch locally transforming variables (obtained after L_conv()). shape: (batch, L1, ..., Ld, N_ch, Nc, Nc)
+        beta: shape: (d,N_ch)
         """
         # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
         W_ah = W - W.adjoint() # taking the anti-hemitian part
@@ -111,12 +131,20 @@ class LCNN(torch.nn.Module):
         EU = E @ U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return EU
     #---
-    def all_layers(self, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable):
-        U_PT = get_ParallelTransporters(U=U, K=self.K)
+    def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable = lambda U, W: get_ReTr(W=W)):
+        """
+          omega: shape=(N_out,N_in,d,2K+1)
+          alpha: shape=(N_out,N_in1,N_in2)
+          beta: shape=(d,N_ch)
+        """
+        U_PT = get_ParallelTransporters(U=self.U, K=self.K)
         W = self.get_W() # set of locally transforming variables
-        Wprime = self.get_Wprime(U=self.U, W=W) # W' as in eq. 11 of https://arxiv.org/pdf/2012.12901
+        Wprime = self.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
+        res = LocallyGaugeCovariant(torch.flatten(Wprime, start_dim=-5, end_dim=-3))
+        return res
         W_conv = self.L_conv(U=self.U, U_PT=U_PT, Wprime=Wprime, omega=omega, K=self.K) # W after eq. 5 of https://arxiv.org/pdf/2012.12901
-        W_bilin = self.L_Bilin(Wprime=Wprime, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
+        Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
+        W_bilin = self.L_Bilin(W=W_conv, Wprime=Wprime_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
         W_act = self.L_act(U=U, W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(U=self.U, W=W_act, beta=beta)
         return EU

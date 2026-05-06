@@ -1,18 +1,21 @@
 
 import torch
-from lattice_data_tools.links.configuration import GaugeConfiguration
+from lattice_data_tools.links.configuration import GaugeConfiguration, LocallyGaugeCovariant
 
 class WilsonLoopsGenerator:
     def __init__(self, U: GaugeConfiguration):
+        """
+          U: batch of gauge configurations U^{(b)}(x, mu) as Nc \\times Nc matrices, with x=(x_1,...x_d).
+          It is passed as a multi-dimensional array U[b, L1,L2,...,Ld, d, Nc, Nc],
+          where N_c is the number of colors.
+        """
         self.U = U
     #---
     def plaquettes(self):
         """
-        Returns the array of plaquettes (as loops, no trace or real part), assuming periodic boundary conditions on a L^d lattice.
+        Plaquettes (as loops, no trace or real part), assuming periodic boundary conditions on a L^d lattice.
 
-        U: batch of gauge configurations U^{(b)}(x, mu) as Nc \\times Nc matrices, with x=(x_1,...x_d).
-           It is passed as a multi-dimensional array U[b, L1,L2,...,Ld, d, Nc, Nc],
-           where N_c is the number of colors.
+        Returns: tensor of shape (batch_size, L1,...,Ld, N_plaq, Nc, Nc)
         """
         assert(self.U.is_complex()) # check that the gauge configuration is complex-valued
         d = self.U.shape[-3] # number of dimensions of the lattice
@@ -28,17 +31,14 @@ class WilsonLoopsGenerator:
                 P_munu = U_mu @ U_nu_fwd @ U_mu_fwd.adjoint() @ U_nu.adjoint() # U_\\mu(x)*U_\\nu(x+\mu)*U_\\mu(x+\\nu)^\dagger*U_\\mu(x)^\dagger
                 plaqs.append(P_munu) # appending the plaquette to the list
         #-------
-        plaqs = torch.stack(plaqs, dim=-3)
+        plaqs = LocallyGaugeCovariant(torch.stack(plaqs, dim=-3))
         return plaqs
     #---
     def Polyakov_loops(self):
         """
-        Computes the Polyakov loops for each direction mu.
+        Polyakov loops for each direction mu.
 
-        U: [batch, L1, L2, ..., Ld, d, Nc, Nc]
-        Returns: A tensor of shape [batch, L1, ..., Ld, d, Nc, Nc] 
-                 where the L_mu dimension is reduced or contains the loop.
-                 Commonly, it returns [batch, (transverse_dims), d, Nc, Nc].
+        Returns: A tensor of shape (batch, L1, ..., Ld, d, Nc, Nc)
         """
         assert(self.U.is_complex())
         d = self.U.shape[-3] # number of dimensions
@@ -49,7 +49,7 @@ class WilsonLoopsGenerator:
             for k in range(1, L_mu):
                 Poly[..., mu, :, :] @= torch.roll(self.U, -k, dims=1+mu)[..., mu, :,:] # P_\\mu(x) --> P_\\mu(x)*U_\\mu(x+mu)
         #-------
-        return Poly
+        return LocallyGaugeCovariant(Poly)
     #---
 
 
