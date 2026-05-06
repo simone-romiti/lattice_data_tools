@@ -15,7 +15,7 @@ from itertools import chain
 import torch
 
 import lattice_data_tools.links.suN as suN
-from lattice_data_tools.links.configuration import GaugeConfiguration, LocallyGaugeCovariant
+from lattice_data_tools.links.configuration import ColorMatrix, GaugeConfiguration, LocallyGaugeCovariant
 from lattice_data_tools.links.loops import WilsonLoopsGenerator
 from lattice_data_tools.links.parallel_transport import get_ParallelTransporters, get_W_shifted
 
@@ -88,6 +88,19 @@ class LCNN(torch.nn.Module):
         #-------
         return W_conv
     #---
+    def gen_random_omega(self, Nch_out: int, Nch_in: int, seed: int):
+        """
+        Initialize the \\omega for Eq. 5 of https://arxiv.org/pdf/2012.12901,
+        such that the order of magnitude does not spoil gauge-covariance because of numerical rounding.
+        This is achieved by setting them all to be O(1) per component
+        """
+        d = self.U.n_dims
+        K = self.K
+        torch.manual_seed(seed=seed)
+        den = Nch_in * d * (2*K+1) 
+        omega = (torch.rand(*(Nch_out,Nch_in,d,2*K+1)) / den).type(self.U.type())
+        return omega
+    #---
     def L_conv(self, U: GaugeConfiguration, U_PT: torch.Tensor, Wprime: torch.Tensor, omega: torch.Tensor, K: int):
         """
         Eq. 5 of https://arxiv.org/pdf/2012.12901, using Wprime as in eq. 11.
@@ -101,6 +114,17 @@ class LCNN(torch.nn.Module):
         # W_conv = torch.einsum("ijmk,...mkac,...jmkcd,...mkdb->...iab", omega, U_PT, Wprime, U_PT.adjoint())
         W_conv = LocallyGaugeCovariant(torch.einsum("ijmk,...mkjab->...iab", omega, Wprime))
         return W_conv
+    #---
+    def gen_random_alpha(self, N_out: int, N_in1: int, N_in2: int, seed: int):
+        """
+        Initialize the \\alpha for Eq. 6 of https://arxiv.org/pdf/2012.12901,
+        such that the order of magnitude does not spoil gauge-covariance because of numerical rounding.
+        This is achieved by setting them all to be O(1) per component
+        """
+        torch.manual_seed(seed=seed)
+        den = N_in1 * N_in2 
+        alpha = (torch.randn(N_out, N_in1, N_in2) / den).type(self.U.type())
+        return alpha
     #---
     def L_Bilin(self, W: torch.Tensor, Wprime: torch.Tensor, alpha: torch.Tensor):
         """
@@ -116,7 +140,6 @@ class LCNN(torch.nn.Module):
           W_bilin: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
         
         """
-        print(W.shape, Wprime.shape)
         W_bilin = torch.einsum("ijk,...jac,...kcb->...iab", alpha, W, Wprime)
         return W_bilin
     #---
@@ -127,8 +150,19 @@ class LCNN(torch.nn.Module):
         NOTE: act_fun() should be scalar-valued --> we use componentwise multiplication
         """
         f_U = act_fun(self.U,W).unsqueeze(dim=-1).unsqueeze(dim=-1).to_tensor()
-        res = f_U * W.to_tensor() # componentwise operation, not matrix multiplication 
+        res = LocallyGaugeCovariant(f_U * W.to_tensor()) # componentwise operation, not matrix multiplication 
         return res
+    #---
+    def gen_random_beta(self, N_out: int, seed: int):
+        """
+        Initialize the \\beta for Eq. 8,9 of https://arxiv.org/pdf/2012.12901.
+        The \\betas are multiplied componentwise, so we can initialize all of them to be O(1)
+        to not spoil gauge-covariance because of numerical rounding.
+        """
+        d = self.U.n_dims
+        torch.manual_seed(seed=seed)
+        beta =  torch.rand(*(d, N_out)).type(self.U.type())
+        return beta
     #---
     def L_exp(self, W: torch.Tensor, beta: torch.Tensor):
         """
@@ -140,11 +174,9 @@ class LCNN(torch.nn.Module):
         beta: shape: (d,N_ch)
         """
         # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
-        W_ah = W - W.adjoint() # taking the anti-hemitian part
-        Nc = self.U.Nc # number of colors
-        W_ah -= torch.einsum("...,ab->...ab", suN.get_Tr(W_ah), torch.eye(Nc))/Nc # subtracting the trace
-        arg_exp = torch.einsum("mi,...iab->...mab", beta, W_ah)
-        E = suN.get_exp_iA(arg_exp) # eq. 9 of https://arxiv.org/pdf/2012.12901
+        W_ah_traceless = ColorMatrix(W).get_ah_traceless()
+        arg_exp = torch.einsum("mi,...iab->...mab", 1j*beta, W_ah_traceless) # NOTE: arg_exp has to be hermitean --> we include the ""1j"
+        E = suN.get_exp_iA(arg_exp.to_tensor()) # eq. 9 of https://arxiv.org/pdf/2012.12901
         EU = E @ self.U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return EU
     #---
@@ -155,7 +187,7 @@ class LCNN(torch.nn.Module):
           beta: shape=(d,N_ch)
         """
         U_PT = get_ParallelTransporters(U=self.U, K=self.K)
-        W = self.get_W() # set of locally transforming variables
+        W = self.get_W() # set of locally transforming variables 
         Wprime = self.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
         W_conv = self.L_conv(U=self.U, U_PT=U_PT, Wprime=Wprime, omega=omega, K=self.K) # W after eq. 5 of https://arxiv.org/pdf/2012.12901
         # Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
@@ -163,8 +195,6 @@ class LCNN(torch.nn.Module):
         W_bilin = self.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
         W_act = self.L_act(W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(W=W_act, beta=beta)
-        # print(EU @ EU.adjoint())
-        print(torch.linalg.det(EU))
         W_res = LCNN(U=EU, K=self.K).get_W() 
         return W_res
  #---

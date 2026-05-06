@@ -99,6 +99,35 @@ class ColorMatrix(torch.Tensor):
     def validate(self):
         pass
 
+    def get_traceless_part(self):
+        """ Returns the traceless version of the object """
+        Nc = self.Nc
+        # Compute trace over last two dims: shape (...)
+        tr = torch.diagonal(self, dim1=-1, dim2=-2).sum(-1).to_tensor()
+        # Subtract (tr/Nc) * I, broadcasting over batch dims
+        eye = torch.eye(Nc, dtype=self.dtype, device=self.device)
+        res = self - (tr / Nc)[..., None, None] * eye
+        return res
+    #---
+    def get_ah_traceless(self):
+        """
+        Computes the anti-Hermitian traceless part of W:
+            W_aht = (W - W†)/2 - (Tr((W - W†)/2) / Nc) * I
+        Avoids intermediate rounding by combining steps.
+        """
+        Nc = self.Nc
+        eye = torch.eye(Nc, dtype=self.dtype, device=self.device)
+
+        # Anti-Hermitian part
+        W_ah = (self - self.adjoint()) / 2.0
+
+        # Trace is purely imaginary; take only imaginary part of diagonal to avoid rounding
+        tr = torch.diagonal(W_ah.to_tensor(), dim1=-1, dim2=-2).sum(-1)
+        tr = 1j * tr.imag  # force exact purely-imaginary trace
+
+        return W_ah - (tr/Nc)[..., None, None] * eye   
+
+    
 
 class GaugeConfiguration(ColorMatrix):
     """
@@ -193,7 +222,7 @@ class GaugeConfiguration(ColorMatrix):
         return None
     #---
     def gauge_transformation(self, V: torch.Tensor) -> None:
-        print("## Transforming a conf. of links")
+        """ Transforming the configuarion of links """
         self.Left_gauge_transformation(V=V)
         self.Right_gauge_transformation(V=V)
         return None
@@ -258,7 +287,6 @@ class LocallyGaugeCovariant(ColorMatrix):
         U_\\mu(x) \\to V(x) U_\\mu(x) @ V(x)^\\dagger
         
         """
-        print("## Transforming a local object")
         self.copy_(V[...,None,:,:] @ self @ V[...,None,:,:].adjoint()) #  V(x) U_\\mu(x) V(x)^\\dagger
         return None
     #---

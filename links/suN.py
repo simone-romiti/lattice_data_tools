@@ -120,12 +120,16 @@ def get_generators(Nc: int, device: torch.device, dtype=torch.complex128):
 
 def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
     """
-    Compute exp(A) for a Hermitian matrix A via eigendecomposition.
+    Compute exp(i*A) for a Hermitian matrix A via eigendecomposition.
 
     1. Diagonalise A = M*D*M^{-1} = M*D*M^{\\dagger}   (A Hermitian --> D real, M unitary via eigh).
     2. Compute exp(i D) element-wise on the real diagonal eigenvalues.
     3. Reconstruct U = M · diag(exp(i D)) · M^{-1}.
     """
+    # A_shape = A.shape
+    # A_flat = torch.flatten(A, start_dim=0, end_dim=-3)
+    # exp_iA = torch.linalg.matrix_exp(1j*A_flat)
+    # return torch.reshape(exp_iA, A_shape)
     d, M = torch.linalg.eigh(A)        # A = M diag(d) M^\\dagger, d real   #documentation:matrix_exp_diag_algorithm
     exp_iD = torch.diag_embed(torch.exp(1j*d)).type(M.type())  # exp(d_k) for each eigenvalue d_k
     U = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
@@ -151,7 +155,6 @@ def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     Nc = get_Nc(Ng=Ng)
     theta_complex = theta + 1j*torch.zeros_like(theta) # casting to complex to determine the type of the tau_a and combine them together
     tau = get_generators(Nc, device=theta_complex.device, dtype=theta_complex.dtype).to(theta_complex.device)
-    print(theta_complex.shape, tau.shape)
     A = torch.einsum("...a,aij->...ij", theta_complex, tau)
     return A
 #---
@@ -223,7 +226,6 @@ def gen_random_gauge_transformation(shape: torch.Size, dtype: torch.dtype, seed:
     apply_hotstart(U=V, seed=seed)
     return V
 #---
-
 
 if __name__ == "__main__":
     Nc = 3 # number of colors
