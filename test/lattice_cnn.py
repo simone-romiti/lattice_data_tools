@@ -84,7 +84,7 @@ def get_W_conv_local(U_conf):
     U_PT = get_ParallelTransporters(U=U_conf, K=K)
     W = lcnn_loc.get_W() # set of locally transforming variables 
     Wprime = lcnn_loc.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
-    W_conv = lcnn_loc.L_conv(U=U_conf, U_PT=U_PT, Wprime=Wprime, omega=omega) 
+    W_conv = lcnn_loc.L_conv(Wprime=Wprime, omega=omega) 
     return W_conv
 
 LocallyGaugeCovariant.check_gauge_covariance(U=U, V=V, fun=get_W_conv_local)
@@ -95,7 +95,7 @@ def get_W_bilin_local(U_conf):
     U_PT = get_ParallelTransporters(U=U_conf, K=K)
     W = lcnn_loc.get_W() # set of locally transforming variables 
     Wprime = lcnn_loc.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
-    W_conv = lcnn_loc.L_conv(U=U_conf, U_PT=U_PT, Wprime=Wprime, omega=omega) 
+    W_conv = lcnn_loc.L_conv(Wprime=Wprime, omega=omega) 
     W_bilin = lcnn_loc.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha)
     return W_bilin
 
@@ -107,7 +107,7 @@ def get_W_act_local(U_conf):
     U_PT = get_ParallelTransporters(U=U_conf, K=K)
     W = lcnn_loc.get_W() # set of locally transforming variables 
     Wprime = lcnn_loc.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
-    W_conv = lcnn_loc.L_conv(U=U_conf, U_PT=U_PT, Wprime=Wprime, omega=omega) 
+    W_conv = lcnn_loc.L_conv(Wprime=Wprime, omega=omega) 
     W_bilin = lcnn_loc.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha)
     W_act = lcnn_loc.L_act(W=W_bilin) # default act_fun
     return W_act
@@ -121,7 +121,7 @@ def get_E_local(U_conf):
     U_PT = get_ParallelTransporters(U=U_conf, K=K)
     W = lcnn_loc.get_W() # set of locally transforming variables 
     Wprime = lcnn_loc.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
-    W_conv = lcnn_loc.L_conv(U=U_conf, U_PT=U_PT, Wprime=Wprime, omega=omega) 
+    W_conv = lcnn_loc.L_conv(Wprime=Wprime, omega=omega) 
     W_bilin = lcnn_loc.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha)
     W_act = lcnn_loc.L_act(W=W_bilin) # default act_fun
     E = lcnn_loc.exp_ibetaWah(W=W_act, beta=beta)
@@ -134,6 +134,17 @@ print("All layers")
 LocallyGaugeCovariant.check_gauge_covariance(
     U=U, V=V,
     fun=lambda U_conf: LCNN(U=U_conf,K=K).all_layers(omega=omega, alpha=alpha, beta=beta)
+)
+print("Done.")
+
+print("All layers with L-CB")
+
+N_in = Nch_in
+omega_CB = lcnn1.gen_random_omega_CB(N_out=N_out, N_in=N_in, seed=seed)
+
+LocallyGaugeCovariant.check_gauge_covariance(
+    U=U, V=V,
+    fun=lambda U_conf: LCNN(U=U_conf,K=K).all_layers_with_CB(omega_CB=omega_CB, beta=beta)
 )
 print("Done.")
 
@@ -164,6 +175,6 @@ print(f"t8-t7: {t8-t7} sec.")
 Wprime = lcnn1.get_Wprime(U_PT=U_PT, W=W) # W_\\mu(x+k*\\mu)
 t9 = time.time()
 print(f"t9-t8: {t9-t8} sec.")
-W_conv = lcnn1.L_conv(U=U, U_PT=U_PT, Wprime=Wprime, omega=omega)
+W_conv = lcnn1.L_conv(Wprime=Wprime, omega=omega)
 t10 = time.time()
 

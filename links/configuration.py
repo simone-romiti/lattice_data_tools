@@ -29,19 +29,6 @@ class ColorMatrix(torch.Tensor):
         if N1 != N2:
             raise ValueError(f"Invalid shape {self.shape}, expected {expected}")
     #-------
-    
-    @classmethod
-    def __torch_function__(cls, func, types, args=(), kwargs=None):
-        if kwargs is None:
-            kwargs = {}
-        ret = super().__torch_function__(func, types, args, kwargs)
-        if isinstance(ret, ColorMatrix):
-            src = next((a for a in torch.utils._pytree.tree_leaves(args)
-                        if isinstance(a, ColorMatrix)), None)
-            if src is not None:
-                ret._Nc = src._Nc
-        return ret
-    #---
 
     def dim(self):
         raise AttributeError(
@@ -56,30 +43,20 @@ class ColorMatrix(torch.Tensor):
     def __rmul__(self, other):
         raise TypeError("'ColorMatrix' disables '*'. Use '@' for matrix multiplication.")
 
-    _DOWNCAST_OPS = {
-        torch.Tensor.__add__,
-        torch.Tensor.__radd__,
-        torch.Tensor.__sub__,
-        torch.Tensor.__rsub__,
-        torch.add,
-        torch.sub,
-    }
+    def __matmul__(self, other):
+        A = self.as_subclass(torch.Tensor)
+        B = other.as_subclass(torch.Tensor) if isinstance(other, torch.Tensor) else other
+        return torch.matmul(A,B)
 
-    @classmethod
-    def __torch_function__(cls, func, types, args=(), kwargs=None):
-        if kwargs is None:
-            kwargs = {}
-        ret = super().__torch_function__(func, types, args, kwargs)
-        if func in cls._DOWNCAST_OPS:
-            if isinstance(ret, torch.Tensor):
-                return ret.as_subclass(torch.Tensor)
-        if isinstance(ret, GaugeConfiguration):
-            try:
-                ret.validate()
-            except (ValueError, AttributeError):
-                return ret.as_subclass(torch.Tensor)
-        return ret
-
+    def __rmatmul__(self, other):
+        A = other.as_subclass(torch.Tensor) if isinstance(other, torch.Tensor) else other
+        B = self.as_subclass(torch.Tensor)
+        return torch.matmul(A,B) 
+                            
+    #---
+    def to_tensor(self):
+        return torch.Tensor(self)
+    
     @property
     def Nc(self):
         return self._Nc
@@ -91,13 +68,6 @@ class ColorMatrix(torch.Tensor):
 
     def dagger(self):
         return self.adjoint()
-
-    def to_tensor(self):
-        return torch.Tensor(self)
-    
-    @abstractmethod
-    def validate(self):
-        pass
 
     def get_traceless_part(self):
         """ Returns the traceless version of the object """
@@ -316,5 +286,5 @@ class LocallyGaugeCovariant(ColorMatrix):
         W1.gauge_transformation(V=V) # transforming the object W1
         assert(torch.allclose(W1, W2, atol=atol)) # check that the order of gauge transformations does matter
     #---
-        
-        
+#---
+

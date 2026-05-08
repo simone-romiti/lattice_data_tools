@@ -41,7 +41,8 @@ def get_ParallelTransporters(U: GaugeConfiguration, K: int):
             U_fwd = U.index_select(1 + mu, idx_fwd) # U_\\mu(x+\\mu)
             ParallelTransporters[..., mu, i_fwd, :, :] = ParallelTransporters[..., mu, i_fwd-1, :, :] @  U_fwd[...,mu,:,:] # iterative construction
     #-------
-    return ParallelTransporters
+    U_PT = ParallelTransporters.as_subclass(torch.Tensor) # downgrading to not confuse with a gauge configuration
+    return U_PT
 #---    
 
 
