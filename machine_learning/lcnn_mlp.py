@@ -3,9 +3,11 @@ This file contains the implementation of a prototype of a gauge-invariant wavefu
 """
 
 
+import typing
 import torch
+
 import lattice_data_tools.links.suN as suN
-from lattice_data_tools.machine_learning import LCNN, default_activation_function
+from lattice_data_tools.machine_learning.lcnn import LCNN
 
 
 class LCNN_MLP(torch.nn.Module):
@@ -18,23 +20,24 @@ class LCNN_MLP(torch.nn.Module):
     def __init__(
             self,
             LCNN_layer: LCNN,
-            N_hidden: int, N_neurons: int,
+            LCNN_N_in: int, LCNN_N_out: int,
+            N_hidden: int, N_neurons: typing.List[int],
             seed: int,
-            act_fun_MLP: typing.Callable = torch.nn.Tanh
+            act_fun_MLP: typing.Callable = torch.nn.Tanh()
     ):
         super().__init__()
 
         self.LCNN_layer = LCNN_layer
-        self.beta  = LCNN_layer.gen_random_beta(N_out=N_out, seed=seed)
-        self.omega_CB = LCNN_layer.gen_random_omega_CB(N_out=N_out, N_in=N_in, seed=seed)
+        self.beta  = LCNN_layer.gen_random_beta(N_out=LCNN_N_out, seed=seed)
+        self.omega_CB = LCNN_layer.gen_random_omega_CB(N_out=LCNN_N_out, N_in=LCNN_N_in, seed=seed)
         example_output = LCNN_layer.all_layers_with_CB_AND_Tr(omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
         N_input_MLP = example_output.shape[1]
 
-        self.MLP_layer = nn.Sequential(
-            nn.Linear(N_input_MLP, N_neurons[0]),
+        self.MLP_layer = torch.nn.Sequential(
+            torch.nn.Linear(N_input_MLP, N_neurons[0]),
             act_fun_MLP,
-            *[nn.Sequential(nn.Linear(N_neurons[i], N_neurons[i]), act_fun_MLP) for _ in range(n_hidden - 2)],
-            nn.Linear(N_neurons[-1], 2)
+            *[torch.nn.Sequential(torch.nn.Linear(N_neurons[i], N_neurons[i+1]), act_fun_MLP) for i in range(N_hidden - 2)],
+            torch.nn.Linear(N_neurons[-1], 2)
         )
 
     def forward(self, U):

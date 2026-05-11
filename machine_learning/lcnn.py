@@ -37,9 +37,10 @@ class LCNN(torch.nn.Module):
 
         """
         super().__init__()
-        self.U = U
-        self.WLG = WilsonLoopsGenerator(U)
+        self.U = U # gauge configuration
+        self.WLG = WilsonLoopsGenerator(U) # object for generating Wilson loops
         self.K = K # K <= k <= K in the parallel transporters of length "k"
+        self.act_fun = act_fun # activation function
     #---
     def nK(self):
         return 2*self.K+1
@@ -215,13 +216,13 @@ class LCNN(torch.nn.Module):
         # Wprime_conv = self.get_Wprime(W=W_conv, U_PT=U_PT) # updated W' after L-Conv
         ## in Eq. 6, W' is just W (k=0 in eq. III.11)
         W_bilin = self.L_Bilin(W=W_conv, Wprime=W_conv, alpha=alpha) #  W after eq. 6 of https://arxiv.org/pdf/2012.12901
-        W_act = self.L_act(W=W_bilin, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
+        W_act = self.L_act(W=W_bilin, act_fun=self.act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(W=W_act, beta=beta)
         W_res = LCNN(U=EU, K=self.K).get_W() 
         return W_res
     #---
     def all_layers_AND_Tr(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable):
-        return suN.get_Tr(self.all_layers(omega=omega,alpha=alpha,beta=beta,act_fun=act_fun))
+        return suN.get_Tr(self.all_layers(omega=omega,alpha=alpha,beta=beta))
     #---
     def all_layers_with_CB(self, omega_CB: torch.Tensor, beta: torch.Tensor):
         """
@@ -233,13 +234,13 @@ class LCNN(torch.nn.Module):
         W = self.get_W() # set of locally transforming variables 
         Wprime = self.get_Wprime(W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
         W_CB = self.L_CB(W=W, Wprime=Wprime, omega_CB=omega_CB) # W after eq. 18 of https://arxiv.org/pdf/2401.06481
-        W_act = self.L_act(W=W_CB, act_fun=act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
+        W_act = self.L_act(W=W_CB, act_fun=self.act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(W=W_act, beta=beta)
         W_res = LCNN(U=EU, K=self.K).get_W() 
         return W_res
     #---
     def all_layers_with_CB_AND_Tr(self, omega_CB: torch.Tensor, beta: torch.Tensor):
-        return suN.get_Tr(self.all_layers_with_CB(omega_CB=omega_CB,beta=beta,act_fun=act_fun))
+        return suN.get_Tr(self.all_layers_with_CB(omega_CB=omega_CB,beta=beta))
     #---
 #---
                 
