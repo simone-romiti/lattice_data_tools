@@ -1,0 +1,49 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "lattice_data_tools"
+  description: "Python library for lattice QCD data analysis"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - text: Resampling
+        menu:
+          - href: bootstrap.qmd
+            text: Bootstrap sampling
+          - href: jackknife.qmd
+            text: Jackknife sampling
+      - text: Correlators
+        menu:
+          - href: effective_curves.qmd
+            text: Effective Curves
+          - href: gevp.qmd
+            text: GEVP
+      - text: Analysis
+        menu:
+          - href: fitting.qmd
+            text: Fitting
+          - href: model_averaging.qmd
+            text: Model Averaging
+          - href: nested_sampling.qmd
+            text: Nested Sampling
+          - href: artifacts.qmd
+            text: Lattice Artifacts
+
+format:
+  html:
+    theme: cosmo
+    html-math-method: katex
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    fontsize: 14pt
+    highlight-style: github
+    embed-resources: false
+
+execute:
+  eval: false
+  echo: true

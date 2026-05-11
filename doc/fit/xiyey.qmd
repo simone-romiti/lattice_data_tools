@@ -1,0 +1,38 @@
+---
+title: "xiyey"
+---
+
+Fit of a 1d function of n variables
+
+.. ldt-id:: FIT-xiyey-module
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`fit/xiyey.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xiyey.py)
+:::
+
+
+## API Reference
+
+#### `fit_xiyey` {#fit_xiyey}
+
+```python
+def fit_xiyey(ansatz, x: np.ndarray, y: np.ndarray, ey: np.ndarray, guess: np.ndarray, method='BFGS', Cov_y_inv=None)
+```
+
+Fit of y=f(\vec{x}), there f: R^n \to R^1
+
+Args:
+    ansatz : ansatz taking a float and returning a float
+    x (np.ndarray): 1d array of x values
+    y (np.ndarray): 1d array of y values
+    ey (np.ndarray):1d array of errors on the values
+    guess (np.ndarray): 1d array fo guesses for the ansatz_
+    maxiter (int, optional): _description_. Defaults to 10000.
+    method (str, optional): _description_. Defaults to "BFGS".
+    Cov_y_inv: estimate of inverse covariance matrix of y
+
+.. ldt-id:: FIT-fit_xiyey
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xiyey.py#L10){.source-link style='font-size:0.8em;'}
+
+---

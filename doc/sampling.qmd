@@ -1,0 +1,116 @@
+---
+title: "sampling"
+---
+
+Abstract base class for statistical resampling arrays.
+
+Defines the common interface for ``BootstrapSamples`` and ``JackknifeSamples``.
+Both subclasses are NumPy ndarray subclasses that hold resampled data and
+enforce the use of their own ``mean()`` and ``error()`` estimators instead of
+the standard NumPy equivalents.
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`sampling.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py)
+:::
+
+
+## API Reference
+
+### `AbstractSamples` {#abstractsamples}
+
+```python
+class AbstractSamples(np.ndarray)
+```
+
+Abstract base class for resampling arrays (bootstrap, jackknife).
+
+Subclasses store resampled data as a NumPy array and must implement
+the statistical estimators ``mean()`` and ``error()``.  Direct use of
+``np.mean``, ``np.std``, and ``np.average`` is blocked to prevent
+accidental misuse — call the concrete methods instead.
+
+.. ldt-id:: SAMP-AbstractSamples
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L15){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `AbstractSamples.__array_finalize__` {#abstractsamples-__array_finalize__}
+
+```python
+def __array_finalize__(self, obj)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `AbstractSamples.__array_function__` {#abstractsamples-__array_function__}
+
+```python
+def __array_function__(self, func, types, args, kwargs)
+```
+
+Block ``np.mean``, ``np.std``, and ``np.average``.
+
+Subclasses enforce their own estimators; calling the NumPy
+equivalents directly on a resampling array is almost always a
+mistake.
+
+.. ldt-id:: SAMP-AbstractSamples-__array_function__
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L30){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `AbstractSamples.to_numpy` {#abstractsamples-to_numpy}
+
+```python
+def to_numpy(self) -> np.ndarray
+```
+
+Return a plain ``np.ndarray`` view of this object.
+
+.. ldt-id:: SAMP-AbstractSamples-to_numpy
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L46){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `AbstractSamples.mean` {#abstractsamples-mean}
+
+```python
+def mean(self) -> np.ndarray
+```
+
+Estimate of the mean of the underlying distribution.
+
+The precise definition depends on the resampling scheme:
+
+- **Bootstrap**: biased mean over the bootstrap replicates (rows 1…N_bts).
+- **Jackknife**: unbiased leave-one-out mean.
+
+.. ldt-id:: SAMP-AbstractSamples-mean
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L54){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `AbstractSamples.error` {#abstractsamples-error}
+
+```python
+def error(self) -> np.ndarray
+```
+
+Estimate of the standard error on the mean.
+
+The precise definition depends on the resampling scheme:
+
+- **Bootstrap**: standard deviation of the bootstrap replicates.
+- **Jackknife**: jackknife standard error (scaled by √(N−1)).
+
+.. ldt-id:: SAMP-AbstractSamples-error
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/sampling.py#L66){.source-link style='font-size:0.8em;'}
+
+---

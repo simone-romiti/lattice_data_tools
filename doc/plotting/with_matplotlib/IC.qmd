@@ -1,0 +1,30 @@
+---
+title: "IC"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_matplotlib/IC.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/IC.py)
+:::
+
+
+## API Reference
+
+### `FromBootstraps` {#frombootstraps}
+
+```python
+class FromBootstraps
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/IC.py#L7){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `FromBootstraps.plot_cdf` {#frombootstraps-plot_cdf}
+
+```python
+def plot_cdf(y, P, title=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/IC.py#L9){.source-link style='font-size:0.8em;'}
+
+---

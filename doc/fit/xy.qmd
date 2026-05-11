@@ -1,0 +1,33 @@
+---
+title: "xy"
+---
+
+Fit of a 1d function of 1 variable without errors on data points
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`fit/xy.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xy.py)
+:::
+
+
+## API Reference
+
+#### `fit_xy` {#fit_xy}
+
+```python
+def fit_xy(ansatz, x: np.ndarray, y: np.ndarray, guess: np.ndarray, method='BFGS', Cov_estimate=None)
+```
+
+Fit of y=f(x), there f: \mathbb{R}^1 \to \mathbb{R}^1
+
+Args:
+    ansatz : ansatz taking a float and returning a float
+    x (np.ndarray): 1d array of x values
+    y (np.ndarray): 1d array of y values
+    ey (np.ndarray):1d array of errors on the values
+    guess (np.ndarray): 1d array fo guesses for the ansatz_
+    maxiter (int, optional): _description_. Defaults to 10000.
+    method (str, optional): _description_. Defaults to "BFGS".
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xy.py#L7){.source-link style='font-size:0.8em;'}
+
+---

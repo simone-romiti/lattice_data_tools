@@ -1,0 +1,40 @@
+---
+title: "test_effective_curves"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_effective_curves.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_effective_curves.py)
+:::
+
+
+## API Reference
+
+#### `test_get_m_eff_log_constant_mass` {#test_get_m_eff_log_constant_mass}
+
+```python
+def test_get_m_eff_log_constant_mass()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_effective_curves.py#L14){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_get_m_eff_strategy_invalid` {#test_get_m_eff_strategy_invalid}
+
+```python
+def test_get_m_eff_strategy_invalid()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_effective_curves.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_fit_eff_mass_returns_float` {#test_fit_eff_mass_returns_float}
+
+```python
+def test_fit_eff_mass_returns_float()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_effective_curves.py#L34){.source-link style='font-size:0.8em;'}
+
+---

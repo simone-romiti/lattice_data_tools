@@ -1,4 +1,11 @@
-""" Analysis routines """
+"""
+Analysis routines.
+
+The functions defined here are meant to be 
+
+
+
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,7 +18,9 @@ def bts_corr_plot(
         t1: int, t2: int, 
         outfile: str, 
         yscale=None, label=None, linestyle="None"):
-    """ Plot of the correlator from the bootstrap samples in the interval t1, t2 included """
+    """
+    Plot of the correlator `C(t)` from the bootstrap samples in the interval `t1`, `t2` included
+    """
     N_bts, T_ext = C_bts.shape
     print("## Potting the correlator")
     plt.errorbar(
@@ -33,7 +42,7 @@ def bts_corr_plot(
     print("## output:", outfile)
     plt.savefig(outfile)
     plt.close()
-####
+#---
 
 
 def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=False, outfile=None, **kwargs):
@@ -41,8 +50,8 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
     Bootstrap analysis of the effective mass. 
     Returns the bootstraps of the best fit value. 
     
-    - The fit is done by fitting to a constant the effective mass curve in the interval [t1,t2] (both included)
-    - The time extent T and the strategy for the effective mass curve determination are provided by the user
+    - The fit is done by fitting to a constant the effective mass curve in the interval `[t1,t2]` (both included)
+    - The time extent `T` and the strategy for the effective mass curve determination are provided by the user
     - If outfile is passed, is used as path for the output plot
     
     """
@@ -50,7 +59,7 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
     N_bts = C_bts.shape[0]
     if verbose:
         print("## Finding the effective mass")
-    ####
+    #---
     M_eff = np.array([ec.get_m_eff(C_bts[ib,:], strategy=strategy, T=T) for ib in range(N_bts)])
     T_ext = M_eff.shape[1] ## time extent of the effective mass curve
     #times_eff = np.array([t for t in range(T-1)])
@@ -59,7 +68,7 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
     if verbose:
         print("## Fitting the effective mass")
         print("T=",T, "t1=", t1, "t2=", t2)
-    ####
+    #---
     M_eff_fit = np.array([ec.fit_eff_mass(M_eff_plat[ib,:], dM_eff_plat) for ib in range(N_bts)])
     dM_eff_fit = np.std(M_eff_fit, axis=0, ddof=1)
     if plot:
@@ -79,17 +88,17 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
         tmin_plot, tmax_plot = 0, T_ext
         if "tmin_plot" in kwargs.keys():
             tmin_plot = kwargs["tmin_plot"]
-        ####
+        #---
         if "tmax_plot" in kwargs.keys():
             tmax_plot = kwargs["tmax_plot"]+1
-        ####
+        #---
         label = "$M={M} \\pm {dM}$".format(
             M=np.round(np.average(M_eff_fit, axis=0), 3),
             dM=np.round(np.std(M_eff_fit, axis=0, ddof=1), 3)
             )
         if "label" in kwargs.keys():
             label = kwargs["label"]
-        ####
+        #---
         plt.errorbar(
             x = np.arange(tmin_plot, tmax_plot),
             y = np.average(M_eff, axis=0)[tmin_plot:tmax_plot], 
@@ -105,9 +114,9 @@ def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=Fa
             plt.tight_layout()
             plt.savefig(outfile)
             plt.close()
-    ####
+    #---
     return M_eff_fit
-####
+#---
 
 def bts_gevp(C_bts: np.ndarray, t0: int, outfile = None):
     N_bts = C_bts.shape[0]
@@ -115,4 +124,4 @@ def bts_gevp(C_bts: np.ndarray, t0: int, outfile = None):
     N, T_ext = C_bts.shape[2], C_bts.shape[3]
     res = np.array([gevp.gevp(C_bts[i,:], t0=t0) for i in range(N_bts)])
     return res
-####
+#---

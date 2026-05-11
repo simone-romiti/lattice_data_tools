@@ -1,0 +1,145 @@
+---
+title: "Z_function"
+---
+
+Implementation of the Luescher's Zeta function, 
+as in eq. (7) of https://arxiv.org/pdf/1707.05817.
+
+NOTE: For Z_00 in the Center of Mass frame: ec{s}=(0,0,0) [see eq. (3)], l=m=0, gamma=1.
+
+
+Additional references:
+
+- https://doi.org/10.1016/0550-3213(91)90366-6 (analytic continuation of the Luscher's Zeta function)
+- https://doi.org/10.1016/0550-3213(91)90584-K (tabulated values of phi(q))
+- https://arxiv.org/abs/1202.2145, see appendix
+- https://arxiv.org/pdf/1107.5023: eq. (5) and Eq.(2)+Tab.II for the tabulated energy levels
+- https://arxiv.org/pdf/1011.5288. Tab.V for some tabulated values
+
+
+- `python2` implementation: https://github.com/knippsch/LueschersZetaFunction
+    - For `python3` calls, use  
+        ```
+        -np.arctan(np.pi**1.5*np.sqrt(q2) * 1./np.real(Z(q2, gamma=1., d=np.zeros(3, dtype=int), m_split=1., precision=1e-8)))/(np.pi*q2)
+        ```
+- Morningstar's implementation: https://github.com/cjmorningstar10/TwoHadronsInBox
+    - For a `python` wrapper, see this repo as a template 
+      (note that the actual repository needed is a fork of the above `TwoHadronsBox`):
+      https://github.com/ebatz/pythib
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/Z_function.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py)
+:::
+
+
+## API Reference
+
+### `Z_00_Calculator` {#z_00_calculator}
+
+```python
+class Z_00_Calculator
+```
+
+Z_00(q2) as in eq. C8 of https://doi.org/10.1016/0550-3213(91)90366-6,
+with a cutoff on the norm of the 3-vector ec{n}.    
+
+NOTE: 
+There are 2 cutoffs, a small one for the regularization of K_00, 
+and a large one that is the unavoidable numerical truncation of the sum over ec{n} in the Z_00(q2) expression.
+
+Additional reference: https://arxiv.org/pdf/hep-lat/0404001, appendix A
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L33){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.__init__` {#z_00_calculator-__init__}
+
+```python
+def __init__(self, Lambda_Z3: float, Lambda: float, N_gauss: int, q2_max: float, tol_Z_00_zeroes: float=1e-14)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L44){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.curly_Y_lm` {#z_00_calculator-curly_y_lm}
+
+```python
+def curly_Y_lm(self, l: int, m: int, r: np.float64, theta: np.float64, phi: np.float64)
+```
+
+\mathcal{Y}_{lm}(r,    heta, \phi) as in eq. 3.14 of https://doi.org/10.1016/0550-3213(91)90366-6
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L63){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.F0` {#z_00_calculator-f0}
+
+```python
+def F0(self, x: float) -> float
+```
+
+F_0(x) as in eq. (11) of https://arxiv.org/pdf/1707.05817
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L68){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.find_Z_00_zeros` {#z_00_calculator-find_z_00_zeros}
+
+```python
+def find_Z_00_zeros(self, q2_min: float, q2_max: float, tol: float=1e-14)
+```
+
+Find all zeros of Z_00(q2) in the range [q2_min, q2_max].
+Returns a list of q2 values where Z_00(q2) = 0.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L79){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.get_Z_00` {#z_00_calculator-get_z_00}
+
+```python
+def get_Z_00(self, q2: float) -> float
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L96){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.get_Z_00_brute_force` {#z_00_calculator-get_z_00_brute_force}
+
+```python
+def get_Z_00_brute_force(self, q2: float)
+```
+
+This is the brute-force calculation of Z_00.
+It should be used only to show that it actually does not converge,
+and we need the get_Z_00() method implemented in this class
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L124){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.tan_phi` {#z_00_calculator-tan_phi}
+
+```python
+def tan_phi(self, q: float)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L134){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Z_00_Calculator.phi` {#z_00_calculator-phi}
+
+```python
+def phi(self, q: float)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Z_function.py#L139){.source-link style='font-size:0.8em;'}
+
+---

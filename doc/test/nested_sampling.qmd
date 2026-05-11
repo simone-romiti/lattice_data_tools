@@ -1,0 +1,12 @@
+---
+title: "nested_sampling"
+---
+
+Simple testing of Nested Sampling (NS) routines on some syntetic data
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/nested_sampling.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/nested_sampling.py)
+:::
+
+
+*No public definitions found in this module.*

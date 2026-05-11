@@ -1,0 +1,47 @@
+---
+title: "parallel_transport"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`links/parallel_transport.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/parallel_transport.py)
+:::
+
+
+## API Reference
+
+#### `get_ParallelTransporters` {#get_paralleltransporters}
+
+```python
+def get_ParallelTransporters(U: GaugeConfiguration, K: int)
+```
+
+Array of the parallel transporters \prod_{i=0}^{j} U_\mu(x+i*\mu) , j=0,...,k
+
+Namely, the ones corresponding to a parallel transport along an axis, for up to "k" steps in the lattice spacing.
+
+Returns:
+  Array of shape (batch_size,L1,...,Ld,d,2K+1,Nc,Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/parallel_transport.py#L6){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_W_shifted` {#get_w_shifted}
+
+```python
+def get_W_shifted(U: GaugeConfiguration, W: LocallyGaugeCovariant, K: int)
+```
+
+W_\mu(x+k*\mu)
+
+Input:
+  U: gauge configuration. shape:  (batch_size,L1,...,Ld,d,Nc,Nc)
+  U_PT: parallel transporters. shape:  (batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
+  W: locally gauge-transforming variables. shape  (batch_size,L1,...,Ld, N_var, Nc,Nc)
+
+Returns:
+  W_shifted: shifted W. shape: (batch_size, L1,...,Ld, N_var, d, nK, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/parallel_transport.py#L50){.source-link style='font-size:0.8em;'}
+
+---

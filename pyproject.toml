@@ -14,6 +14,9 @@ dependencies = [
     "pyyaml",
 ]
 
+[project.urls]
+repository = "https://github.com/simone-itpkaon/lattice_data_tools"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["*"]

@@ -1,0 +1,127 @@
+---
+title: "r0"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`r0.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py)
+:::
+
+
+## API Reference
+
+#### `read_Wloops_1st_format` {#read_wloops_1st_format}
+
+```python
+def read_Wloops_1st_format(omeas_dir, i1, step, Ng, nmax_iter, L, T)
+```
+
+Reading the Wilson loops in the 1st type of format 
+
+Args:
+    omeas_dir (str): directory storing the online measurements
+    i1 (int): index of 1st configuration
+    step (int): stap between indices of consedutive configurations
+    Ng (int): number of configurations we want to extract
+    nmax_iter (int): maximum number of attempts to read configurations (avoids getting stuck when files don't exist)
+    L (int): Spatial extent of the lattice
+    T (int): Temporal extent of the lattice
+
+Returns:
+    numpy.ndarray: array with 3 indices: configuration, t (temporal extent of the loop), r (spatial extent of the loop)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `read_Wloops_format2` {#read_wloops_format2}
+
+```python
+def read_Wloops_format2(omeas_dir: str, L: int, T: int, beta: float, xi: float, ss: bool, sizeWloops: float, nape=0, alpha=1.0) -> np.ndarray
+```
+
+Reading the Wilson loops in the 2nd type of format 
+
+Args:
+    omeas_dir (str): directory storing the online measurements
+    L (int): Spatial extent of the lattice
+    T (int): Temporal extent of the lattice
+    beta (float): beta in the Lagrangian
+    xi (float): bare anisotropy
+    ss (bool): spatial-spatial Wilson loops
+    sizeWloops (float): ratio between size and maximum extent of measured loops
+    nape (int, optional): number of APE smearing steps. Defaults to 0.
+    alpha (float, optional): APE smearing parameter. Defaults to 1.0.
+
+Returns:
+    numpy.ndarray: array with 3 indices: configuration, t (temporal extent of the loop), r (spatial extent of the loop)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py#L44){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_potential_bts` {#get_potential_bts}
+
+```python
+def get_potential_bts(W_bts: np.ndarray, t1: int, t2: int, output_plot=None) -> np.ndarray
+```
+
+Extracting the potential from the Wilson loop by fitting between t1 and t2 included
+
+Args:
+    W_bts (np.ndarray): bootstraps for W(t) \sim e^{-V*t}. shape = (N_bts, T)
+    t1 (int): start of the plateau of V_eff(t)
+    t2 (int): end of the plateau of V_eff(t)
+    output_plot (str): path of output file with plot. Default to None.
+
+Return:
+    V_bts (np.ndarray): bootstraps for V
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py#L78){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `fit_static_potential_QED2p1` {#fit_static_potential_qed2p1}
+
+```python
+def fit_static_potential_QED2p1(V_bts_all: np.ndarray, r1: int, r2: int, p0=[1.0, 1.0, 1.0], output_plot=None) -> np.ndarray
+```
+
+QED in 2+1 dimensions: fit the static potential V(r):
+
+V(r) = V_0 + b*log(r) + sigma*r,
+
+where V_0 is an unphysical offset constant.
+ACHTUNG: you should provide the data such that V[0] = V(r=1).
+        (r=0 can't be measured: Wilson loop of size 0!)
+
+Args:
+    V_bts_all (np.ndarray): bootstraps for the potential. shape = (N_bts, L). V[0] = V(r=1)
+    r1 (int): start of the fit interval for V(r)
+    r2 (int): end of the fit interval for F(r)
+    p0 (list, optional): initial fit guess for "v0", "b" and "sigma" . Defaults to [1.0, 1.0, 1.0].
+
+Returns:
+    np.ndarray: _description_
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py#L113){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_r0_QED2p1` {#get_r0_qed2p1}
+
+```python
+def get_r0_QED2p1(b, sigma, c)
+```
+
+QED in 2+1 dimensions: finding the Sommer parameter r0 by the condition:
+
+r_0^2 * F(r_0) = c
+
+where F(r) = rac{d}{dr}V(r). 
+In QED_{2+1} V(r) = V_0 + b*log(r) + sigma*r, hence r0 is found solving:
+
+sigma*r_0^2 + b*r_0 - c = 0
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/r0.py#L164){.source-link style='font-size:0.8em;'}
+
+---

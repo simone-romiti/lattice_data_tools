@@ -1,0 +1,50 @@
+---
+title: "test_jackknife"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_jackknife.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_jackknife.py)
+:::
+
+
+## API Reference
+
+#### `test_uncorrelated_confs_to_jkf_shape` {#test_uncorrelated_confs_to_jkf_shape}
+
+```python
+def test_uncorrelated_confs_to_jkf_shape()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_jackknife.py#L10){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_jackknife_mean` {#test_jackknife_mean}
+
+```python
+def test_jackknife_mean()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_jackknife.py#L17){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_jackknife_error` {#test_jackknife_error}
+
+```python
+def test_jackknife_error()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_jackknife.py#L28){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_jackknife_blocks_numpy_mean` {#test_jackknife_blocks_numpy_mean}
+
+```python
+def test_jackknife_blocks_numpy_mean()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_jackknife.py#L36){.source-link style='font-size:0.8em;'}
+
+---

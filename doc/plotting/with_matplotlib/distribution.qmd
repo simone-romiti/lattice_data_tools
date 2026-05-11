@@ -1,0 +1,54 @@
+---
+title: "distribution"
+---
+
+Routnined for plotting probability density functions (PDFs) and cumulative distribution functions (CDFs) of the data.
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_matplotlib/distribution.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/distribution.py)
+:::
+
+
+## API Reference
+
+### `DistributionPlotter` {#distributionplotter}
+
+```python
+class DistributionPlotter
+```
+
+Class for plotting probability density functions (PDFs) and cumulative distribution functions (CDFs) of the data.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/distribution.py#L7){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `DistributionPlotter.__init__` {#distributionplotter-__init__}
+
+```python
+def __init__(self, fix, ax)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/distribution.py#L9){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `DistributionPlotter.cdf` {#distributionplotter-cdf}
+
+```python
+def cdf(self, x: np.ndarray, color='blue', label=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/distribution.py#L13){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `DistributionPlotter.pdf` {#distributionplotter-pdf}
+
+```python
+def pdf(self, x: np.ndarray, bins=typing.Literal['sqrtN'], color='blue', label=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/distribution.py#L22){.source-link style='font-size:0.8em;'}
+
+---

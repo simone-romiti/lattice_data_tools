@@ -1,0 +1,12 @@
+---
+title: "charge_factor"
+---
+
+Charge factors in front to be added in front of the Vector-Vector correlator
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/charge_factor.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/charge_factor.py)
+:::
+
+
+*No public definitions found in this module.*

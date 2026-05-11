@@ -1,59 +1,13 @@
 ---
-title: "lattice_data_tools"
-subtitle: "Python library for lattice QCD data analysis"
+title: "lattice-data-tools"
 ---
 
-## Overview
+Lattice Data Tools: tools for the analysis of lattice data
 
-`lattice_data_tools` provides the full analysis pipeline for lattice Quantum Chromodynamics (QCD) simulations, from raw Monte Carlo configurations to publication-ready results.
+This package contains a set of routines for the analysis of lattice data.
 
-### Library structure
+Remarks:
 
-| Module | Purpose |
-|---|---|
-| `bootstrap.py` | Bootstrap resampling, auto-binning, correlated data |
-| `jackknife.py` | Jackknife resampling |
-| `uwerr.py` | Gamma method, integrated autocorrelation time |
-| `effective_curves.py` | Effective mass and amplitude extraction |
-| `gevp.py` | Generalized Eigenvalue Problem |
-| `fit/` | Trajectory method for multi-dimensional fitting |
-| `model_averaging/` | AIC/BIC model averaging, CDF-based error decomposition |
-| `nested_sampling/` | Nested sampling weights and density of states |
-| `artifacts.py` | λ-method for continuum limit |
-| `physical_point/` | Physical quark mass tuning |
-| `gm2/HVP/` | Muon g−2 hadronic vacuum polarization |
-| `plotting/` | matplotlib, plotly, plotnine backends |
-
-### Abstract resampling interface
-
-All resampling classes inherit from `AbstractSamples` (defined in `sampling.py`), which enforces a common interface and guards against misuse of NumPy functions:
-
-```python
-from lattice_data_tools.sampling import AbstractSamples
-# Both BootstrapSamples and JackknifeSamples implement:
-#   .mean()    — estimator of the mean
-#   .error()   — estimator of the standard error
-#   .to_numpy() — cast back to plain np.ndarray
-```
-
-### Quick start
-
-```python
-import numpy as np
-from lattice_data_tools.bootstrap import uncorrelated_confs_to_bts
-from lattice_data_tools.fit.xyey import fit_xyey
-
-# 1. Generate bootstrap samples from 500 measurements
-data = np.random.normal(5.0, 1.0, 500)
-bts  = uncorrelated_confs_to_bts(data, N_bts=200)
-print(f"mean = {bts.unbiased_mean():.4f} ± {bts.error():.4f}")
-
-# 2. Fit an ansatz to data
-x  = np.linspace(0, 1, 30)
-y  = 2.0 * np.exp(-3.0 * x) + np.random.normal(0, 0.01, 30)
-ey = np.full(30, 0.01)
-res = fit_xyey(ansatz=lambda x, p: p[0]*np.exp(-p[1]*x),
-               x=x, y=y, ey=ey, guess=[1.0, 1.0])
-print("Best-fit parameters:", res["par"])
-print("chi2/dof =", res["ch2_dof"])
-```
+- Most scripts are in python, only a few in R
+- Test scripts are provided in the `test/` subdirectory
+- If you find errors or have suggestions, please write me at <simone.romiti.1994@gmail.com>

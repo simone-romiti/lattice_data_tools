@@ -1,0 +1,91 @@
+---
+title: "statistics"
+---
+
+General routines for statistical analysis
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`statistics.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py)
+:::
+
+
+## API Reference
+
+#### `sample_from_CDF` {#sample_from_cdf}
+
+```python
+def sample_from_CDF(y, P, seed: int, n_samples: int=10000)
+```
+
+Sample points y_sampled from the numerical histogram of the interpolated cumulative distribution P(y).
+
+This is achieved by
+- sampling uniformly u \in [0,1] (value of P)
+- finding the corresponding value of y such that u=P(y)
+- the values of y and P in input are used to do the interpolation
+
+Parameters
+----------
+y : np.ndarray
+    Values for which P(y) is known (e.g. from cumulative histogram).
+P : np.ndarray
+    Corresponding CDF values (monotonic increasing).
+n_samples : int, optional
+    Number of uniform samples to draw from [0, 1].
+
+Returns
+-------
+float
+    Estimated variance.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py#L7){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `variance_from_CDF` {#variance_from_cdf}
+
+```python
+def variance_from_CDF(y, P, seed: int, n_samples: int=10000)
+```
+
+unbiased estimator of sample variance from CDF histogram
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py#L50){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `covariance_to_correlation` {#covariance_to_correlation}
+
+```python
+def covariance_to_correlation(C: np.ndarray)
+```
+
+covariance matrix --> correlation matrix
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py#L56){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `correlation_to_covariance` {#correlation_to_covariance}
+
+```python
+def correlation_to_covariance(rho, errors)
+```
+
+correlation matrix --> covariance
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py#L64){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `rooting` {#rooting}
+
+```python
+def rooting(A: np.ndarray, decimals: float=15)
+```
+
+Rooting the matrix A (assumed to be symmetric)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/statistics.py#L71){.source-link style='font-size:0.8em;'}
+
+---

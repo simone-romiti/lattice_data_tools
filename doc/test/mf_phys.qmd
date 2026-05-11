@@ -1,0 +1,12 @@
+---
+title: "mf_phys"
+---
+
+Physical point of quark mass
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/mf_phys.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/mf_phys.py)
+:::
+
+
+*No public definitions found in this module.*

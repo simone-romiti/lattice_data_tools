@@ -1,81 +1,24 @@
 ---
-title: "GEVP — Generalized Eigenvalue Problem"
+title: "gevp"
 ---
 
-The Generalized Eigenvalue Problem (GEVP) is used to disentangle
-contributions from multiple states in a correlator matrix.
-
-**Source file**: `gevp.py`
-
----
-
-## `gevp`
-
-```python
-from lattice_data_tools.gevp import gevp
-
-Lam, V = gevp(C, t0=0)
-```
-
-::: {.column-margin}
-**Source**: `gevp.py`
-**ID**: `GEVP-gevp`
+::: {.callout-note appearance="minimal"}
+**Source:** [`gevp.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gevp.py)
 :::
 
-Solves
 
-$$C(t)\, \vec{v}_n(t) = \lambda_n(t)\, C(t_0)\, \vec{v}_n(t)$$
+## API Reference
 
-at each time slice $t$, where $C$ is an $N \times N \times T$ correlator
-matrix.
+#### `gevp` {#gevp}
 
-**Arguments**
+```python
+def gevp(C: np.ndarray, t0=0)
+```
 
-| Argument | Type | Description |
-|---|---|---|
-| `C` | `np.ndarray` | Correlator matrix, shape `(N, N, T)` |
-| `t0` | `int` | Reference time slice (default: 0) |
+Returns eigenvalues and eigenvectors of the GEVP (Generalized EigenValue Problem)
 
-**Returns**
+.. ldt-id:: GEVP-gevp
 
-| Variable | Shape | Description |
-|---|---|---|
-| `Lam` | `(N, T)` | Eigenvalues $\lambda_n(t)$ |
-| `V` | `(N, N, T)` | Eigenvectors (normalised, sorted by eigenvalue) |
-
-Eigenvalues and eigenvectors are sorted in ascending order of $\lambda_n$
-at each $t$.  Uses `scipy.linalg.eigh` for the generalised symmetric
-eigenproblem.
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gevp.py#L7){.source-link style='font-size:0.8em;'}
 
 ---
-
-## Example
-
-```python
-import numpy as np
-from lattice_data_tools.gevp import gevp
-
-N, T = 3, 32
-# Build a synthetic symmetric positive-definite correlator matrix
-C = np.zeros((N, N, T))
-masses = [0.15, 0.30, 0.50]
-for i in range(N):
-    for j in range(N):
-        for t in range(T):
-            C[i, j, t] = np.exp(-masses[i] * t) * np.exp(-masses[j] * t)
-C += np.random.normal(0, 1e-5, (N, N, T))
-# Symmetrise
-C = (C + C.transpose(1, 0, 2)) / 2
-
-Lam, V = gevp(C, t0=2)
-# Lam[n, t] ≈ exp(-E_n * t) / exp(-E_n * t0) for the n-th eigenvalue
-```
-
-The effective mass of the $n$-th state can then be extracted from
-$\lambda_n(t)$ using the effective curve tools:
-
-```python
-from lattice_data_tools.effective_curves import get_m_eff_log
-
-m_eff_n = get_m_eff_log(Lam[0, :])   # ground state
-```

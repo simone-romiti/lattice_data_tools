@@ -1,0 +1,55 @@
+---
+title: "kernel"
+---
+
+Implementation of the QEd kernel for the HVP contribution to the muon's g-2
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/kernel.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/kernel.py)
+:::
+
+
+## API Reference
+
+#### `integral_01` {#integral_01}
+
+```python
+def integral_01(f, N: int, method: typing.Literal['trapezoid', 'rectangles', 'Simpson']='trapezoid')
+```
+
+\int_0^1 dy f(y)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/kernel.py#L9){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `K` {#k}
+
+```python
+def K(mt: float, N: int)
+```
+
+kernel K(m*t) as in eq. 1 of https://inspirehep.net/literature/2615948 
+
+mt:  m*t (NOTE: dimensionless)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/kernel.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `dK_da` {#dk_da}
+
+```python
+def dK_da(a: float, m: float, mt: float, N: int)
+```
+
+Derivative of the kernel K(m*t) as in eq. 1 of https://inspirehep.net/literature/2615948
+with respect to the lattice spacing "a". See K() above for an implementation of the kernel itself.
+
+a: lattice spacing (dimensionful)
+m: lepton mass (dimensionful, must be in the same dimension of a^{-1})
+mt:  m*t (NOTE: dimensionless)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/kernel.py#L39){.source-link style='font-size:0.8em;'}
+
+---

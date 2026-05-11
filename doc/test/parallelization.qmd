@@ -1,0 +1,20 @@
+---
+title: "parallelization"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/parallelization.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/parallelization.py)
+:::
+
+
+## API Reference
+
+#### `heavy_compute` {#heavy_compute}
+
+```python
+def heavy_compute(x)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/parallelization.py#L5){.source-link style='font-size:0.8em;'}
+
+---

@@ -1,0 +1,40 @@
+---
+title: "AIC_fits"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/AIC_fits.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_fits.py)
+:::
+
+
+## API Reference
+
+#### `f1` {#f1}
+
+```python
+def f1(a, c1, c2)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_fits.py#L25){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `f2` {#f2}
+
+```python
+def f2(a, c1, c2)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_fits.py#L28){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `f3` {#f3}
+
+```python
+def f3(a, c1, c2)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_fits.py#L31){.source-link style='font-size:0.8em;'}
+
+---

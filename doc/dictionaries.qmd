@@ -1,0 +1,111 @@
+---
+title: "dictionaries"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`dictionaries.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py)
+:::
+
+
+## API Reference
+
+### `NestedDict` {#nesteddict}
+
+```python
+class NestedDict(defaultdict)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L6){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.__init__` {#nesteddict-__init__}
+
+```python
+def __init__(self, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L7){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.to_dict` {#nesteddict-to_dict}
+
+```python
+def to_dict(self) -> dict
+```
+
+Convert the nested defaultdict structure into a plain dict.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L14){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.__repr__` {#nesteddict-__repr__}
+
+```python
+def __repr__(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L19){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.__getitem__` {#nesteddict-__getitem__}
+
+```python
+def __getitem__(self, key)
+```
+
+Extended access:
+  - if key is a list/tuple, traverse nested levels
+  - else, behave like defaultdict
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.__setitem__` {#nesteddict-__setitem__}
+
+```python
+def __setitem__(self, key, value)
+```
+
+Extended assignment:
+  - if key is a list/tuple, traverse nested levels and assign value
+  - else, behave like defaultdict
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L36){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.get_key_combinations` {#nesteddict-get_key_combinations}
+
+```python
+def get_key_combinations(self, parent_keys=None, max_depth=None, current_depth=0) -> List
+```
+
+Recursively extract all key combinations from a nested dictionary,
+with optional depth limiting.
+
+Args:
+    parent_keys (list): Used internally for recursion.
+    max_depth (int, optional): Maximum depth to traverse.
+    current_depth (int): Current recursion depth (internal).
+
+Returns:
+    list[list[str]]: List of key paths.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L51){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `NestedDict.loop` {#nesteddict-loop}
+
+```python
+def loop(combinations: List, fun: Callable)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/dictionaries.py#L90){.source-link style='font-size:0.8em;'}
+
+---

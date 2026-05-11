@@ -1,0 +1,29 @@
+---
+title: "fits"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_matplotlib/fits.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/fits.py)
+:::
+
+
+## API Reference
+
+#### `bts_weighted_fits` {#bts_weighted_fits}
+
+```python
+def bts_weighted_fits(x, y_models, weights, n_samples=10, color='blue', marker_size=0.1)
+```
+
+Plots of several fit models for a bootstrap analysis
+
+Args:
+    x (np.ndarray): N_pts values of x
+    y_models (list): list of numpy arrays of shape (N_bts, N_pts)
+    weights (np.ndarray): array fo weights of each model
+    n_samples (int): number of bootstraps to sample
+    color (str, optional): Color of the traces. Defaults to 'blue'.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_matplotlib/fits.py#L4){.source-link style='font-size:0.8em;'}
+
+---

@@ -1,0 +1,40 @@
+---
+title: "fit_xyey"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/fit_xyey.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xyey.py)
+:::
+
+
+## API Reference
+
+#### `ansatz` {#ansatz}
+
+```python
+def ansatz(x, params)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xyey.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_correlated_matches_uncorrelated` {#test_correlated_matches_uncorrelated}
+
+```python
+def test_correlated_matches_uncorrelated()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xyey.py#L30){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_recovers_exact_omega` {#test_recovers_exact_omega}
+
+```python
+def test_recovers_exact_omega()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xyey.py#L38){.source-link style='font-size:0.8em;'}
+
+---

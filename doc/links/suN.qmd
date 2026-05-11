@@ -1,0 +1,231 @@
+---
+title: "suN"
+---
+
+Routines for elements of the su(N) Lie algebra using Generalized Gell-Mann matrices: Sec. III.A of https://arxiv.org/pdf/0806.1174 .
+
+Commutation relations: [tau_a, tau_b]  = i f_{abc} tau_c
+Number of generators of the Lie algebra: N^2-1.
+Basis: Generalized Gell-Mann matrices
+Normalization: Tr(tau_a tau_b) = \delta_{ab} / 2
+
+Special cases:
+- U(1)  : only one generator: τ = 1/sqrt{2}
+- SU(2) : \tau_a = \sigma_a/2  (half-Pauli matrices).
+- SU(3) : \tau_a = \lambda_a/2  (half-Gell-Mann matrices).
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`links/suN.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py)
+:::
+
+
+## API Reference
+
+#### `get_Ng` {#get_ng}
+
+```python
+def get_Ng(Nc: int) -> int
+```
+
+Returns of su(Nc): Nc^2-1 for Nc >= 2, 1 for U(1).
+
+Nc: number of colors
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L20){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_Nc` {#get_nc}
+
+```python
+def get_Nc(Ng: int)
+```
+
+Number of colors Nc given the number of generators Ng
+
+Ng = 1 for U(1)
+Ng = Nc^2 -1 for SU(Nc) (Nc > 1)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L30){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_Tr` {#get_tr}
+
+```python
+def get_Tr(W: torch.tensor)
+```
+
+Eq. 10 of https://arxiv.org/pdf/2012.12901
+
+Trace of a set of Nc \times Nc matrices.
+
+W: tensor of Nc \times Nc matrices. shape: (..., Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L41){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `subtract_trace` {#subtract_trace}
+
+```python
+def subtract_trace(W: torch.tensor)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L52){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_ReTr` {#get_retr}
+
+```python
+def get_ReTr(W: torch.tensor)
+```
+
+Real part of the trace of each W object.
+
+
+W: tensor of Nc \times Nc matrices. shape: (..., Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L58){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_generalized_GellMann_matrices_suN` {#get_generalized_gellmann_matrices_sun}
+
+```python
+def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype=torch.complex128) -> torch.Tensor
+```
+
+Return the N^2-1 Generalized Gell-Mann matrices as (N,N) complex
+numpy arrays.
+
+Reference: Eqs. 3,4,5 of https://arxiv.org/pdf/0806.1174
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L70){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_generators` {#get_generators}
+
+```python
+def get_generators(Nc: int, device: torch.device, dtype=torch.complex128)
+```
+
+Wrapper for the generators of U(1) and SU(Nc) matrices, properly normalized
+The case of U(1) is returned when Nc==1
+
+Note: Eq. A3 of https://arxiv.org/pdf/0806.1174 is normalized such that Tr(\tau_a \tau_b)= 2*\delta_{ab}
+      Here we normalize them such that: Tr(\tau_a \tau_b)= \delta_{ab}/2
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L105){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_exp_iA` {#get_exp_ia}
+
+```python
+def get_exp_iA(A: torch.Tensor) -> torch.Tensor
+```
+
+Compute exp(i*A) for a Hermitian matrix A via eigendecomposition.
+
+1. Diagonalise A = M*D*M^{-1} = M*D*M^{\dagger}   (A Hermitian --> D real, M unitary via eigh).
+2. Compute exp(i D) element-wise on the real diagonal eigenvalues.
+3. Reconstruct U = M · diag(exp(i D)) · M^{-1}.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L121){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_suN_element_from_theta` {#get_sun_element_from_theta}
+
+```python
+def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor
+```
+
+Build the su(Nc) algebra element  A = \theta_a \tau_a  (implicit sum over a)
+
+Parameters
+----------
+theta  : coefficients \theta_s. shape: (Ng,)
+N      : int. number of colors.
+dtype  : complex dtype for the output matrix.
+
+Returns
+-------
+A : (Nc,Nc) complex torch.Tensor
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L140){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_U_from_theta` {#get_u_from_theta}
+
+```python
+def get_U_from_theta(theta: torch.Tensor)
+```
+
+Element of the group SU(N), computed as U(\theta_a)=exp(i*theta_a*tau_a)
+
+Input:
+  - theta: array of angles. shape=(...,Ng)
+
+Returns:
+  - U: array of links. shape=(...,Nc,Nc)
+
+!!! NOTES !!!:
+  1. The inverse function does not exist, as the map U(\theta_a) is not injective.
+  2. For an arbitrary Nc, the different angles have in general different periodicities, so you can't globally restrict to a fixed interval for all of them
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L162){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `apply_coldstart` {#apply_coldstart}
+
+```python
+def apply_coldstart(U: torch.Tensor)
+```
+
+Initialize gauge links to identity matrices of size Nc \times Nc
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L181){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `apply_hotstart` {#apply_hotstart}
+
+```python
+def apply_hotstart(U: torch.Tensor, seed: int)
+```
+
+Initialize gauge links to random SU(Nc) elements,
+following the recipe of page 11 of https://arxiv.org/pdf/math-ph/0609050
+
+Each link matrix is constructed by:
+  1. Drawing an Nc×Nc random complex matrix.
+  2. Applying row-wise Gram-Schmidt orthonormalization -> U(Nc) matrix.
+  3. Dividing the first row by the Nc-th root of det(U) -> SU(Nc) matrix.
+
+Returns: configuration of links. shape: (..., Nc, Nc).
+         The first components of the shape are deduced from the shape of U.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L190){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `gen_random_gauge_transformation` {#gen_random_gauge_transformation}
+
+```python
+def gen_random_gauge_transformation(shape: torch.Size, dtype: torch.dtype, seed: int)
+```
+
+Returns a tensor of links V that generate a gauge transformation,
+using the provided shape.
+
+U_\mu(x) --> V(x) U_\mu(x) V^{\dagger}(x+\mu) , \forall x,\mu
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/suN.py#L218){.source-link style='font-size:0.8em;'}
+
+---

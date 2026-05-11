@@ -1,0 +1,20 @@
+---
+title: "matching_LH"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`matching_LH.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/matching_LH.py)
+:::
+
+
+## API Reference
+
+#### `match_LH` {#match_lh}
+
+```python
+def match_LH(beta_L, y_L, dy_L, beta_H, y_H, N_bts, ansatz_beta_VS_y, p0, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/matching_LH.py#L62){.source-link style='font-size:0.8em;'}
+
+---

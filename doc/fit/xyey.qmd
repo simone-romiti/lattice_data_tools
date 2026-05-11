@@ -1,0 +1,63 @@
+---
+title: "xyey"
+---
+
+Fit of a 1d function of 1 variable
+
+.. ldt-id:: FIT-xyey-module
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`fit/xyey.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xyey.py)
+:::
+
+
+## API Reference
+
+#### `fit_xyey` {#fit_xyey}
+
+```python
+def fit_xyey(ansatz, x: np.ndarray, y: np.ndarray, ey: np.ndarray, guess: np.ndarray, method='BFGS', Cov_y_inv=None)
+```
+
+Fit of y=f(x), there f: \mathbb{R}^1 \to \mathbb{R}^1
+
+Args:
+    ansatz : ansatz taking a float and returning a float
+    x (np.ndarray): 1d array of x values
+    y (np.ndarray): 1d array of y values
+    ey (np.ndarray):1d array of errors on the values
+    guess (np.ndarray): 1d array fo guesses for the ansatz_
+    maxiter (int, optional): _description_. Defaults to 10000.
+    method (str, optional): _description_. Defaults to "BFGS".
+    Cov_y_inv: if != None is an estimate of the inverse of the covariance matrix of the y points (e.g. from the bootstrap samples)
+
+.. ldt-id:: FIT-fit_xyey
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xyey.py#L10){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `polynomial_fit_xyey` {#polynomial_fit_xyey}
+
+```python
+def polynomial_fit_xyey(N_deg: int, x: np.ndarray, y: np.ndarray, ey: np.ndarray, Cov_y_inv=None)
+```
+
+Exact formula for the fit of a polynomial of degree N_deg, with N_deg+1 parameters:
+
+f(x) = \sum_{k=0}^{N_deg} \alpha_k x^k
+
+The formula can be obtained after some algebra, by minimizing the chi^2 = (y - ansatz(x))^T C^{-1} (y - ansatz(x)).
+A reference is eq. 13 of https://people.duke.edu/~hpgavin/SystemID/CourseNotes/linear-least-squares.pdf
+
+N_deg: degree of the polynomial (--> number of parameters = N_deg+1)
+x: 1d array of x values
+y: 1d array of y values
+ey: 1d array of errors on the y values
+Cov_y_inv: if != None is an estimate of the inverse of the covariance matrix of the y points
+
+.. ldt-id:: FIT-polynomial_fit_xyey
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xyey.py#L57){.source-link style='font-size:0.8em;'}
+
+---

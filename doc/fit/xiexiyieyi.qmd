@@ -1,0 +1,34 @@
+---
+title: "xiexiyieyi"
+---
+
+Fit of a 1d function of n variables with errors on the "x" too
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`fit/xiexiyieyi.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xiexiyieyi.py)
+:::
+
+
+## API Reference
+
+#### `fit_xiexiyieyi` {#fit_xiexiyieyi}
+
+```python
+def fit_xiexiyieyi(ansatz, x: np.ndarray, ex: np.ndarray, y: np.ndarray, ey: np.ndarray, guess: np.ndarray, maxiter=10000, method='BFGS', Cov_inv=None)
+```
+
+Fit of y=f(ec{x}), there f: R^n        o R^1
+NOTE: This function is just an alias for fit_trajectory
+
+Args:
+    ansatz : ansatz taking a float and returning a float
+    x (np.ndarray): 1d array of x values
+    y (np.ndarray): 1d array of y values
+    ey (np.ndarray):1d array of errors on the values
+    guess (np.ndarray): 1d array fo guesses for the ansatz_
+    maxiter (int, optional): _description_. Defaults to 10000.
+    method (str, optional): _description_. Defaults to "BFGS".
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/xiexiyieyi.py#L6){.source-link style='font-size:0.8em;'}
+
+---

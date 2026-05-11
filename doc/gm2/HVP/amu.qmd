@@ -1,0 +1,41 @@
+---
+title: "amu"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/amu.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/amu.py)
+:::
+
+
+## API Reference
+
+#### `get_amu_precomp_K` {#get_amu_precomp_k}
+
+```python
+def get_amu_precomp_K(ti: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: float, strategy='trapezoidal')
+```
+
+a_\mu as in eq. 1 of https://inspirehep.net/literature/2615948
+
+ti : array of times in lattice units, e.g. [1,2,3,...]
+Vi : values of the (bare) correlator at each ti (already including the charge factors)
+Ki: precomputed value of the kernel at each ti
+Z_ren: renormalization constant of the vector current: Z_A for tm and Z_V for OS
+
+NOTE: All observables should be in lattice units
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/amu.py#L9){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_amu` {#get_amu}
+
+```python
+def get_amu(m: float, ti: np.ndarray, Vi: np.ndarray, N_int: int, strategy='trapezoidal')
+```
+
+a_\mu from get_amu_precomp_K(), but computing the Kernel on the fly for each "t"
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/amu.py#L37){.source-link style='font-size:0.8em;'}
+
+---

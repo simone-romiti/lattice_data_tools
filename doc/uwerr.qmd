@@ -1,0 +1,144 @@
+---
+title: "uwerr"
+---
+
+Python translation of the uwerrprimary function from "hadron": https://github.com/HISKP-LQCD/hadron
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`uwerr.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py)
+:::
+
+
+## API Reference
+
+### `GammaMethod` {#gammamethod}
+
+```python
+class GammaMethod
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L14){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_Gamma` {#gammamethod-get_gamma}
+
+```python
+def get_Gamma(a: np.ndarray)
+```
+
+Gamma(t) as in eq. E.7 of https://arxiv.org/pdf/hep-lat/0409106
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L16){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_rho` {#gammamethod-get_rho}
+
+```python
+def get_rho(Gamma: np.ndarray)
+```
+
+Normalized correlation function Gamma(t)/Gamma(0)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_drho` {#gammamethod-get_drho}
+
+```python
+def get_drho(rho: np.ndarray, N: int, Lambda: int=100)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L31){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_W` {#gammamethod-get_w}
+
+```python
+def get_W(rho, drho)
+```
+
+summation window W as in Eq. (E.13) of https://arxiv.org/pdf/hep-lat/0409106
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L41){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_W_auto` {#gammamethod-get_w_auto}
+
+```python
+def get_W_auto()
+```
+
+optimal W according to Eq. 52 of https://arxiv.org/pdf/hep-lat/0306017
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L46){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_tau_int` {#gammamethod-get_tau_int}
+
+```python
+def get_tau_int(rho: np.ndarray, W: int)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L50){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.get_dtau` {#gammamethod-get_dtau}
+
+```python
+def get_dtau(tau_int: np.ndarray, N: int, W: int)
+```
+
+Eq. E.14 of https://arxiv.org/pdf/hep-lat/0409106
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L54){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GammaMethod.uwerr_primary` {#gammamethod-uwerr_primary}
+
+```python
+def uwerr_primary(data)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L58){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `rho_error` {#rho_error}
+
+```python
+def rho_error(rho, N, W, Lambda)
+```
+
+Error on the normalized autocorrelation function
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L99){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `plot_uwerr_primary` {#plot_uwerr_primary}
+
+```python
+def plot_uwerr_primary(u, output_file, name_obs: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L125){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `uwerr_primary` {#uwerr_primary}
+
+```python
+def uwerr_primary(data, nrep=None, S=1.5, output_file=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/uwerr.py#L182){.source-link style='font-size:0.8em;'}
+
+---

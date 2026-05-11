@@ -1,0 +1,96 @@
+---
+title: "windows"
+---
+
+Windows contribution to $a_\mu$.
+
+References:
+
+- https://arxiv.org/abs/2206.15084 (eqs. 18, 19, 20, 21)
+- https://arxiv.org/pdf/2411.08852 (eqs. 8, 9, 10, 11)
+- https://arxiv.org/pdf/1801.07224 (RBC/UKQCD set the convention)
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/windows.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py)
+:::
+
+
+## API Reference
+
+### `TimeModulator` {#timemodulator}
+
+```python
+class TimeModulator
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L20){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `TimeModulator.SD` {#timemodulator-sd}
+
+```python
+def SD(t_fm)
+```
+
+Short distance
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `TimeModulator.W` {#timemodulator-w}
+
+```python
+def W(t_fm: np.float128)
+```
+
+Window
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L28){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `TimeModulator.LD` {#timemodulator-ld}
+
+```python
+def LD(t_fm: np.float128)
+```
+
+Long Distance
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L34){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `TimeModulator.full` {#timemodulator-full}
+
+```python
+def full(t_fm: np.float128)
+```
+
+full contrbution, no modulation. It is equivalent to the sum of the 3 windows: SD, W, LD
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L40){.source-link style='font-size:0.8em;'}
+
+---
+
+### `a_mu` {#a_mu}
+
+```python
+class a_mu
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L47){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `a_mu.with_precomputed_K` {#a_mu-with_precomputed_k}
+
+```python
+def with_precomputed_K(window: Literal['SD', 'W', 'LD', 'full'], a_fm: np.float128, t_lat: np.ndarray, Vi: np.ndarray, K: np.ndarray, Z_ren: float, strategy: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/windows.py#L49){.source-link style='font-size:0.8em;'}
+
+---

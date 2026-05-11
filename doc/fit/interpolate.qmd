@@ -1,0 +1,36 @@
+---
+title: "interpolate"
+---
+
+Interpolation routines
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`fit/interpolate.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/interpolate.py)
+:::
+
+
+## API Reference
+
+#### `interpolate_x0` {#interpolate_x0}
+
+```python
+def interpolate_x0(y0, ansatz, par, x0_guess)
+```
+
+Finds the value x0 such that ansatz(x0, par)==y0
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/interpolate.py#L10){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `x0_from_xyey` {#x0_from_xyey}
+
+```python
+def x0_from_xyey(ansatz, guess: np.ndarray, y0: np.float64, x: np.ndarray, y: np.ndarray, ey: np.ndarray, maxiter=10000, method='BFGS')
+```
+
+Interpolate y(x) to x0
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/fit/interpolate.py#L22){.source-link style='font-size:0.8em;'}
+
+---

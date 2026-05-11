@@ -1,0 +1,104 @@
+---
+title: "AIC_bootstrap"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/AIC_bootstrap.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py)
+:::
+
+
+## API Reference
+
+#### `test_result_keys` {#test_result_keys}
+
+```python
+def test_result_keys()
+```
+
+get_P_from_bootstraps should return y, wP, and P.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L36){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_P_is_valid_cdf` {#test_p_is_valid_cdf}
+
+```python
+def test_P_is_valid_cdf()
+```
+
+P should be monotonically increasing, starting near 0 and ending near 1.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L43){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_w_normalized_sums_to_P` {#test_w_normalized_sums_to_p}
+
+```python
+def test_w_normalized_sums_to_P()
+```
+
+Cumulative sum of w_normalized across models should equal P at each y point.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L50){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_w_normalized_shape` {#test_w_normalized_shape}
+
+```python
+def test_w_normalized_shape()
+```
+
+wP should have shape (n_y_points, n_models).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L56){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_percentiles_ordered` {#test_percentiles_ordered}
+
+```python
+def test_percentiles_ordered()
+```
+
+y16 <= y50 <= y84 must hold.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L61){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_mean_near_true_mean` {#test_mean_near_true_mean}
+
+```python
+def test_mean_near_true_mean()
+```
+
+AIC mean should be within 2 sigma_syst of the true mean (5.0).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L67){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_sigma2_tot_positive` {#test_sigma2_tot_positive}
+
+```python
+def test_sigma2_tot_positive()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L74){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_sigma2_tot_in_expected_range` {#test_sigma2_tot_in_expected_range}
+
+```python
+def test_sigma2_tot_in_expected_range()
+```
+
+Total variance should be between stat-only and stat+syst combined.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC_bootstrap.py#L78){.source-link style='font-size:0.8em;'}
+
+---

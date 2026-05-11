@@ -1,0 +1,20 @@
+---
+title: "fit_xiyey"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/fit_xiyey.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xiyey.py)
+:::
+
+
+## API Reference
+
+#### `ansatz` {#ansatz}
+
+```python
+def ansatz(x, p)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_xiyey.py#L22){.source-link style='font-size:0.8em;'}
+
+---

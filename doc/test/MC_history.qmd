@@ -1,0 +1,31 @@
+---
+title: "MC_history"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/MC_history.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/MC_history.py)
+:::
+
+
+## API Reference
+
+#### `generate_mc_history` {#generate_mc_history}
+
+```python
+def generate_mc_history(n_steps=10000, dt=0.01, theta_start=1.0, theta_end=0.01)
+```
+
+Generate a Monte Carlo history with slowly vanishing autocorrelation.
+
+Parameters:
+    n_steps (int): Number of time steps.
+    dt (float): Time step size.
+    theta_start (float): Initial value of the decay rate.
+    theta_end (float): Final value of the decay rate.
+
+Returns:
+    np.ndarray: The Monte Carlo history.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/MC_history.py#L18){.source-link style='font-size:0.8em;'}
+
+---

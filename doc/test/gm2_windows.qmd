@@ -1,0 +1,12 @@
+---
+title: "gm2_windows"
+---
+
+Time-modulating functions for the windows contributions to g-2
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/gm2_windows.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/gm2_windows.py)
+:::
+
+
+*No public definitions found in this module.*

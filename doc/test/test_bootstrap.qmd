@@ -1,0 +1,70 @@
+---
+title: "test_bootstrap"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_bootstrap.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py)
+:::
+
+
+## API Reference
+
+#### `test_uncorrelated_confs_to_bts_shape` {#test_uncorrelated_confs_to_bts_shape}
+
+```python
+def test_uncorrelated_confs_to_bts_shape()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_uncorrelated_confs_to_bts_mean` {#test_uncorrelated_confs_to_bts_mean}
+
+```python
+def test_uncorrelated_confs_to_bts_mean()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L19){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_bootstrap_samples_error_blocks_numpy_mean` {#test_bootstrap_samples_error_blocks_numpy_mean}
+
+```python
+def test_bootstrap_samples_error_blocks_numpy_mean()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L34){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_parametric_gaussian_bts` {#test_parametric_gaussian_bts}
+
+```python
+def test_parametric_gaussian_bts()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L42){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_binning` {#test_binning}
+
+```python
+def test_binning()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L51){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_bootstrap_bias` {#test_bootstrap_bias}
+
+```python
+def test_bootstrap_bias()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_bootstrap.py#L58){.source-link style='font-size:0.8em;'}
+
+---

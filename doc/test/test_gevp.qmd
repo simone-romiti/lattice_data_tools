@@ -1,0 +1,42 @@
+---
+title: "test_gevp"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_gevp.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_gevp.py)
+:::
+
+
+## API Reference
+
+#### `_make_spd_correlator` {#_make_spd_correlator}
+
+```python
+def _make_spd_correlator(N, T, seed=42)
+```
+
+Create a (N, N, T) random symmetric positive-definite correlator matrix.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_gevp.py#L10){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_gevp_eigenvalues_shape` {#test_gevp_eigenvalues_shape}
+
+```python
+def test_gevp_eigenvalues_shape()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_gevp.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_gevp_eigenvalues_real` {#test_gevp_eigenvalues_real}
+
+```python
+def test_gevp_eigenvalues_real()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_gevp.py#L31){.source-link style='font-size:0.8em;'}
+
+---

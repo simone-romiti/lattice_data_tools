@@ -1,0 +1,108 @@
+---
+title: "with_bts"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`model_averaging/with_bts.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py)
+:::
+
+
+## API Reference
+
+#### `get_unique` {#get_unique}
+
+```python
+def get_unique(L: List) -> List
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py#L11){.source-link style='font-size:0.8em;'}
+
+---
+
+### `ModelAverage` {#modelaverage}
+
+```python
+class ModelAverage
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py#L20){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ModelAverage.get_P` {#modelaverage-get_p}
+
+```python
+def get_P(y: BootstrapSamples, w: np.ndarray, lam: np.float64)
+```
+
+CDFs from boostrap samples 
+
+We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
+This is done as follows:
+
+Step 0 (optional): we rescale the variance of the bootstrap samples
+Step 1: We consider all the y values, i.e. from each bootstrap and each each model, all together
+Step 2: We build the CDFs of each model, scaled by its weight (normalized to 1).
+        This is done by building, for each model k, a fictitious histogram count (with binning 1). 
+        Only for the values of "y" of the k-th model, we set the count to the weight w_k.
+Step 3: The cumulative sums of these fictitious histogram gives the CDF 
+        in terms of the whole array of values coming from all the models.
+
+Arguments:
+    y: array of size (N_bts, n_models)
+    lam: scaling parameter for the variance --> sqrt(lambda) for the uncertainty
+    
+Returns:
+    dictionary with the results of this procedure
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ModelAverage.error_budget` {#modelaverage-error_budget}
+
+```python
+def error_budget(keys: List[str], y: Dict[str, BootstrapSamples], ch2: Dict[str, np.ndarray], n_par: Dict[str, np.ndarray], n_data: Dict[str, np.ndarray], IC: valid_IC, Nmax: Optional[int]=None, seed: int=1234)
+```
+
+Error budget contribution as eq. 16 of https://inspirehep.net/literature/2847988 (law of total variance)
+
+This function splits the contributions to the total error on the variable "y", 
+finding the contribution of a specific one corresponding to the variation of the key in "keys".
+
+This is done by: 
+    - Finding the ModelAverage CDF at fixed "key", i.e. finding N_keys CDFs.
+    - Model averaging all of them, for 2 values of lambda, in order to isolate the contributions
+    - The "statistical" error comes from all the other effects, while the  systematics is the contribution of the variation of "key"
+
+Args:
+    keys (List[str]): keys corresponding to the contribution to isolate_
+    y (Dict[BootstrapSamples]): bootstrap samples (one for each model), for each model in "keys"
+        Example: y = {"model1": [y1_bts, y2_bts, ...], "model2": [y1_bts, y2_bts]}
+    w (Dict[np.ndarray]): dictionary of the weights
+        Example: w = {"model1": [w1, w2, ...], "model2": [w1, w2, ...]}
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py#L60){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ModelAverage.error_budget_table` {#modelaverage-error_budget_table}
+
+```python
+def error_budget_table(Y: NestedDict, syst_names: List[str], IC: valid_IC, Nmax: Optional[int]=None, seed: int=1234)
+```
+
+Computes automatically the error budget contributions for each source of the total error: statistical, total systematic and systematic contributions.
+In practice, this function loops over all systematic effects and computes the marginalized CDFs at fixed value of each systematic effect.
+
+X: nested dictionary such that the innermost level contains the BootstrapSamples for each model, the \chi^2, the number of points and number of parameters.
+    X[model_key_1][model_key_2]...[model_key_n]["y"] = BootstrapSamples
+    X[model_key_1][model_key_2]...[model_key_n]["ch2"] = np.ndarray
+    X[model_key_1][model_key_2]...[model_key_n]["n_par"] = np.ndarray
+    X[model_key_1][model_key_2]...[model_key_n]["n_data"] = np.ndarray
+    
+syst_names: list of strings corresponding to the contributions to isolate: This is useful to label the contributions.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/with_bts.py#L101){.source-link style='font-size:0.8em;'}
+
+---

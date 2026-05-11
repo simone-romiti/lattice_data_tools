@@ -1,0 +1,16 @@
+---
+title: "PP_model"
+---
+
+This test script shows how to use the library to find the Vector-Vector correlator (HVP) 
+in terms of 2-pion states in a finite volume, in the I=1, J=1 channel. 
+The phase shift needed to solve the Luescher's quantization condition is provided by the Gounaris-Sakurai model.
+
+Reference: https://arxiv.org/pdf/1808.00887
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/PP_model.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/PP_model.py)
+:::
+
+
+*No public definitions found in this module.*

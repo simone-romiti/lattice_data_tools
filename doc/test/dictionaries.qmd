@@ -1,0 +1,10 @@
+---
+title: "dictionaries"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/dictionaries.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/dictionaries.py)
+:::
+
+
+*No public definitions found in this module.*

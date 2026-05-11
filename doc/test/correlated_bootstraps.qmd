@@ -1,0 +1,16 @@
+---
+title: "correlated_bootstraps"
+---
+
+Parametrix bootstrap samples from the means, errors and correlation among the variables.
+
+If one is given the estimates of the mean values, their errors and how the variables are correlated among each other (i.e. the correlation matrix), it is possible to generate parametric bootstrap samples that are distributed according to those means, errors and that correlation.
+
+This program tests the routine that achieves that.
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/correlated_bootstraps.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/correlated_bootstraps.py)
+:::
+
+
+*No public definitions found in this module.*

@@ -1,0 +1,62 @@
+---
+title: "scatter"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_plotly/scatter.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/scatter.py)
+:::
+
+
+## API Reference
+
+#### `xy` {#xy}
+
+```python
+def xy(x: np.ndarray, y: np.ndarray, title='Plot title', marker='x', color='blue', xlabel='x', ylabel='y', ex: np.ndarray=None, ey: np.ndarray=None)
+```
+
+Plot of x values against y values with optional error bars.
+
+Parameters:
+-----------
+x : np.ndarray
+    Array of x values.
+y : np.ndarray
+    Array of y values.
+title : str
+    Title of the plot.
+marker : str
+    Marker style for the scatter plot (e.g., 'circle', 'square').
+color : str
+    Color for the markers.
+xlabel : str
+    Label for the X-axis.
+ylabel : str
+    Label for the Y-axis.
+ex : np.ndarray, optional
+    Array of x-axis error values (default is None).
+ey : np.ndarray, optional
+    Array of y-axis error values (default is None).
+
+Returns:
+--------
+fig : plotly.graph_objs.Figure
+    A Plotly figure object with the scatter plot and optional error bars.
+
+Example usage:
+--------------
+# Plot without error bars:
+xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis')
+
+# Plot with error bars on x-axis:
+xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ex=exs)
+
+# Plot with error bars on y-axis:
+xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ey=eys)
+
+# Plot with error bars on both x and y axes:
+xy(x, y, 'Plot Title', 'circle', 'blue', 'X-Axis', 'Y-Axis', ex=exs, ey=eys)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/scatter.py#L4){.source-link style='font-size:0.8em;'}
+
+---

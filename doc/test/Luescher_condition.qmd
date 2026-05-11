@@ -1,0 +1,86 @@
+---
+title: "Luescher_condition"
+---
+
+Luescher quantization condition for PP states in a finite volume.
+I use the Gounaris-Sakurai model to describe the phase shift
+$$ \delta_11(k) + \phi(q=kL/(2\pi)) = n \pi $$
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/Luescher_condition.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py)
+:::
+
+
+## API Reference
+
+#### `test_aMP_aMV_in_lattice_units` {#test_amp_amv_in_lattice_units}
+
+```python
+def test_aMP_aMV_in_lattice_units()
+```
+
+Lattice masses should be small numbers (<<1 in lattice units).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L38){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_rho_heavier_than_pion` {#test_rho_heavier_than_pion}
+
+```python
+def test_rho_heavier_than_pion()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L44){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_delta_11_increases_near_resonance` {#test_delta_11_increases_near_resonance}
+
+```python
+def test_delta_11_increases_near_resonance()
+```
+
+Phase shift should rise through pi/2 near the rho mass.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L48){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_delta_11_range` {#test_delta_11_range}
+
+```python
+def test_delta_11_range()
+```
+
+Phase shift should stay within [0, pi] for physical k values.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L56){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_phi_increases_between_poles` {#test_phi_increases_between_poles}
+
+```python
+def test_phi_increases_between_poles()
+```
+
+phi(q) should increase monotonically in each interval between poles.
+Poles occur at q = sqrt(n^2) for integer lattice vectors n, i.e. q ~ 1, sqrt(2), sqrt(3)...
+We test on a safe window well away from any pole.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L64){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_quantization_condition_has_expected_levels` {#test_quantization_condition_has_expected_levels}
+
+```python
+def test_quantization_condition_has_expected_levels()
+```
+
+delta_11 + phi should cross n*pi at least once.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Luescher_condition.py#L92){.source-link style='font-size:0.8em;'}
+
+---

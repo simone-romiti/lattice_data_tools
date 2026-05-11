@@ -1,49 +1,130 @@
 project:
-  type: website
-  output-dir: _site
+  type: book
 
-website:
-  title: "lattice_data_tools"
-  description: "Python library for lattice QCD data analysis"
-  navbar:
-    left:
-      - href: index.qmd
-        text: Home
-      - text: Resampling
-        menu:
-          - href: bootstrap.qmd
-            text: Bootstrap sampling
-          - href: jackknife.qmd
-            text: Jackknife sampling
-      - text: Correlators
-        menu:
-          - href: effective_curves.qmd
-            text: Effective Curves
-          - href: gevp.qmd
-            text: GEVP
-      - text: Analysis
-        menu:
-          - href: fitting.qmd
-            text: Fitting
-          - href: model_averaging.qmd
-            text: Model Averaging
-          - href: nested_sampling.qmd
-            text: Nested Sampling
-          - href: artifacts.qmd
-            text: Lattice Artifacts
+book:
+  title: "lattice-data-tools"
+  sidebar:
+    collapse-level: 1
+  search: true
+  repo-url: https://github.com/simone-romiti/lattice_data_tools
+  repo-actions: [source, issue]
+  chapters:
+    - index.qmd
+    - Dirac.qmd
+    - LIBE.qmd
+    - analysis.qmd
+    - artifacts.qmd
+    - bootstrap.qmd
+    - constants.qmd
+    - dictionaries.qmd
+    - effective_curves.qmd
+    - generate_doc.qmd
+    - gevp.qmd
+    - io.qmd
+    - jackknife.qmd
+    - matching_LH.qmd
+    - r0.qmd
+    - sampling.qmd
+    - scientific_notation.qmd
+    - statistics.qmd
+    - symmetries.qmd
+    - uwerr.qmd
+    - part: fit/index.qmd
+      chapters:
+        - fit/interpolate.qmd
+        - fit/trajectory.qmd
+        - fit/xiexiyey.qmd
+        - fit/xiexiyieyi.qmd
+        - fit/xiyey.qmd
+        - fit/xy.qmd
+        - fit/xyey.qmd
+    - part: gm2/index.qmd
+      chapters:
+        - gm2/HLbL/index.qmd
+        - gm2/HVP/index.qmd
+        - gm2/HLbL/integrand.qmd
+        - gm2/HVP/Gounaris_Sakurai_model.qmd
+        - gm2/HVP/PP_finite_volume.qmd
+        - gm2/HVP/Z_function.qmd
+        - gm2/HVP/amu.qmd
+        - gm2/HVP/bounding_methods.qmd
+        - gm2/HVP/charge_factor.qmd
+        - gm2/HVP/kernel.qmd
+        - gm2/HVP/windows.qmd
+    - part: links/index.qmd
+      chapters:
+        - links/configuration.qmd
+        - links/loops.qmd
+        - links/parallel_transport.qmd
+        - links/suN.qmd
+    - part: machine_learning
+      chapters:
+        - machine_learning/lcnn.qmd
+    - part: model_averaging/index.qmd
+      chapters:
+        - model_averaging/IC.qmd
+        - model_averaging/with_bts.qmd
+    - part: nested_sampling/index.qmd
+      chapters:
+        - nested_sampling/action.qmd
+        - nested_sampling/from_mcmc.qmd
+        - nested_sampling/phase_space.qmd
+        - nested_sampling/weights.qmd
+    - part: physical_point
+      chapters:
+        - physical_point/tuning_mf.qmd
+    - part: plotting
+      chapters:
+        - plotting/with_matplotlib/IC.qmd
+        - plotting/with_matplotlib/distribution.qmd
+        - plotting/with_matplotlib/fits.qmd
+        - plotting/with_matplotlib/scatter.qmd
+        - plotting/with_plotly/boundings.qmd
+        - plotting/with_plotly/correlator.qmd
+        - plotting/with_plotly/effective_curve.qmd
+        - plotting/with_plotly/scatter.qmd
+        - plotting/with_plotnine/correlator.qmd
+    - part: test
+      chapters:
+        - test/AIC.qmd
+        - test/AIC_bootstrap.qmd
+        - test/AIC_fits.qmd
+        - test/Luescher_condition.qmd
+        - test/MC_history.qmd
+        - test/PP_model.qmd
+        - test/Thalf_symmetry.qmd
+        - test/Zeta_function.qmd
+        - test/correlated_bootstraps.qmd
+        - test/covariance_matrix.qmd
+        - test/covariance_matrix_bts.qmd
+        - test/dictionaries.qmd
+        - test/fit_polynomial.qmd
+        - test/fit_xiexiyey.qmd
+        - test/fit_xiyey.qmd
+        - test/fit_xyey.qmd
+        - test/gauge_configuration.qmd
+        - test/gm2_windows.qmd
+        - test/lambda_method.qmd
+        - test/lattice_cnn.qmd
+        - test/mf_phys.qmd
+        - test/nested_sampling.qmd
+        - test/parallelization.qmd
+        - test/test_bootstrap.qmd
+        - test/test_effective_curves.qmd
+        - test/test_fitting.qmd
+        - test/test_gevp.qmd
+        - test/test_jackknife.qmd
+        - test/test_model_averaging.qmd
 
 format:
   html:
     theme: cosmo
-    html-math-method: katex
     toc: true
     toc-depth: 3
     code-fold: false
-    code-tools: true
-    fontsize: 14pt
     highlight-style: github
-    embed-resources: false
+
 
 execute:
-  eval: false
-  echo: true
+  freeze: auto  # re-render only when source changes
+

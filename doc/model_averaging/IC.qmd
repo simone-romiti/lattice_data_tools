@@ -1,0 +1,248 @@
+---
+title: "IC"
+---
+
+Model averaging of lattice determinations using custom Information Criteria (e.g. Akaike Information Criterion, AIC).
+
+Each criterion is based on the values of the \chi^2 residual, number of parameters and number of data points.
+
+Conventions here:
+    - "AIC"  :=  chi2 + 2 * n_par - 2 * n_data,
+    - "AICc" :=  chi2 + 2*npar*(1.0+npar)/real(ndata-npar-1),
+    - "BIC"  :=  chi2 + npar*log(real(ndata)),
+    - "AIC_Ncut" := chi2 + 2*npar + 2*(Nmax - ndata),
+    - "AIC_BMW"  := chi2 + 2*n_par + (Nmax - n_data)
+
+Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
+    Used in: https://arxiv.org/pdf/2411.08852, eq. 17
+    ACHTUNG: Typo in https://arxiv.org/pdf/2002.12347, eq. 161: factor 2 in front of n_data is missing
+
+.. ldt-id:: IC-module
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`model_averaging/IC.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py)
+:::
+
+
+## API Reference
+
+#### `get_IC` {#get_ic}
+
+```python
+def get_IC(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray, IC: valid_IC, Nmax: Optional[int]=None) -> np.ndarray
+```
+
+Compute an information criterion `IC` for each model.
+NOTE: This function whould run on a single sample (e.g. bootstrap or jackknife)
+
+Main reference: https://arxiv.org/pdf/2208.14983. See Eqs. (65),(64),(62)
+
+NOTE: 
+    The difference between AIC and AIC_BMW lies in the missing factor of 2 in front of n_data for the BMW's one:
+    - AIC:      https://arxiv.org/pdf/2411.08852, eq. 17
+    - AIC_BMW:  https://arxiv.org/pdf/2002.12347, eq. 161 (BMW lattice collaboration)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L30){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_weights` {#get_weights}
+
+```python
+def get_weights(ch2: np.ndarray, n_par: np.ndarray, n_data: np.ndarray, IC: valid_IC, Nmax: Optional[int]=None) -> np.ndarray
+```
+
+Returns the (unnormalized) 1d array of weights as in eq. 17 of https://arxiv.org/pdf/2411.08852
+The inputs are the array of models (each with a \chi^2) the number of fit parameters and number of points
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L69){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_Pi` {#get_pi}
+
+```python
+def get_Pi(y: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64)
+```
+
+Returns the Cumulative Density Functions (CDF) P_i(y, lambda) of Eq. 162 of https://arxiv.org/pdf/2002.12347
+for all the values of the array "y".
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L79){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_P` {#get_p}
+
+```python
+def get_P(y: np.ndarray, w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64)
+```
+
+Returns the sum of the Cumulative Density Functions (CDF) P_i(y, lambda) of Eq. 162 of https://arxiv.org/pdf/2002.12347
+for all the values of the array "y". These values are the domain of values that we can get from each model, 
+i.e. the m[i] should fall into the interval of the y values.
+
+Remark: We numerically evaluate the CDF at some values of y (specified by the array), 
+and estimate the percentiles from those. Thus, the resolution in the y[i] should be much larger that the sigma[i]
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L94){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_P_from_bootstraps` {#get_p_from_bootstraps}
+
+```python
+def get_P_from_bootstraps(y: BootstrapSamples, w: np.ndarray, lam: np.float64)
+```
+
+CDFs from boostrap samples 
+
+We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
+This is done as follows:
+
+Step 0 (optional): we rescale the variance of the bootstrap samples
+Step 1: We consider all the y values, i.e. from each bootstrap and each each model, all together
+Step 2: We build the CDFs of each model, scaled by its weight (normalized to 1).
+        This is done by building, for each model k, a fictitious histogram count (with binning 1). 
+        Only for the values of "y" of the k-th model, we set the count to the weight w_k.
+Step 3: The cumulative sums of these fictitious histogram gives the CDF 
+        in terms of the whole array of values coming from all the models.
+
+Arguments:
+    y: array of size (N_bts, n_models)
+    lam: scaling parameter for the variance --> sqrt(lambda) for the uncertainty
+    
+Returns:
+    dictionary with the results of this procedure
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L110){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_y16_y50_y84` {#get_y16_y50_y84}
+
+```python
+def get_y16_y50_y84(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, lam: np.float64, ymin: np.float64, ymax: np.float64, eps: np.float64)
+```
+
+Returns percentile values y16, y50 (the median) and y84
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L146){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_mean_and_sigma2` {#get_mean_and_sigma2}
+
+```python
+def get_mean_and_sigma2(y16, y50, y84)
+```
+
+Returns mean and variance from the percentiles (assuming the distribution is Gaussian)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L156){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_sigma2_contributions` {#get_sigma2_contributions}
+
+```python
+def get_sigma2_contributions(w: np.ndarray, m: np.ndarray, sigma: np.ndarray, ymin: np.float64, ymax: np.float64, eps: np.float64, lambda1=1.0, lambda2=2.0)
+```
+
+Statistical and systematic variances using the AIC model averaging
+
+w: weights
+m: means of the models
+sigma: statistical uncertainties of the models
+ymin, ymax, eps: parameters defining the interval for numerically reproducing the CDF finely enough
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L165){.source-link style='font-size:0.8em;'}
+
+---
+
+### `with_CDF` {#with_cdf}
+
+```python
+class with_CDF
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L190){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_CDF.get_rescaled_y` {#with_cdf-get_rescaled_y}
+
+```python
+def get_rescaled_y(y: np.ndarray, P: np.ndarray, lam: float)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L192){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_CDF.get_P` {#with_cdf-get_p}
+
+```python
+def get_P(y: List[np.ndarray], w: np.ndarray)
+```
+
+CDFs from list of models
+
+We build the CDF numerically, by counting how many occurrencies of y we have before each y_0.
+This is done as follows:
+
+Step 1: We consider all the y values
+Step 2: We build the CDFs of each model, scaled by its weight (normalized to 1).
+        This is done by building, for each model k, a fictitious histogram count (with binning 1). 
+        Only for the values of "y" of the k-th model, we set the count to the weight w_k.
+Step 3: The cumulative sums of these fictitious histogram gives the CDF 
+        in terms of the whole array of values coming from all the models.
+
+Arguments:
+    y: list of size (n_models). Each item is an array of values of "y", whose distribution determine their CDF. The array can have different sizes.
+    w: array of length n_models
+    
+Returns:
+    dictionary with the results of this procedure
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L198){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_CDF.get_quantiles` {#with_cdf-get_quantiles}
+
+```python
+def get_quantiles(y: np.ndarray, P: np.ndarray, quantiles=[16, 50, 84])
+```
+
+Dictionary of quantiles corresponding to 
+16%, 50%, 84% of probabilities
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L229){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_CDF.get_contributions` {#with_cdf-get_contributions}
+
+```python
+def get_contributions(y1: np.ndarray, y2: np.ndarray, P1: np.ndarray, P2: np.ndarray, lam1: float, lam2: float)
+```
+
+Contributions to the total error.
+
+!!! ACHTUNG !!!
+The result may be inconsistent if one chooses the wrong values of lam1 and lam2.
+In fact, the procedure works if (lam2*sigma^2_tot_l1 - lam1*sigma2_tot_l2) > 0. 
+The user is expected to use the results of this function to update the value of lam2 in order to get all positive variances.
+
+These are obtained by using 2 different AICs, where each time we rescaled the statistical uncertainty with lam1 and lam2 respectively.
+NOTE: by "statistical" we mean the uncertainty of the individual models before the AIC. The latter can be the total error coming from a sub-model averaging
+
+This function returns:
+  - mean: 50% quantile of the total distribution
+  - sigma^2_stat: variance due to the statistical fluctuations
+  - sigma^2 syst: variance due to the systematics
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/model_averaging/IC.py#L246){.source-link style='font-size:0.8em;'}
+
+---

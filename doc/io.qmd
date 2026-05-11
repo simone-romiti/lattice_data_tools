@@ -1,0 +1,72 @@
+---
+title: "io"
+---
+
+Routines for input and output to files
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`io.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py)
+:::
+
+
+## API Reference
+
+### `with_dill` {#with_dill}
+
+```python
+class with_dill
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L6){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_dill.dump` {#with_dill-dump}
+
+```python
+def dump(obj, path: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L8){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_dill.load` {#with_dill-load}
+
+```python
+def load(path: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L13){.source-link style='font-size:0.8em;'}
+
+---
+
+### `with_yaml` {#with_yaml}
+
+```python
+class with_yaml
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L19){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_yaml.load` {#with_yaml-load}
+
+```python
+def load(path: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L21){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `with_yaml.dump` {#with_yaml-dump}
+
+```python
+def dump(df, path: str)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/io.py#L27){.source-link style='font-size:0.8em;'}
+
+---

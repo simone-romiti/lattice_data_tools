@@ -1,0 +1,46 @@
+---
+title: "LIBE"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`LIBE.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/LIBE.py)
+:::
+
+
+## API Reference
+
+#### `get_dMpi_eff` {#get_dmpi_eff}
+
+```python
+def get_dMpi_eff(C0, C_exch, C_handcuffs=None)
+```
+
+Single Bootstrap sample of the effective curve for the pion mass difference M_{\pi^+} - M_\{\pi^0}
+This is found from eq. 14 of https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.014502
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/LIBE.py#L8){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `tuning_dmu_uds_Edinburgh_consensus` {#tuning_dmu_uds_edinburgh_consensus}
+
+```python
+def tuning_dmu_uds_Edinburgh_consensus(a_GeV_inv, dMpi_plus, dMK_plus, dMK_0, dmcr_uds)
+```
+
+Linear system for physical mass tuning with the "Edinburgh consensus".
+This is done for each time --> effective mass curves for the mass counterterms
+dMpi, dMK_plus, dMK_0 are the mass slopes with respect to m_u, m_d, m_s
+dmcr_uds are the critical mass counterterms of the quarks u,d,s
+
+a_GeV_inv = lattice spacing in GeV^{-1}
+
+isoQCD point:
+    M_pi^{iso} = 135.0 MeV
+    M_K^{iso}  = 494.6 MeV
+    
+QCD+QED point: given by the experimental masses
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/LIBE.py#L25){.source-link style='font-size:0.8em;'}
+
+---

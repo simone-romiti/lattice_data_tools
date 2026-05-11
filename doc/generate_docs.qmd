@@ -1,0 +1,223 @@
+---
+title: "generate_docs"
+---
+
+generate_docs.py
+================
+Pipeline to auto-generate a Quarto **book** documentation project from a
+Python library.
+
+Usage
+-----
+    python generate_docs.py --src /path/to/library --out /path/to/docs_output
+
+Options
+-------
+--src      Root directory of the Python library (required)
+--out      Output directory for the Quarto project (created if absent, required)
+--github   Override the GitHub base URL for source links.
+           If omitted the script reads it from pyproject.toml in --src.
+--branch   Git branch name used in source links (default: main)
+
+The script:
+1. Reads pyproject.toml for the project name and GitHub repository URL
+2. Walks the library tree and parses every .py file with ``ast``
+3. Extracts module-level docstrings, class/function signatures and docstrings
+4. Writes one .qmd file per .py file, mirroring the folder structure
+5. __init__.py files become chapter/section index pages (index.qmd)
+6. Builds _quarto.yml as a Quarto *book* project with a nested chapter tree
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`generate_docs.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py)
+:::
+
+
+## API Reference
+
+#### `_load_toml` {#_load_toml}
+
+```python
+def _load_toml(path: Path) -> dict
+```
+
+Return parsed TOML dict, or {} on failure.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L59){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `_simple_toml_parse` {#_simple_toml_parse}
+
+```python
+def _simple_toml_parse(path: Path) -> dict
+```
+
+Very small TOML parser that handles only [sections] and key = "value".
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L79){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `read_pyproject` {#read_pyproject}
+
+```python
+def read_pyproject(src_dir: Path) -> tuple[str, str]
+```
+
+Return (project_name, github_url) parsed from src_dir/pyproject.toml.
+github_url is the bare repo URL, e.g. https://github.com/user/repo
+Returns ("", "") if not found.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L108){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `github_file_url` {#github_file_url}
+
+```python
+def github_file_url(rel_path: Path, lineno: int | None=None) -> str
+```
+
+Return a GitHub URL pointing to a specific file (blob view).
+rel_path is relative to the repo root (= src_dir).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L155){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `github_file_badge` {#github_file_badge}
+
+```python
+def github_file_badge(rel_path: Path) -> str
+```
+
+Return a callout-note block with the source file link, or '' if no repo.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L170){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `parse_file` {#parse_file}
+
+```python
+def parse_file(path: Path)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L186){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `module_docstring` {#module_docstring}
+
+```python
+def module_docstring(tree) -> str
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L194){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `_sig` {#_sig}
+
+```python
+def _sig(node) -> str
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L198){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `iter_definitions` {#iter_definitions}
+
+```python
+def iter_definitions(tree)
+```
+
+Yield (kind, name, lineno, doc, sig) for top-level and one-level-deep defs.
+kind in {"class", "method", "function", "async_function"}
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L216){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `build_qmd_content` {#build_qmd_content}
+
+```python
+def build_qmd_content(rel_py: Path, module_doc: str, definitions: list, is_init: bool=False) -> str
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L240){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `_chapter_entries` {#_chapter_entries}
+
+```python
+def _chapter_entries(node: dict, indent: int=4) -> list[str]
+```
+
+Recursively build book chapter YAML lines from the nav tree dict.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L297){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `build_quarto_yml` {#build_quarto_yml}
+
+```python
+def build_quarto_yml(nav_tree: dict) -> str
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L324){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `insert_nav` {#insert_nav}
+
+```python
+def insert_nav(tree: dict, parts: list, value)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L363){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `collect_py_files` {#collect_py_files}
+
+```python
+def collect_py_files(src_dir: Path) -> list
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L377){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `rel_py_to_qmd` {#rel_py_to_qmd}
+
+```python
+def rel_py_to_qmd(rel_py: Path) -> Path
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L392){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `generate` {#generate}
+
+```python
+def generate(src_dir: Path, out_dir: Path)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L403){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `main` {#main}
+
+```python
+def main()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/generate_docs.py#L477){.source-link style='font-size:0.8em;'}
+
+---

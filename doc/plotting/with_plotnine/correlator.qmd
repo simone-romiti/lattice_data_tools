@@ -1,0 +1,24 @@
+---
+title: "correlator"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_plotnine/correlator.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotnine/correlator.py)
+:::
+
+
+## API Reference
+
+#### `get_figure` {#get_figure}
+
+```python
+def get_figure(t: np.ndarray, C: np.ndarray, dC: np.ndarray, title: str, labels: List[str], legend_title: str, tmin=None, tmax=None, Cmin=None, Cmax=None, width=phi_golden * 500, height=500, log_scale_button=True)
+```
+
+Plot the correlators C_i(t) as a function of t (in lattice units) using plotnine.
+
+This version uses the `plotnine` package to plot the correlators with error bars.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotnine/correlator.py#L9){.source-link style='font-size:0.8em;'}
+
+---

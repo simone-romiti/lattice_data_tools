@@ -1,0 +1,53 @@
+---
+title: "analysis"
+---
+
+Analysis routines.
+
+The functions defined here are meant to be
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`analysis.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/analysis.py)
+:::
+
+
+## API Reference
+
+#### `bts_corr_plot` {#bts_corr_plot}
+
+```python
+def bts_corr_plot(C_bts: np.ndarray, t1: int, t2: int, outfile: str, yscale=None, label=None, linestyle='None')
+```
+
+Plot of the correlator `C(t)` from the bootstrap samples in the interval `t1`, `t2` included
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/analysis.py#L16){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `bts_meff` {#bts_meff}
+
+```python
+def bts_meff(C_bts: np.ndarray, strategy: str, T: int, t1: int, t2: int, plot=False, outfile=None, **kwargs)
+```
+
+Bootstrap analysis of the effective mass. 
+Returns the bootstraps of the best fit value. 
+
+- The fit is done by fitting to a constant the effective mass curve in the interval `[t1,t2]` (both included)
+- The time extent `T` and the strategy for the effective mass curve determination are provided by the user
+- If outfile is passed, is used as path for the output plot
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/analysis.py#L48){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `bts_gevp` {#bts_gevp}
+
+```python
+def bts_gevp(C_bts: np.ndarray, t0: int, outfile=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/analysis.py#L121){.source-link style='font-size:0.8em;'}
+
+---

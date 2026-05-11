@@ -1,129 +1,113 @@
 ---
-title: "Jackknife Sampling"
+title: "jackknife"
 ---
 
-The jackknife method provides unbiased estimates of the mean and standard
-error by systematically leaving out one block of configurations at a time.
-Unlike bootstrap, it produces an exact (unbiased) estimate of the mean by
-construction.
+::: {.callout-note appearance="minimal"}
+**Source:** [`jackknife.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py)
+:::
 
-**Source file**: `jackknife.py`
 
----
+## API Reference
 
-## The `JackknifeSamples` class
-
-`JackknifeSamples` is a subclass of `AbstractSamples` (and therefore of
-`np.ndarray`). Each row $i$ stores the mean computed from all
-configurations *except* block $i$.
+### `JackknifeSamples` {#jackknifesamples}
 
 ```python
-from lattice_data_tools.jackknife import JackknifeSamples
+class JackknifeSamples(np.ndarray)
 ```
 
-::: {.column-margin}
-**Source**: `jackknife.py`
-**ID**: `JKF-JackknifeSamples`
-:::
-
-As with `BootstrapSamples`, direct use of `np.mean`, `np.std`, and
-`np.average` is blocked.
-
-::: {.column-margin}
-**Source**: `jackknife.py`, method `__array_function__`
-**ID**: `JKF-JackknifeSamples-__array_function__`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L5){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Statistical estimators
-
-### `.mean()`
+#### `JackknifeSamples.__new__` {#jackknifesamples-__new__}
 
 ```python
-jkf.mean() -> np.ndarray
+def __new__(cls, input_array)
 ```
 
-Jackknife mean — the arithmetic average of all jackknife samples along
-axis 0.  This is unbiased by construction.
-
-::: {.column-margin}
-**Source**: `jackknife.py`
-**ID**: `JKF-JackknifeSamples-mean`
-:::
-
-### `.error()`
-
-```python
-jkf.error() -> np.ndarray
-```
-
-Jackknife standard error:
-
-$$\delta\bar{x} = \sqrt{N_\text{jkf} - 1} \cdot \sigma_\text{jkf}$$
-
-where $\sigma_\text{jkf}$ is the standard deviation of the jackknife
-samples and $N_\text{jkf}$ is the number of samples.
-
-::: {.column-margin}
-**Source**: `jackknife.py`
-**ID**: `JKF-JackknifeSamples-error`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L6){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Generating jackknife samples
-
-### `uncorrelated_confs_to_jkf`
+#### `JackknifeSamples.__array_finalize__` {#jackknifesamples-__array_finalize__}
 
 ```python
-uncorrelated_confs_to_jkf(x, N_jkf) -> JackknifeSamples
+def __array_finalize__(self, obj)
 ```
 
-Generate $N_\text{jkf}$ jackknife samples from uncorrelated data `x`.
-Configurations are divided into blocks of size $\lfloor N/N_\text{jkf} \rfloor$;
-each sample omits one block.
-
-::: {.column-margin}
-**Source**: `jackknife.py`
-**ID**: `JKF-uncorrelated_confs_to_jkf`
-:::
-
-```python
-import numpy as np
-from lattice_data_tools.jackknife import uncorrelated_confs_to_jkf
-
-data = np.random.normal(5.0, 1.0, 200)
-jkf  = uncorrelated_confs_to_jkf(data, N_jkf=20)
-print(jkf.mean(), "±", jkf.error())
-```
-
-### `correlated_confs_to_jkf`
-
-```python
-correlated_confs_to_jkf(Cg, N_jkf, output_file=None) -> JackknifeSamples
-```
-
-Same as above, but for correlated Monte Carlo chains.  The integrated
-autocorrelation time $\tau_\text{int}$ is estimated via `uwerr_primary`
-and configurations are thinned accordingly before jackknifing.
-
-::: {.column-margin}
-**Source**: `jackknife.py`
-**ID**: `JKF-correlated_confs_to_jkf`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L10){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Bootstrap vs. Jackknife
+#### `JackknifeSamples.__array_function__` {#jackknifesamples-__array_function__}
 
-| Property | Bootstrap | Jackknife |
-|---|---|---|
-| Mean estimator | biased (`.mean()`) + unbiased (`.unbiased_mean()`) | unbiased (`.mean()`) |
-| Error estimator | std dev of replicates | $\sqrt{N-1}\,\sigma_\text{jkf}$ |
-| Autocorrelation handling | auto-binning via $\tau_\text{int}$ | thinning via $\tau_\text{int}$ |
-| Non-linear propagation | yes | yes |
-| Computational cost | $O(N_\text{bts})$ | $O(N_\text{jkf})$ |
+```python
+def __array_function__(self, func, types, args, kwargs)
+```
 
-Both classes share the `AbstractSamples` interface, so code that calls
-`.mean()` and `.error()` works identically for both.
+Block np.mean, np.std, np.average etc.
+The user should call the methods of this class explicitly, to avoid mistakes
+
+.. ldt-id:: JKF-JackknifeSamples-__array_function__
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L13){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `JackknifeSamples.mean` {#jackknifesamples-mean}
+
+```python
+def mean(self, *args, **kwargs)
+```
+
+jackknife mean (unbiased by construction)
+
+.. ldt-id:: JKF-JackknifeSamples-mean
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L27){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `JackknifeSamples.error` {#jackknifesamples-error}
+
+```python
+def error(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L34){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `uncorrelated_confs_to_jkf` {#uncorrelated_confs_to_jkf}
+
+```python
+def uncorrelated_confs_to_jkf(x, N_jkf) -> JackknifeSamples
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L39){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `correlated_confs_to_jkf` {#correlated_confs_to_jkf}
+
+```python
+def correlated_confs_to_jkf(Cg: np.ndarray, N_jkf: int, output_file=None) -> JackknifeSamples
+```
+
+Jackknife samples from array of correlated configurations
+
+- The configurations are sampled every tau_int, (integrated autocorrelation time)
+- The Jackknife samples are drawn from the uncorrelated configurations
+
+Args:
+    C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
+    N_bts (int): Number of Jackknifes
+
+Returns:
+    np.ndarray: Jackknife samples
+
+.. ldt-id:: JKF-correlated_confs_to_jkf
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/jackknife.py#L46){.source-link style='font-size:0.8em;'}
+
+---

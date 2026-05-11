@@ -1,0 +1,504 @@
+---
+title: "configuration"
+---
+
+Implementation of a class representing a gauge configuration
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`links/configuration.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py)
+:::
+
+
+## API Reference
+
+### `ColorMatrix` {#colormatrix}
+
+```python
+class ColorMatrix(torch.Tensor)
+```
+
+Tensor representing a set of color matrices:
+(..., Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__new__` {#colormatrix-__new__}
+
+```python
+def __new__(cls, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L18){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__init__` {#colormatrix-__init__}
+
+```python
+def __init__(self, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L23){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.validate` {#colormatrix-validate}
+
+```python
+def validate(self)
+```
+
+Check that it is actually a set of color matrice of size Nc \times Nc
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.dim` {#colormatrix-dim}
+
+```python
+def dim(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L33){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__mul__` {#colormatrix-__mul__}
+
+```python
+def __mul__(self, other)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L40){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__rmul__` {#colormatrix-__rmul__}
+
+```python
+def __rmul__(self, other)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L43){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__matmul__` {#colormatrix-__matmul__}
+
+```python
+def __matmul__(self, other)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L46){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.__rmatmul__` {#colormatrix-__rmatmul__}
+
+```python
+def __rmatmul__(self, other)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L51){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.to_tensor` {#colormatrix-to_tensor}
+
+```python
+def to_tensor(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L57){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.Nc` {#colormatrix-nc}
+
+```python
+def Nc(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L61){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.Ng` {#colormatrix-ng}
+
+```python
+def Ng(self) -> int
+```
+
+Number of generators of the Lie algebra: Nc^2 - 1 for SU(Nc).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L65){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.dagger` {#colormatrix-dagger}
+
+```python
+def dagger(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L69){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.get_traceless_part` {#colormatrix-get_traceless_part}
+
+```python
+def get_traceless_part(self)
+```
+
+Returns the traceless version of the object
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L72){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ColorMatrix.get_ah_traceless` {#colormatrix-get_ah_traceless}
+
+```python
+def get_ah_traceless(self)
+```
+
+Computes the anti-Hermitian traceless part of W:
+    W_aht = (W - W†)/2 - (Tr((W - W†)/2) / Nc) * I
+Avoids intermediate rounding by combining steps.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L82){.source-link style='font-size:0.8em;'}
+
+---
+
+### `GaugeConfiguration` {#gaugeconfiguration}
+
+```python
+class GaugeConfiguration(ColorMatrix)
+```
+
+Tensor representing a gauge configuration of links (in the fundamental representation) with shape:
+(B, L1, ..., Ld, d, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L102){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.__new__` {#gaugeconfiguration-__new__}
+
+```python
+def __new__(cls, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L108){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.__init__` {#gaugeconfiguration-__init__}
+
+```python
+def __init__(self, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L117){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.validate` {#gaugeconfiguration-validate}
+
+```python
+def validate(self)
+```
+
+Check that shape == (B, L1, ..., Ld, d, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L120){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.batch_size` {#gaugeconfiguration-batch_size}
+
+```python
+def batch_size(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L127){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.lattice_shape` {#gaugeconfiguration-lattice_shape}
+
+```python
+def lattice_shape(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L131){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.n_dims` {#gaugeconfiguration-n_dims}
+
+```python
+def n_dims(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L135){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.n_links` {#gaugeconfiguration-n_links}
+
+```python
+def n_links(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L139){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.Nc` {#gaugeconfiguration-nc}
+
+```python
+def Nc(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L143){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.Ng` {#gaugeconfiguration-ng}
+
+```python
+def Ng(self) -> int
+```
+
+Number of generators of the Lie algebra: Nc^2 - 1 for SU(Nc).
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L147){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.from_theta` {#gaugeconfiguration-from_theta}
+
+```python
+def from_theta(theta: torch.Tensor) -> 'GaugeConfiguration'
+```
+
+Build U_\mu(x) = exp(i * \theta^a_\mu(x) * tau_a)
+theta: shape (B, L1, ..., Ld, d, Ng)
+
+NOTE: inverse function does not exist --> see implementation
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L152){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.hotstart` {#gaugeconfiguration-hotstart}
+
+```python
+def hotstart(self, seed: int) -> None
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L161){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.coldstart` {#gaugeconfiguration-coldstart}
+
+```python
+def coldstart(self, seed: int) -> None
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L165){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.Left_gauge_transformation` {#gaugeconfiguration-left_gauge_transformation}
+
+```python
+def Left_gauge_transformation(self, V: torch.Tensor) -> None
+```
+
+Apply a LEFT gauge transformation to this object:
+
+U_\mu(x) \to V(x) @ U_\mu(x)
+
+V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L169){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.Right_gauge_transformation` {#gaugeconfiguration-right_gauge_transformation}
+
+```python
+def Right_gauge_transformation(self, V: torch.Tensor) -> None
+```
+
+Apply a LEFT gauge transformation to this object:
+
+U_\mu(x) \to U_\mu(x) @ V(x + \mu)^\dagger
+
+V: array fo shape (batchsize, L1,...,Ld, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L180){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.gauge_transformation` {#gaugeconfiguration-gauge_transformation}
+
+```python
+def gauge_transformation(self, V: torch.Tensor) -> None
+```
+
+Transforming the configuarion of links
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L194){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.gen_random_gauge_transformation` {#gaugeconfiguration-gen_random_gauge_transformation}
+
+```python
+def gen_random_gauge_transformation(self, seed: int) -> None
+```
+
+Returns a random SU(Nc) tensor representing the matrices V(x) of a gauge tranformation,
+with the correct shape for the present configuration
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L200){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GaugeConfiguration.random_gauge_transformation` {#gaugeconfiguration-random_gauge_transformation}
+
+```python
+def random_gauge_transformation(self, seed: int) -> None
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L209){.source-link style='font-size:0.8em;'}
+
+---
+
+### `LocallyGaugeCovariant` {#locallygaugecovariant}
+
+```python
+class LocallyGaugeCovariant(ColorMatrix)
+```
+
+Tensor representing a configuration of N_obs gauge covariant variables that transform locally under a gauge transformation:
+
+W_i(x) --> V(x) W_i(x) V^{\dagger}(x)
+
+shape: (B, L1, ..., Ld, N_obs, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L215){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.__new__` {#locallygaugecovariant-__new__}
+
+```python
+def __new__(cls, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L224){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.__init__` {#locallygaugecovariant-__init__}
+
+```python
+def __init__(self, x, *args, **kwargs)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L232){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.validate` {#locallygaugecovariant-validate}
+
+```python
+def validate(self)
+```
+
+Check that shape == (B, L1, ..., Ld, d, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L235){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.batch_size` {#locallygaugecovariant-batch_size}
+
+```python
+def batch_size(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L242){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.lattice_shape` {#locallygaugecovariant-lattice_shape}
+
+```python
+def lattice_shape(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L246){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.N_obs` {#locallygaugecovariant-n_obs}
+
+```python
+def N_obs(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L250){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.gauge_transformation` {#locallygaugecovariant-gauge_transformation}
+
+```python
+def gauge_transformation(self, V: torch.Tensor) -> None
+```
+
+Local gauge transformation:
+
+U_\mu(x) \to V(x) U_\mu(x) @ V(x)^\dagger
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L253){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.random_gauge_transformation` {#locallygaugecovariant-random_gauge_transformation}
+
+```python
+def random_gauge_transformation(self, seed: int) -> None
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L263){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LocallyGaugeCovariant.check_gauge_covariance` {#locallygaugecovariant-check_gauge_covariance}
+
+```python
+def check_gauge_covariance(U: GaugeConfiguration, V: torch.Tensor, fun: typing.Callable[['GaugeConfiguration'], 'LocallyGaugeCovariant'], atol: float=1e-15)
+```
+
+Checks that W=fun(U) transforms locally:
+
+W(x) --> V(x) W(x) V(x)^\dagger
+
+This is done computing the object transformed according to what we expect (the local transformation),
+and verifying that it is the same as the object computed on the transformed gauge configuration.
+In other words, we check that the function for W(U) is well implemented, as the order of gauge transformations is
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/configuration.py#L270){.source-link style='font-size:0.8em;'}
+
+---

@@ -1,0 +1,161 @@
+---
+title: "Gounaris_Sakurai_model"
+---
+
+Gounaris-Sakurai (GS) model of Finite Volume Effects (FVEs) 
+
+This file contains an implementation of the GS model as used in https://inspirehep.net/literature/2103903
+
+!!! ACHTUNG !!! 
+The original paper has a typo in the definition of the function h'(omega) (eq. 20 of https://arxiv.org/pdf/1808.00887).
+A factor of "k" is missing in the equation, but the implementation below includes it.
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/Gounaris_Sakurai_model.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py)
+:::
+
+
+## API Reference
+
+#### `get_k` {#get_k}
+
+```python
+def get_k(omega: np.float64, MP: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L15){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_omega` {#get_omega}
+
+```python
+def get_omega(k: np.float64, MP: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L22){.source-link style='font-size:0.8em;'}
+
+---
+
+### `GS_model` {#gs_model}
+
+```python
+class GS_model
+```
+
+Gounaris Sakurai model (see eq. F6 of https://arxiv.org/pdf/2206.15084)
+
+MP --> pseudoscalar meson mass (pion)
+MV --> resonance mass (rho meson)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L31){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.__init__` {#gs_model-__init__}
+
+```python
+def __init__(self, MP: np.float64, MV: np.float64, g_VPP: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L39){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.arg_log` {#gs_model-arg_log}
+
+```python
+def arg_log(self, omega: np.float64)
+```
+
+Argument of the logarithm in the h function
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L44){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.h` {#gs_model-h}
+
+```python
+def h(self, omega: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L49){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.hprime` {#gs_model-hprime}
+
+```python
+def hprime(self, omega: np.float64)
+```
+
+Eq. 20 of https://arxiv.org/pdf/1808.00887.
+
+!!! ACHTUNG !!! 
+The original paper has a typo in the definition of the function h'(omega) 
+A factor of "k" is missing in the equation, but the implementation below includes it.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L57){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.Gamma_VPP` {#gs_model-gamma_vpp}
+
+```python
+def Gamma_VPP(self, omega: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L74){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.A_PP_zero` {#gs_model-a_pp_zero}
+
+```python
+def A_PP_zero(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L82){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.A_PP` {#gs_model-a_pp}
+
+```python
+def A_PP(self, omega: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L88){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.F_P` {#gs_model-f_p}
+
+```python
+def F_P(self, omega: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L95){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.cot_delta_11` {#gs_model-cot_delta_11}
+
+```python
+def cot_delta_11(self, k: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L101){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `GS_model.delta_11` {#gs_model-delta_11}
+
+```python
+def delta_11(self, k: np.float64)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/Gounaris_Sakurai_model.py#L108){.source-link style='font-size:0.8em;'}
+
+---

@@ -1,0 +1,10 @@
+---
+title: "Dirac"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`Dirac.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/Dirac.py)
+:::
+
+
+*No public definitions found in this module.*

@@ -1,0 +1,118 @@
+---
+title: "PP_finite_volume"
+---
+
+Finite Volume formalism for the PP in a finite volume.
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`gm2/HVP/PP_finite_volume.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py)
+:::
+
+
+## API Reference
+
+### `PP_model` {#pp_model}
+
+```python
+class PP_model
+```
+
+Luscher's formalism for 2-pions state on the lattice
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L10){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PP_model.__init__` {#pp_model-__init__}
+
+```python
+def __init__(self, MP: np.float64, L: int, N_lev: int, Z_00_obj: Z_00_Calculator)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PP_model.omega_n_residue_function` {#pp_model-omega_n_residue_function}
+
+```python
+def omega_n_residue_function(self, delta_11: Callable[[np.float64], np.float64], k: np.float64, n: int)
+```
+
+The zeroes of this function give the energy levels of the PP states
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L18){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PP_model.find_omega_n` {#pp_model-find_omega_n}
+
+```python
+def find_omega_n(self, delta_11: Callable[[np.float64], np.float64], eps: np.float64)
+```
+
+Find the momentum k_n for each energy level n using the phase shift function delta_11,
+as in eq F2 of https://arxiv.org/pdf/2206.15084. 
+NOTE: we bring \delta_11 to the right hand side and take the tangent of both sides.
+
+Parameters
+----------
+delta_11 : callable
+    A lambda function that takes a float (momentum) and returns the phase shift delta_11(k).
+eps : np.float64
+    The step size used to search for the roots of the equation.
+
+Returns
+-------
+kn_list : list
+    List of momentum values \omega_n for each energy level.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PP_model.get_nuA2_n` {#pp_model-get_nua2_n}
+
+```python
+def get_nuA2_n(self, n: int, omega_arr: int, FP2: Callable[[np.float64], np.float64], delta_11: Callable[[np.float64], np.float64], eps_k: np.float64)
+```
+
+\nu_n * |A_n|^2 as in eq. 15 of https://arxiv.org/pdf/1808.00887
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L63){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PP_model.get_V_PP` {#pp_model-get_v_pp}
+
+```python
+def get_V_PP(self, times: np.ndarray, FP2: Callable[[np.float64], np.float64], delta_11: Callable[[np.float64], np.float64], omega_n: np.ndarray, eps_der: np.float64)
+```
+
+Compute the two-pion vector correlator V_{\pi\pi}(t) as defined in equation 14 of 
+https://arxiv.org/pdf/1808.00887, using the provided form factor and phase shift functions.
+
+    times (np.ndarray): Array of time values at which to evaluate the correlator.
+    FP2 (Callable[[np.float64], np.float64]): Function returning the squared pion form factor F_\pi^2(s) for a given energy squared s.
+    delta_11 (Callable[[np.float64], np.float64]): Function returning the isospin-1, angular momentum-1 \pi\pi scattering phase shift δ_11(s) for a given energy squared s.
+    eps_roots (float): Tolerance for finding the roots of the quantization condition (energy levels).
+    eps_der (float, optional): Tolerance for numerical derivatives used in the calculation. Defaults to 1e-12.
+
+Returns:
+    np.ndarray: The computed V_{\pi\pi}(t) correlator evaluated at the input time values.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L81){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_V_PP_GSmodel` {#get_v_pp_gsmodel}
+
+```python
+def get_V_PP_GSmodel(times: np.ndarray, MP: np.float64, MV: np.float64, g_VPP: np.float64, L: np.float64, N_lev: int, Z_00_obj: Z_00_Calculator, eps_roots: np.float64, eps_der: np.float64)
+```
+
+Representation of the Vector-Vector correlator using the Luscher's formalism for PP states in a finite volume
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/gm2/HVP/PP_finite_volume.py#L108){.source-link style='font-size:0.8em;'}
+
+---

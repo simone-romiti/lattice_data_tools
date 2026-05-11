@@ -1,0 +1,50 @@
+---
+title: "test_model_averaging"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_model_averaging.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_model_averaging.py)
+:::
+
+
+## API Reference
+
+#### `test_get_IC_AIC` {#test_get_ic_aic}
+
+```python
+def test_get_IC_AIC()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_model_averaging.py#L11){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_get_weights_sum_positive` {#test_get_weights_sum_positive}
+
+```python
+def test_get_weights_sum_positive()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_model_averaging.py#L23){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_get_weights_AICc_vs_AIC` {#test_get_weights_aicc_vs_aic}
+
+```python
+def test_get_weights_AICc_vs_AIC()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_model_averaging.py#L34){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_with_CDF_get_quantiles` {#test_with_cdf_get_quantiles}
+
+```python
+def test_with_CDF_get_quantiles()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_model_averaging.py#L46){.source-link style='font-size:0.8em;'}
+
+---

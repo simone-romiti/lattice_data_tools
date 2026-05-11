@@ -1,0 +1,12 @@
+---
+title: "Zeta_function"
+---
+
+Testing the implementation of the Luescher Zeta function Z_00
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/Zeta_function.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/Zeta_function.py)
+:::
+
+
+*No public definitions found in this module.*

@@ -1,0 +1,54 @@
+---
+title: "action"
+---
+
+Routines to deal with action values, tailored for the Nested Sampling data
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`nested_sampling/action.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/action.py)
+:::
+
+
+## API Reference
+
+#### `get_n_plaq` {#get_n_plaq}
+
+```python
+def get_n_plaq(T: int, L: int, ndims: int)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/action.py#L5){.source-link style='font-size:0.8em;'}
+
+---
+
+### `PureGauge` {#puregauge}
+
+```python
+class PureGauge
+```
+
+Routines for the pure gauge theory
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/action.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PureGauge.plaquette_to_action` {#puregauge-plaquette_to_action}
+
+```python
+def plaquette_to_action(beta: float, P: np.ndarray, T: int, L: int, ndims: int)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/action.py#L15){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PureGauge.action_to_plaquette` {#puregauge-action_to_plaquette}
+
+```python
+def action_to_plaquette(beta: float, S: np.ndarray, T: int, L: int, ndims: int)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/action.py#L21){.source-link style='font-size:0.8em;'}
+
+---

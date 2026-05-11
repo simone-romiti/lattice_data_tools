@@ -1,125 +1,153 @@
 ---
-title: "Lattice Artifacts — the λ-method"
+title: "artifacts"
 ---
 
-Different lattice regularizations (e.g. twisted-mass fermions and
-Osterwalder–Seiler fermions) must agree in the continuum limit but differ
-by discretization effects at finite lattice spacing $a$.  The **λ-method**
-exploits this redundancy to construct a linear combination whose leading
-$O(a^n)$ artifacts are minimised.
+Routines for the combination of different lattice regularizations (e.g. twisted mass and Osterwalder Seyler fermions)
 
-**Source file**: `artifacts.py`
+The idea is to exploit the fact that in the continuum limit,
+different lattice regularizations must agree,
+because they differ only by lattice artifacts
 
-::: {.column-margin}
-**Source**: `artifacts.py`, module docstring
-**ID**: `ART-module`
+.. ldt-id:: ART-module
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`artifacts.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py)
 :::
 
----
 
-## The `lambda_method` class
+## API Reference
+
+### `lambda_method` {#lambda_method}
 
 ```python
-from lattice_data_tools.artifacts import lambda_method
-
-lm = lambda_method(a=np.array([0.05, 0.07, 0.10, 0.12]))
+class lambda_method
 ```
 
-::: {.column-margin}
-**Source**: `artifacts.py`
-**ID**: `ART-lambda_method`
-:::
+Minimization routines for minimizing the discretization effects with the "lambda method"
 
-The combined observable is:
+If n observables y1(a) and y2(a) are the same in the continuum,
+this quantity converges to the same limit for any \lambda(a) such that
+$\lim_{a    o 0} \lambda(a) = \lambda_0 < \infty$:
 
-$$y_\lambda(a) = \sum_{i=1}^{n} \lambda_i(a)\, y_i(a) \;,\quad \sum_i \lambda_i(a) = 1$$
+$$y_\lambda(a) = \sum_{i=1}^{n} \lambda_i(a) y_i(a) \, , \, \sum_{i} \lambda_i(a)=1$$
 
-The class minimises the average squared slope of $y_\lambda(a)$ with
-respect to $a$, reducing discretization effects.
+This class defines routines for finding the optimal parameter \lambda(a)
+such that discretization effects on y_\lambda are minimal.
+This is implemented by minimizing the average of the squares at each point.
+See the documentation of the for more details.
 
-**Constructor argument**: `a` — 1-D array of lattice spacings.
+.. ldt-id:: ART-lambda_method
 
----
-
-## Methods
-
-### `y1y2_lambda_fixed`
-
-```python
-res = lm.y1y2_lambda_fixed(y1, y2, method="BFGS")
-# res["lambda"]  — optimal (constant) λ
-# res["y"]       — y_λ(a) = λ*y1 + (1-λ)*y2
-# res["residue"] — minimised average squared slope
-```
-
-::: {.column-margin}
-**Source**: `artifacts.py`
-**ID**: `ART-lambda_method-y1y2_lambda_fixed`
-:::
-
-Finds the single optimal $\lambda$ that is the same for all lattice
-spacings.  Minimises:
-
-$$\overline{(\partial_a y_\lambda)^2} = \text{avg}_a\left[\left(\frac{\Delta y_\lambda}{\Delta a}\right)^2\right]$$
-
-### `y1y2_lambda_variable`
-
-```python
-res = lm.y1y2_lambda_variable(y1, y2, ansatz=lambda a, p: p[0]+p[1]*a, guess=np.array([0.5, 0.0]))
-# res["par"]     — best-fit parameters of λ(a)
-# res["lambda"]  — λ(a) evaluated at each lattice spacing
-# res["y"]       — y_λ(a)
-```
-
-::: {.column-margin}
-**Source**: `artifacts.py`
-**ID**: `ART-lambda_method-y1y2_lambda_variable`
-:::
-
-Finds $\lambda(a)$ according to a user-supplied ansatz.  The ansatz must
-satisfy $\lim_{a\to 0}\lambda(a) < \infty$, ensuring the correct
-continuum limit.
-
-### `y1y2_mu_variable`
-
-```python
-res = lm.y1y2_mu_variable(y_input, ansatz=lambda a, p: p[0]*a**2, guess=np.array([0.0]))
-# res["mu"]  — additive correction μ(a)
-# res["y"]   — y_input + μ(a)
-```
-
-::: {.column-margin}
-**Source**: `artifacts.py`
-**ID**: `ART-lambda_method-y1y2_mu_variable`
-:::
-
-Finds an additive correction $\mu(a)$ (with $\mu(0) = 0$) that
-minimises the slope of $y + \mu(a)$.
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L17){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Example
+#### `lambda_method.__init__` {#lambda_method-__init__}
 
 ```python
-import numpy as np
-from lattice_data_tools.artifacts import lambda_method
-
-a   = np.array([0.04, 0.06, 0.08, 0.10])
-# Two regularizations, both converging to the same continuum value
-y1  = 1.0 + 0.5*a + 2.0*a**2
-y2  = 1.0 - 0.3*a + 1.5*a**2
-
-lm  = lambda_method(a=a)
-res = lm.y1y2_lambda_fixed(y1, y2)
-
-print(f"optimal λ  = {res['lambda']:.4f}")
-print(f"y_λ at a→0 ≈ {res['y'][0]:.4f}  (exact: 1.0)")
+def __init__(self, a: np.ndarray)
 ```
 
-For a $\lambda$ with $a$-dependence:
+Setting the lattice spacing values
+
+Args:
+    a (np.ndarray): 1d array of lattice spacings
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L33){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `lambda_method.y1y2_lambda_fixed` {#lambda_method-y1y2_lambda_fixed}
 
 ```python
-ansatz = lambda ai, p: p[0] + p[1]*ai
-res    = lm.y1y2_lambda_variable(y1, y2, ansatz=ansatz, guess=np.array([0.5, 0.0]))
-print("λ(a) =", res["lambda"])
+def y1y2_lambda_fixed(self, y1: np.ndarray, y2: np.ndarray, method='BFGS') -> dict
 ```
+
+Finding the optimal lambda: the same for each value of the lattice spacing
+
+Args:
+    y1 (np.ndarray): array of values of the 1st observable (i.e. for each lattice spacing)
+    y2 (np.ndarray): array of values of the 2nd observable (i.e. for each lattice spacing)
+    method (str, optional): minimization routine. Defaults to "BFGS".
+
+Returns:
+    dict: dictionary of results
+
+.. ldt-id:: ART-lambda_method-y1y2_lambda_fixed
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L41){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `lambda_method.y1y2_lambda_variable` {#lambda_method-y1y2_lambda_variable}
+
+```python
+def y1y2_lambda_variable(self, y1: np.ndarray, y2: np.ndarray, ansatz: Callable, guess=np.ndarray, method='BFGS') -> dict
+```
+
+Finding the optimal lambda: it can depend on the lattice spacing
+
+    Steps:
+    - we impose lambda=ansatz(a) for each lattice spacing "a"
+    - we minimize numerically the slope of y(lambda)
+
+    NOTE:
+    The ansatz should be chosen such that ansatz(a=0) is any finite value (e.g. 1/2 --> average of y1 and y2).
+    In the continuum this gives the correct result.
+
+    Remark:
+    In principle one can also minimize assuming the same lambda for each lattice spacing,
+    but this is too restrictive. What is sufficient is that lambda(a=0)=0.
+    This means that we need to minimize at the level of the parameters of the lambda(a) ansatz.
+
+Args:
+    y1 (np.ndarray): array of values of the 1st observable (i.e. for each lattice spacing)
+    y2 (np.ndarray): array of values of the 2nd observable (i.e. for each lattice spacing)
+    method (str, optional): minimization routine. Defaults to "BFGS".
+
+Returns:
+    dict: dictionary of results
+
+.. ldt-id:: ART-lambda_method-y1y2_lambda_variable
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L71){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `lambda_method.y1y2_mu_variable` {#lambda_method-y1y2_mu_variable}
+
+```python
+def y1y2_mu_variable(self, y_input: np.ndarray, ansatz: Callable, guess=np.ndarray, method='BFGS') -> dict
+```
+
+Finding the optimal mu: it can depend on the lattice spacing
+
+    Steps:
+    - we impose \mu=ansatz(a) for each lattice spacing "a"
+    - we minimize numerically the slope of y(lambda)=y1+\mu(a)
+
+    NOTE:
+    The ansatz should be chosen such that \mu(a=0)=0
+
+Args:
+    y_input (np.ndarray): array of values of the observable (i.e. for each lattice spacing)
+    method (str, optional): minimization routine. Defaults to "BFGS".
+
+Returns:
+    dict: dictionary of results
+
+.. ldt-id:: ART-lambda_method-y1y2_mu_variable
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L117){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `lambda_method.y1y2_lambda_auto` {#lambda_method-y1y2_lambda_auto}
+
+```python
+def y1y2_lambda_auto(self, y1: np.ndarray, y2: np.ndarray, fk: List[Callable], method='Nelder-Mead') -> dict
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/artifacts.py#L161){.source-link style='font-size:0.8em;'}
+
+---

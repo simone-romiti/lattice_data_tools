@@ -1,0 +1,10 @@
+---
+title: "gauge_configuration"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/gauge_configuration.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/gauge_configuration.py)
+:::
+
+
+*No public definitions found in this module.*

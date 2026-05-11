@@ -1,281 +1,480 @@
 ---
-title: "Bootstrap Sampling"
+title: "bootstrap"
 ---
 
-Bootstrap sampling estimates the mean and standard error of an observable
-from a finite dataset, without requiring knowledge of the underlying
-probability distribution. For correlated Monte Carlo chains, the data are
-first binned to remove autocorrelations before resampling.
+::: {.callout-note appearance="minimal"}
+**Source:** [`bootstrap.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py)
+:::
 
-**Source file**: `bootstrap.py`
 
----
+## API Reference
 
-## The `BootstrapSamples` class
-
-`BootstrapSamples` is a subclass of `AbstractSamples` (and therefore of
-`np.ndarray`).  Its first axis has length $N_\text{bts} + 1$: index 0
-stores the **unbiased mean** of the original dataset; indices $1, \ldots,
-N_\text{bts}$ store the bootstrap replicates.
+### `BootstrapSamples` {#bootstrapsamples}
 
 ```python
-from lattice_data_tools.bootstrap import BootstrapSamples
+class BootstrapSamples(np.ndarray)
 ```
 
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples`
-:::
-
-Calling `np.mean`, `np.std`, or `np.average` directly on a
-`BootstrapSamples` object raises a `TypeError` — use the class methods
-below instead.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`, method `__array_function__`
-**ID**: `BOOT-BootstrapSamples-__array_function__`
-:::
-
-### `BootstrapSamples.from_sample`
-
-```python
-BootstrapSamples.from_sample(x: np.ndarray, mean: np.ndarray) -> BootstrapSamples
-```
-
-Construct a `BootstrapSamples` array from a pre-computed array of replicates
-`x` and the unbiased mean, storing the information about the original sample mean.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-from_sample`
-:::
-
-### `BootstrapSamples.zeros`
-
-```python
-BootstrapSamples.zeros(N_bts: int, shape: tuple = ()) -> BootstrapSamples
-```
-
-Like `numpy.zeros`, but the leading dimension is automatically set to
-$N_\text{bts} + 1$ (samples plus the mean slot).
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-zeros`
-:::
-
-### `BootstrapSamples.from_lambda`
-
-```python
-BootstrapSamples.from_lambda(N_bts: int, fun: Callable[[int], Any], parallel: bool = False) -> BootstrapSamples
-```
-
-Build a `BootstrapSamples` array by calling `fun(i)` for
-$i = 0, 1, \ldots, N_\text{bts}$, where $i = 0$ produces the mean and
-$i \geq 1$ produces bootstrap replicates.  Set `parallel=True` to use
-`joblib` for parallelisation.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-from_lambda`
-:::
-
-### `BootstrapSamples.bts_list_from_lambda`
-
-```python
-BootstrapSamples.bts_list_from_lambda(N_bts, fun, parallel=False) -> list
-```
-
-Like `from_lambda`, but returns a plain Python list instead of a NumPy
-array. Useful when the objects returned by `fun` are not numeric arrays
-(e.g. dictionaries).
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-bts_list_from_lambda`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L11){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Statistical estimators
-
-### `.mean()`
+#### `BootstrapSamples.__new__` {#bootstrapsamples-__new__}
 
 ```python
-bts.mean() -> np.ndarray
+def __new__(cls, input_array)
 ```
 
-Biased bootstrap mean: arithmetic average of the bootstrap replicates
-(rows 1 through $N_\text{bts}$), computed along axis 0.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-mean`
-:::
-
-### `.unbiased_mean()`
-
-```python
-bts.unbiased_mean() -> np.ndarray
-```
-
-Returns row 0, which is the mean of the **original** dataset.  This is
-the quantity to report as the central value of the observable.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-unbiased_mean`
-:::
-
-### `.bias()`
-
-```python
-bts.bias() -> np.ndarray
-```
-
-Difference between the unbiased mean and the (biased) bootstrap mean.
-Use this as a diagnostic: if $|\text{bias}| \gg \text{error}$, the
-bootstrap distribution may be poorly centred.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-bias`
-:::
-
-### `.error()`
-
-```python
-bts.error() -> np.ndarray
-```
-
-Standard error on the mean, estimated as the sample standard deviation
-of the bootstrap replicates (with `ddof=1`).
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-error`
-:::
-
-### `.covariance_matrix()` / `.correlation_matrix()`
-
-```python
-bts.covariance_matrix() -> np.ndarray   # shape (N_var, N_var)
-bts.correlation_matrix() -> np.ndarray  # shape (N_var, N_var)
-```
-
-Estimate of the covariance / correlation matrix for a
-`BootstrapSamples` object whose inner shape is `(N_var,)`.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-BootstrapSamples-covariance_matrix`
-**ID**: `BOOT-BootstrapSamples-correlation_matrix`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L12){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Generating bootstrap samples
-
-### `uncorrelated_confs_to_bts`
+#### `BootstrapSamples.__getitem__` {#bootstrapsamples-__getitem__}
 
 ```python
-uncorrelated_confs_to_bts(x, N_bts, seed=12345) -> BootstrapSamples
+def __getitem__(self, key)
 ```
 
-Generate $N_\text{bts}$ bootstrap samples from an array of **uncorrelated**
-configurations `x`.  Each replicate is the mean of $N$ values drawn with
-replacement from `x`.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-uncorrelated_confs_to_bts`
-:::
-
-```python
-import numpy as np
-from lattice_data_tools.bootstrap import uncorrelated_confs_to_bts
-
-data = np.random.normal(5.0, 1.0, 500)
-bts  = uncorrelated_confs_to_bts(data, N_bts=200)
-print(bts.unbiased_mean(), "±", bts.error())
-```
-
-### `correlated_confs_to_bts`
-
-```python
-correlated_confs_to_bts(Cg, N_bts, seed=12345, bin_size=None, ...) -> BootstrapSamples
-```
-
-Same as above, but for **correlated** Monte Carlo chains.  If `bin_size`
-is `None`, the optimal binning is determined automatically from the
-integrated autocorrelation time $\tau_\text{int}$ via `auto_binning`.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-correlated_confs_to_bts`
-:::
-
-### `parametric_gaussian_bts`
-
-```python
-parametric_gaussian_bts(mean, error, N_bts, seed=12345) -> BootstrapSamples
-```
-
-Generate parametric bootstrap samples from a Gaussian distribution with
-given `mean` and `error`.  Useful for propagating uncertainties from
-external inputs.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-parametric_gaussian_bts`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L16){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Binning utilities
-
-### `binning`
+#### `BootstrapSamples.__array_finalize__` {#bootstrapsamples-__array_finalize__}
 
 ```python
-binning(Cg: np.ndarray, bin_size: int) -> np.ndarray
+def __array_finalize__(self, obj)
 ```
 
-Block-average `Cg` by averaging consecutive groups of `bin_size` entries.
-The number of output entries is `len(Cg) // bin_size`.
-
-### `auto_binning`
-
-```python
-auto_binning(Cg: np.ndarray, ...) -> np.ndarray
-```
-
-Automatically find the optimal bin size by iterating until $\tau_\text{int}
-< 0.5$ within its uncertainty.  Uses `uwerr.uwerr_primary` internally.
-
-::: {.column-margin}
-**Source**: `bootstrap.py`
-**ID**: `BOOT-auto_binning`
-:::
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L29){.source-link style='font-size:0.8em;'}
 
 ---
 
-## Example: propagating errors through a non-linear function
+#### `BootstrapSamples.N_bts` {#bootstrapsamples-n_bts}
 
 ```python
-import numpy as np
-from lattice_data_tools.bootstrap import uncorrelated_confs_to_bts, BootstrapSamples
-
-np.random.seed(42)
-data_A = np.random.normal(2.0, 0.1, 300)
-data_B = np.random.normal(3.0, 0.1, 300)
-
-bts_A = uncorrelated_confs_to_bts(data_A, N_bts=500)
-bts_B = uncorrelated_confs_to_bts(data_B, N_bts=500)
-
-# Non-linear combination: R = A/B  -- error propagation is automatic
-bts_R = BootstrapSamples.from_lambda(
-    N_bts=500,
-    fun=lambda i: bts_A[i] / bts_B[i]
-)
-print(f"R = {bts_R.unbiased_mean():.4f} ± {bts_R.error():.4f}")
+def N_bts(self)
 ```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L32){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.inner_shape` {#bootstrapsamples-inner_shape}
+
+```python
+def inner_shape(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L35){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.from_sample` {#bootstrapsamples-from_sample}
+
+```python
+def from_sample(x: np.ndarray, mean: np.ndarray)
+```
+
+keeping the information about the unbiased mean
+
+.. ldt-id:: BOOT-BootstrapSamples-from_sample
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L39){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.zeros` {#bootstrapsamples-zeros}
+
+```python
+def zeros(N_bts: int, shape: tuple=())
+```
+
+Like numpy.zeros, but with an implicit leading dimension of N_bts+1:
+N_bts samples + the mean on the 0th axis
+
+.. ldt-id:: BOOT-BootstrapSamples-zeros
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L53){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.bts_list_from_lambda` {#bootstrapsamples-bts_list_from_lambda}
+
+```python
+def bts_list_from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool=False)
+```
+
+loop over the N_bts+1 values: N_bts + mean.
+Advantage: one does not need to manually remember to do a loop over N_bts+1
+This function is needed for those type of objects that are not necessarily numpy arrays, e.g. dict.
+
+.. ldt-id:: BOOT-BootstrapSamples-bts_list_from_lambda
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L67){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.from_lambda` {#bootstrapsamples-from_lambda}
+
+```python
+def from_lambda(N_bts: int, fun: typing.Callable[[int], typing.Any], parallel: bool=False)
+```
+
+NOTE: only for numeric numpy array objects
+
+.. ldt-id:: BOOT-BootstrapSamples-from_lambda
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L83){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.run_lambda` {#bootstrapsamples-run_lambda}
+
+```python
+def run_lambda(N_bts: int, fun: typing.Callable[[int], None])
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L91){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.__array_function__` {#bootstrapsamples-__array_function__}
+
+```python
+def __array_function__(self, func, types, args, kwargs)
+```
+
+Block np.mean, np.std, np.average etc.
+The user should call the methods of this class explicitly, to avoid mistakes
+
+.. ldt-id:: BOOT-BootstrapSamples-__array_function__
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L101){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.to_numpy` {#bootstrapsamples-to_numpy}
+
+```python
+def to_numpy(self)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L115){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.mean` {#bootstrapsamples-mean}
+
+```python
+def mean(self)
+```
+
+bootstrap mean (biased)
+
+.. ldt-id:: BOOT-BootstrapSamples-mean
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L118){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.unbiased_mean` {#bootstrapsamples-unbiased_mean}
+
+```python
+def unbiased_mean(self)
+```
+
+mean of the original random sample
+
+.. ldt-id:: BOOT-BootstrapSamples-unbiased_mean
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L125){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.bias` {#bootstrapsamples-bias}
+
+```python
+def bias(self)
+```
+
+The bootstrap mean and the true mean differ by a bias.
+This function can be used a posteriori to check if the bias is comparable with the statistical precision coming from the estimate of the error.
+
+.. ldt-id:: BOOT-BootstrapSamples-bias
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L132){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.error` {#bootstrapsamples-error}
+
+```python
+def error(self)
+```
+
+Estimator of the standard error on the mean, computed only on the bootstrap samples,
+i.e. for the rows 1,...,N_bts (the 0-th one is the mean over the original dataset)
+
+.. ldt-id:: BOOT-BootstrapSamples-error
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L141){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.with_rescaled_error` {#bootstrapsamples-with_rescaled_error}
+
+```python
+def with_rescaled_error(self, A: float)
+```
+
+Rescale the error by a factor A: \sigma --> A*\sigma
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L150){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.covariance_matrix` {#bootstrapsamples-covariance_matrix}
+
+```python
+def covariance_matrix(self)
+```
+
+Estimate of covariance matrix from the bootstrap samples
+
+.. ldt-id:: BOOT-BootstrapSamples-covariance_matrix
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L156){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.correlation_matrix` {#bootstrapsamples-correlation_matrix}
+
+```python
+def correlation_matrix(self)
+```
+
+Estimate of correlation matrix from the bootstrap samples
+
+.. ldt-id:: BOOT-BootstrapSamples-correlation_matrix
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L167){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.covariance_matrix_per_bts` {#bootstrapsamples-covariance_matrix_per_bts}
+
+```python
+def covariance_matrix_per_bts(self)
+```
+
+Bootstrap samples of correlation matrix estimate.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L178){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `BootstrapSamples.correlation_matrix_per_bts` {#bootstrapsamples-correlation_matrix_per_bts}
+
+```python
+def correlation_matrix_per_bts(self)
+```
+
+Bootstrap samples of correlation matrix estimate.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L187){.source-link style='font-size:0.8em;'}
+
+---
+
+### `ParametricBootstraps` {#parametricbootstraps}
+
+```python
+class ParametricBootstraps
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L195){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ParametricBootstraps.Gaussian` {#parametricbootstraps-gaussian}
+
+```python
+def Gaussian(mean: float, error: float, N_bts: int, seed: int)
+```
+
+Generate parametric bootstrap samples from a Gaussian distribution
+
+Args:
+mean (float): Mean of the Gaussian distribution
+std (float): Standard deviation of the Gaussian distribution
+N_bts (int): Number of bootstrap samples to generate
+seed (int): Random seed for reproducibility
+
+Returns:
+np.ndarray: Bootstrap samples
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L197){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ParametricBootstraps.correlated_from_covariance` {#parametricbootstraps-correlated_from_covariance}
+
+```python
+def correlated_from_covariance(x_mean: np.ndarray, x_error: np.ndarray, Cov: np.ndarray, N_bts: int, seed: int, method=typing.Literal['eigen', 'Cholesky'])
+```
+
+Multivariate bootstrap samples generation for the variables x_i,
+from their central values x_mean, errors x_err and their covariance matrix Cov.
+
+N_bts: number of output bootstrap samples
+seed: seed of random number generator
+method: "eigen" for diagonalization of "Cov", or "Cholesky" if using the decomposition of "Cov"
+
+NOTE:
+The problem is well posed if Cov is symmetric and semi-positive definite.
+Numerically it might not be the case because of:
+- noise --> solved by rooting: using Cov_rooted=sqrt(C @ C^T). This ensures that all lambda_k >= 0
+- entries differing by several orders of magnitude --> numerical instability, not solvable.
+  Use analogous function that uses correlation matrix for more stability.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L217){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `ParametricBootstraps.correlated_from_rho` {#parametricbootstraps-correlated_from_rho}
+
+```python
+def correlated_from_rho(x_mean: np.ndarray, x_error: np.ndarray, rho: np.ndarray, N_bts: int, seed: int, method=typing.Literal['eigen', 'Cholesky'], decimals: int=15)
+```
+
+Multivariate bootstrap samples generation for the variables x_i,
+from their central values x_mean, errors x_err and their correlation matrix rho.
+
+We can use the same methods as for the covariance matrix "C", because:
+\rho = S^{-1} @ C @ S^{-1} , where: S_{ij} = \sigma_i \delta_{ij} (S is a diagonal matrix)
+More details on how to adapt them in the docstrings below).
+
+N_bts: number of output bootstrap samples
+seed: seed of random number generator
+method: "eigen" for diagonalization of "rho", or "Cholesky" if using the decomposition of "rho"
+
+NOTE:
+The problem is well posed if \rho is symmetric and semi-positive definite.
+Numerically it might not be the case because of:
+- noise --> solved by rooting: using rho_rooted=sqrt(\rho @ \rho^T). This ensures that all lambda_k >= 0
+- entries differing by several orders of magnitude --> numerical instability, not solvable.
+
+- Using the correlation matrix mitigates the orders of magnitude difference (eigenvalues go from -1 to 1) --> more stable compared to covariance matrix.
+- We further stabilize the semi-positive definiteness by imposing that the eigenvalues of \rho @ \rho.T are above \epsilon=10^{-decimals}
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L278){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `parametric_gaussian_bts` {#parametric_gaussian_bts}
+
+```python
+def parametric_gaussian_bts(mean: float, error: float, N_bts, seed=12345)
+```
+
+Generate parametric bootstrap samples from a Gaussian distribution
+
+Args:
+    mean (float): Mean of the Gaussian distribution
+    std (float): Standard deviation of the Gaussian distribution
+    N_bts (int): Number of bootstrap samples to generate
+    seed (int): Random seed for reproducibility
+
+Returns:
+    np.ndarray: Bootstrap samples
+
+.. ldt-id:: BOOT-parametric_gaussian_bts
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L342){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `binning` {#binning}
+
+```python
+def binning(Cg: np.ndarray, bin_size: int)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L365){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `auto_binning` {#auto_binning}
+
+```python
+def auto_binning(Cg: np.ndarray, lambda_output_file=lambda i: None)
+```
+
+Automatic binning of a Monte Carlo (MC) chain according to the autocorrelation time.
+Until it decreases below 0.5 (within its uncertainty), we bin with increasing bin sizes:
+1 (original MC chain), tau, 2*tau, etc.
+
+The function returns the binned correlator with the optimal bin size as above.
+
+    Cg (np.ndarray): MC chain (e.g. 1-dimensional "correlator" at one spacetime point, computed for each configuration)
+    output_files_pattern (str): lambda function that takes 1 argument that is the index of the binning iteration
+
+.. ldt-id:: BOOT-auto_binning
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L382){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `uncorrelated_confs_to_bts` {#uncorrelated_confs_to_bts}
+
+```python
+def uncorrelated_confs_to_bts(x, N_bts, seed: int)
+```
+
+Bootstrap samples from array of data
+
+generates Nb bootstrap samples from N configurations,
+It assumes x.shape[0] == N.
+
+Steps:
+- Draw N samples with replacements among the x values
+- Compute the mean. This is a bootstrap sample.
+- Repeat Nb times. The resulting array has standard deviation of the mean (approximately) equal to the one of the original sample.
+
+Args:
+    x (np.ndarray): time series. Bootstrapping is done on 1st index
+    N_bts (int): Number of bootstraps
+    block_size (int): size of the block
+
+Returns:
+    np.ndarray: Bootstrap samples
+
+.. ldt-id:: BOOT-uncorrelated_confs_to_bts
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L414){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `correlated_confs_to_bts` {#correlated_confs_to_bts}
+
+```python
+def correlated_confs_to_bts(Cg: np.ndarray, N_bts: int, seed=12345, bin_size=None, lambda_output_file=lambda i: None) -> np.ndarray
+```
+
+Bootstrap samples from array of correlated configurations
+
+- The configurations are binned (block-averaged) every bin_size (determined by tau_int: integrated autocorrelation time)
+- The bootstrap samples are drawn from the uncorrelated configurations
+
+Args:
+    C (np.ndarray): 1-dimensional "correlator" (observable computed for each configuration)
+    N_bts (int): Number of bootstraps
+    seed (int): seed for RNG (Random Number Generator)
+
+Returns:
+    np.ndarray: Bootstrap samples
+
+.. ldt-id:: BOOT-correlated_confs_to_bts
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/bootstrap.py#L444){.source-link style='font-size:0.8em;'}
+
+---

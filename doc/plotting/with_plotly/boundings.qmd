@@ -1,0 +1,24 @@
+---
+title: "boundings"
+---
+
+IN PROGRESS
+
+This script contains routines for fitting curves where the bouding method has been used
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_plotly/boundings.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/boundings.py)
+:::
+
+
+## API Reference
+
+#### `get_figure` {#get_figure}
+
+```python
+def get_figure(t: np.ndarray, y: np.ndarray, dy: np.ndarray, title: str, yaxis_title: str, labels: List[str], legend_title: str, tmin=None, tmax=None, ymin=None, ymax=None, t1_fit=None, t2_fit=None, y_fit=None, dy_fit=None, width=phi_golden * 500, height=500)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/boundings.py#L14){.source-link style='font-size:0.8em;'}
+
+---

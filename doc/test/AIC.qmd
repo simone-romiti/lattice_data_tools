@@ -1,0 +1,10 @@
+---
+title: "AIC"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/AIC.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/AIC.py)
+:::
+
+
+*No public definitions found in this module.*

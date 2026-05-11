@@ -1,0 +1,62 @@
+---
+title: "loops"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`links/loops.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/loops.py)
+:::
+
+
+## API Reference
+
+### `WilsonLoopsGenerator` {#wilsonloopsgenerator}
+
+```python
+class WilsonLoopsGenerator
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/loops.py#L5){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `WilsonLoopsGenerator.__init__` {#wilsonloopsgenerator-__init__}
+
+```python
+def __init__(self, U: GaugeConfiguration)
+```
+
+U: batch of gauge configurations U^{(b)}(x, mu) as Nc \times Nc matrices, with x=(x_1,...x_d).
+It is passed as a multi-dimensional array U[b, L1,L2,...,Ld, d, Nc, Nc],
+where N_c is the number of colors.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/loops.py#L6){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `WilsonLoopsGenerator.plaquettes` {#wilsonloopsgenerator-plaquettes}
+
+```python
+def plaquettes(self)
+```
+
+Plaquettes (as loops, no trace or real part), assuming periodic boundary conditions on a L^d lattice.
+
+Returns: tensor of shape (batch_size, L1,...,Ld, N_plaq, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/loops.py#L14){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `WilsonLoopsGenerator.Polyakov_loops` {#wilsonloopsgenerator-polyakov_loops}
+
+```python
+def Polyakov_loops(self)
+```
+
+Polyakov loops for each direction mu.
+
+Returns: A tensor of shape (batch, L1, ..., Ld, d, Nc, Nc)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/links/loops.py#L37){.source-link style='font-size:0.8em;'}
+
+---

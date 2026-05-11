@@ -1,0 +1,27 @@
+---
+title: "symmetries"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`symmetries.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/symmetries.py)
+:::
+
+
+## API Reference
+
+#### `impose_Thalf_symmety` {#impose_thalf_symmety}
+
+```python
+def impose_Thalf_symmety(C: np.ndarray, p: Literal[1, -1]) -> np.ndarray
+```
+
+Impose the symmetry of the correlator at T/2.
+
+Args:
+    C: Input correlator array.
+    T: Temporal extent.
+    p: Parity, must be 1 or -1.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/symmetries.py#L7){.source-link style='font-size:0.8em;'}
+
+---

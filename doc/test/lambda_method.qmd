@@ -1,0 +1,20 @@
+---
+title: "lambda_method"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/lambda_method.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lambda_method.py)
+:::
+
+
+## API Reference
+
+#### `ansatz` {#ansatz}
+
+```python
+def ansatz(ai, p)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lambda_method.py#L23){.source-link style='font-size:0.8em;'}
+
+---

@@ -1,0 +1,72 @@
+---
+title: "tuning_mf"
+---
+
+Tuning the masses of the light strange and charm 
+
+The routines determine the bootstrap samples
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`physical_point/tuning_mf.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/physical_point/tuning_mf.py)
+:::
+
+
+## API Reference
+
+#### `bts_mf_phys_from_M` {#bts_mf_phys_from_m}
+
+```python
+def bts_mf_phys_from_M(mf: np.ndarray, M: np.ndarray, M_phys: np.float64, ansatz, guess: np.ndarray, maxiter=10000, method='BFGS')
+```
+
+Interpolating to m_f^{phys} from the values of M(m_f) 
+
+NOTE: The 1st dimension of M and dM is the bootstrap index
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/physical_point/tuning_mf.py#L12){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `bts_ml_phys_from_Mpi` {#bts_ml_phys_from_mpi}
+
+```python
+def bts_ml_phys_from_Mpi(ml: np.ndarray, Mpi: np.ndarray, Mpi_phys: np.float64, ansatz, guess: np.ndarray, maxiter=10000, method='BFGS')
+```
+
+Interpolating to m_l^{phys} from the values of M_\pi 
+
+NOTE: The 1st dimension of M_pi and dM_pi is the bootstrap index
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/physical_point/tuning_mf.py#L38){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `bts_ms_phys_from_MK` {#bts_ms_phys_from_mk}
+
+```python
+def bts_ms_phys_from_MK(ml: np.ndarray, ms: np.ndarray, ml_phys: np.ndarray, MK: np.ndarray, MK_phys: np.float64, ansatz_ml, guess_ml: np.ndarray, ansatz_ms, guess_ms: np.ndarray, maxiter=10000, method='BFGS')
+```
+
+Interpolating to m_s^{phys} from the values of M_K 
+
+MK is an array of dimension (N_bts, N_ml, N_ms)
+ml_phys is the array of N_bts samples found previously (e.g. with M_\pi)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/physical_point/tuning_mf.py#L56){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `bts_mc_phys_from_MDs` {#bts_mc_phys_from_mds}
+
+```python
+def bts_mc_phys_from_MDs(ms: np.ndarray, mc: np.ndarray, ms_phys: np.ndarray, MDs: np.ndarray, MDs_phys: np.float64, ansatz_ms, guess_ms: np.ndarray, ansatz_mc, guess_mc: np.ndarray, maxiter=10000, method='BFGS')
+```
+
+Interpolating to m_s^{phys} from the values of M_K 
+
+MDs is an array of dimension (N_bts, N_ml, N_ms)
+ml_phys is the array of N_bts samples found previously (e.g. with M_\pi)
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/physical_point/tuning_mf.py#L100){.source-link style='font-size:0.8em;'}
+
+---

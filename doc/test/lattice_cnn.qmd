@@ -1,0 +1,54 @@
+---
+title: "lattice_cnn"
+---
+
+Testing the implementation of the Lattice Convolutional Neural Network (L-CNN)
+
+https://arxiv.org/pdf/2012.12901
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/lattice_cnn.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lattice_cnn.py)
+:::
+
+
+## API Reference
+
+#### `get_W_conv_local` {#get_w_conv_local}
+
+```python
+def get_W_conv_local(U_conf)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lattice_cnn.py#L82){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_W_bilin_local` {#get_w_bilin_local}
+
+```python
+def get_W_bilin_local(U_conf)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lattice_cnn.py#L93){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_W_act_local` {#get_w_act_local}
+
+```python
+def get_W_act_local(U_conf)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lattice_cnn.py#L105){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `get_E_local` {#get_e_local}
+
+```python
+def get_E_local(U_conf)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/lattice_cnn.py#L119){.source-link style='font-size:0.8em;'}
+
+---

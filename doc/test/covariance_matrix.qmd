@@ -1,0 +1,87 @@
+---
+title: "covariance_matrix"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/covariance_matrix.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py)
+:::
+
+
+## API Reference
+
+#### `plot_confidence_ellipse` {#plot_confidence_ellipse}
+
+```python
+def plot_confidence_ellipse(mean, cov_matrix, ax, n_std=1.96, edgecolor='red', **kwargs)
+```
+
+Plot a confidence ellipse based on the covariance matrix.
+Parameters:
+- mean: The mean or center of the data (2D point, as an array-like or list).
+- cov_matrix: The 2x2 covariance matrix of the data.
+- ax: The matplotlib axis object where the ellipse will be drawn.
+- n_std: The number of standard deviations for the ellipse's radius.
+- edgecolor: The edge color of the ellipse.
+- **kwargs: Additional keyword arguments for `Ellipse`.
+Returns:
+- A matplotlib ellipse patch.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L6){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_ellipse_is_added_to_axes` {#test_ellipse_is_added_to_axes}
+
+```python
+def test_ellipse_is_added_to_axes()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L28){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_ellipse_center` {#test_ellipse_center}
+
+```python
+def test_ellipse_center()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L37){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_diagonal_cov_gives_axis_aligned_ellipse` {#test_diagonal_cov_gives_axis_aligned_ellipse}
+
+```python
+def test_diagonal_cov_gives_axis_aligned_ellipse()
+```
+
+For a diagonal covariance matrix the ellipse axes should align with x/y.
+eigh returns eigenvalues ascending, so for cov=diag(4,1):
+eigenvalues = [1, 4] -> width=2*sqrt(1)=2, height=2*sqrt(4)=4.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L46){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_n_std_scales_ellipse` {#test_n_std_scales_ellipse}
+
+```python
+def test_n_std_scales_ellipse()
+```
+
+Doubling n_std should double width and height.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L59){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_edgecolor` {#test_edgecolor}
+
+```python
+def test_edgecolor()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/covariance_matrix.py#L71){.source-link style='font-size:0.8em;'}
+
+---

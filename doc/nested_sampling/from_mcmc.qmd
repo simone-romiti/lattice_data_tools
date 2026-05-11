@@ -1,0 +1,53 @@
+---
+title: "from_mcmc"
+---
+
+Routines for reading data from the MCMC runs with this library:
+https://github.com/HISKP-LQCD/su2
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`nested_sampling/from_mcmc.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/from_mcmc.py)
+:::
+
+
+## API Reference
+
+### `Plaquette` {#plaquette}
+
+```python
+class Plaquette
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/from_mcmc.py#L11){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Plaquette.read` {#plaquette-read}
+
+```python
+def read(path: str, nrows: int=None, skiprows: int=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/from_mcmc.py#L13){.source-link style='font-size:0.8em;'}
+
+---
+
+### `Polyakov` {#polyakov}
+
+```python
+class Polyakov
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/from_mcmc.py#L19){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `Polyakov.read` {#polyakov-read}
+
+```python
+def read(path: str, nrows: int=None, skiprows: int=None)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/nested_sampling/from_mcmc.py#L21){.source-link style='font-size:0.8em;'}
+
+---

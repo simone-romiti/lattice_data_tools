@@ -1,0 +1,23 @@
+---
+title: "effective_curve"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`plotting/with_plotly/effective_curve.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/effective_curve.py)
+:::
+
+
+## API Reference
+
+#### `get_figure` {#get_figure}
+
+```python
+def get_figure(t: np.ndarray, y: np.ndarray, dy: np.ndarray, title: str, yaxis_title: str, labels: List[str], legend_title: str, colors_rgb=List[str], tmin=None, tmax=None, ymin=None, ymax=None, t1_fit=None, t2_fit=None, y_fit=None, dy_fit=None, width=phi_golden * 500, height=500)
+```
+
+Plot the correlators effective curves y_i(t) as a function of t (in lattice units)
+If  t1_fit, t2_fit, y_fit, dy_fit are passed, the fit band is plotted for each trace.
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/plotting/with_plotly/effective_curve.py#L10){.source-link style='font-size:0.8em;'}
+
+---

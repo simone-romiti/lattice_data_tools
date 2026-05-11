@@ -1,0 +1,54 @@
+---
+title: "scientific_notation"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`scientific_notation.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/scientific_notation.py)
+:::
+
+
+## API Reference
+
+### `PowersOf10` {#powersof10}
+
+```python
+class PowersOf10
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/scientific_notation.py#L5){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `PowersOf10.x10y_strings` {#powersof10-x10y_strings}
+
+```python
+def x10y_strings(number, decimals: int)
+```
+
+Strings x,y for writing: number=x*10^y
+
+decimals = number of decimal places after the dot in the "a" string
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/scientific_notation.py#L7){.source-link style='font-size:0.8em;'}
+
+---
+
+### `to_LaTeX` {#to_latex}
+
+```python
+class to_LaTeX
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/scientific_notation.py#L20){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `to_LaTeX.as_x10y` {#to_latex-as_x10y}
+
+```python
+def as_x10y(number, decimals: int, dot_symb: typing.Literal['', '\\cdot', '\\times']='\\times', include_dollars=False)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/scientific_notation.py#L22){.source-link style='font-size:0.8em;'}
+
+---

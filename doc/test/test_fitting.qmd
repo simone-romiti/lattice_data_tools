@@ -1,0 +1,50 @@
+---
+title: "test_fitting"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/test_fitting.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_fitting.py)
+:::
+
+
+## API Reference
+
+#### `test_fit_xyey_tanh` {#test_fit_xyey_tanh}
+
+```python
+def test_fit_xyey_tanh()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_fitting.py#L8){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_polynomial_fit_xyey_linear` {#test_polynomial_fit_xyey_linear}
+
+```python
+def test_polynomial_fit_xyey_linear()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_fitting.py#L26){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_polynomial_fit_xyey_quadratic` {#test_polynomial_fit_xyey_quadratic}
+
+```python
+def test_polynomial_fit_xyey_quadratic()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_fitting.py#L40){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `test_fit_xiyey` {#test_fit_xiyey}
+
+```python
+def test_fit_xiyey()
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/test_fitting.py#L54){.source-link style='font-size:0.8em;'}
+
+---

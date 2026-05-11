@@ -13,8 +13,9 @@
 *~
 
 
-# documentation
-doc/build/
+# documentation (auto-generated)
+./doc
+
 *.pickle
 *.pkl
 *.html

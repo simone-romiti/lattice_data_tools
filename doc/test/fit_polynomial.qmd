@@ -1,0 +1,20 @@
+---
+title: "fit_polynomial"
+---
+
+::: {.callout-note appearance="minimal"}
+**Source:** [`test/fit_polynomial.py`](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_polynomial.py)
+:::
+
+
+## API Reference
+
+#### `ansatz` {#ansatz}
+
+```python
+def ansatz(x, alpha)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/test/fit_polynomial.py#L17){.source-link style='font-size:0.8em;'}
+
+---
