@@ -19,7 +19,7 @@ dev = ["pytest", "pytest-cov"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
-python_files = ["test_*.py"]
+python_files = ["Luescher_condition.py", "covariance_matrix_bts.py"]
 python_functions = ["test_*"]
 addopts = "-v"
 
