@@ -1,0 +1,7 @@
+"""
+Python modules for calculations of the hadronic contribution to the muon's $(g-2)$:
+
+- HVP: Hadronic Vacuum Polarization
+- HLbL: Hadronic Light-by-Light
+
+"""

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-sys.path.append('../../')
+#import sys
+#sys.path.append('../../')
 from lattice_data_tools.fit.legacy.xyey import fit_xyey as old_fit_xyey
 from lattice_data_tools.fit.xyey import fit_xyey
 
