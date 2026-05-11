@@ -24,7 +24,12 @@ def default_activation_function(U: GaugeConfiguration, W: LocallyGaugeCovariant)
 #---    
 
 class LCNN(torch.nn.Module):
-    def __init__(self, U: GaugeConfiguration, K: int) -> None:
+    def __init__(
+            self,
+            U: GaugeConfiguration,
+            K: int,
+            act_fun: typing.Callable = default_activation_function
+    ) -> None:
         """
         U: tensor representing a gauge configuration. shape: (batchsize, L1,...Ld, d, Nc, Nc)
         K: cf. eq. 5 of https://arxiv.org/pdf/2012.12901
@@ -197,7 +202,7 @@ class LCNN(torch.nn.Module):
         EU = E @ self.U # eq. 8 of https://arxiv.org/pdf/2012.12901
         return GaugeConfiguration(EU)
     #---
-    def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable = default_activation_function):
+    def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor):
         """
           omega: shape=(N_out,N_in,d,nK)
           alpha: shape=(N_out,N_in1,N_in2)
@@ -214,7 +219,11 @@ class LCNN(torch.nn.Module):
         EU = self.L_exp(W=W_act, beta=beta)
         W_res = LCNN(U=EU, K=self.K).get_W() 
         return W_res
-    def all_layers_with_CB(self, omega_CB: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable = default_activation_function):
+    #---
+    def all_layers_AND_Tr(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable):
+        return suN.get_Tr(self.all_layers(omega=omega,alpha=alpha,beta=beta,act_fun=act_fun))
+    #---
+    def all_layers_with_CB(self, omega_CB: torch.Tensor, beta: torch.Tensor):
         """
           omega: shape=(N_out,N_in,d,nK)
           omega_CB: shape: (N_out, N_in1, N_in2, d, nK) [NOTE: \\mu before k]
@@ -228,6 +237,10 @@ class LCNN(torch.nn.Module):
         EU = self.L_exp(W=W_act, beta=beta)
         W_res = LCNN(U=EU, K=self.K).get_W() 
         return W_res
+    #---
+    def all_layers_with_CB_AND_Tr(self, omega_CB: torch.Tensor, beta: torch.Tensor):
+        return suN.get_Tr(self.all_layers_with_CB(omega_CB=omega_CB,beta=beta,act_fun=act_fun))
+    #---
 #---
                 
 
