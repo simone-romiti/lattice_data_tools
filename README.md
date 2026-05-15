@@ -15,7 +15,7 @@ Feel free to contact me for bug reports, desired features, etc.
 - Extracting information from lattice QCD correlators (effective masses, amplitudes)
 - Generalized Eigenvalue Problem (GEVP) for multi-state correlator matrices
 - Non-linear least squares fits (with errors on both x and y)
-- Nested Sampling algorithm (production [TODO], analysis)
+- Nested Sampling algorithm (production [ TODO, available on [this library](https://github.com/HISKP-LQCD/su2/tree/nested_sampling) ], analysis)
 - Model Averaging (Akaike Information Criterion, error budget of systematic effects)
 - Frequently made plots in lattice QCD works
 - Lattice Convolutional Neural Networks (L-CNNs)
