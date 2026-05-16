@@ -11,13 +11,14 @@ Feel free to contact me for bug reports, desired features, etc.
 `lattice_data_tools` provides building blocks for the full analysis pipeline of lattice Quantum Chromodynamics (QCD) simulations. Starting from raw Monte Carlo configurations, the library covers:
 
 - Statistical analysis of Monte Carlo simulations histories (autocorrelation, resampling, etc.)
-- Resampling: bootstrap samples and jackknifes
-- Extracting information from lattice QCD correlators (effective masses, amplitudes)
-- Generalized Eigenvalue Problem (GEVP) for multi-state correlator matrices
-- Non-linear least squares fits (with errors on both x and y)
-- Nested Sampling algorithm (production [TODO], analysis)
+- Resampling: bootstraps and jackknifes samples.
+- Extracting information from lattice QCD correlators:
+  - Effective masses, Amplitudes
+  - Generalized Eigenvalue Problem (GEVP) for multi-state correlator matrices
+- Non-linear least squares fits (support for errors on both x and y)
+- Nested Sampling algorithm: production [TODO], analysis
 - Model Averaging (Akaike Information Criterion, error budget of systematic effects)
-- Frequently made plots in lattice QCD works
+- Frequently made plots in lattice QCD works.
 - Lattice Convolutional Neural Networks (L-CNNs)
 
 ## Documentation
@@ -35,7 +36,7 @@ The information is thaken from each folder and subfolder, looking at their `__in
 
 ## Tests
 
-When I add a new feature to the library I usually write also a test script to test the feature. 
+When I add a new feature to the library I usually write also a test script to test the feature using synthetic data. For those, please refer to the `./test/` folder.
 This is however not possible with complicated analyses like for the $g-2$ HVP and HLbL, where one needs also the data.
-For those modules that instead can be tested with synthetic data, please refer to the `./test/` folder.
+
 

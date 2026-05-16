@@ -57,9 +57,10 @@ book:
         - links/loops.qmd
         - links/parallel_transport.qmd
         - links/suN.qmd
-    - part: machine_learning
+    - part: machine_learning/index.qmd
       chapters:
         - machine_learning/lcnn.qmd
+        - machine_learning/lcnn_mlp.qmd
     - part: model_averaging/index.qmd
       chapters:
         - model_averaging/IC.qmd
@@ -105,7 +106,6 @@ book:
         - test/gauge_configuration.qmd
         - test/gm2_windows.qmd
         - test/lambda_method.qmd
-        - test/lattice_cnn.qmd
         - test/mf_phys.qmd
         - test/nested_sampling.qmd
         - test/parallelization.qmd
@@ -114,6 +114,8 @@ book:
         - test/test_fitting.qmd
         - test/test_gevp.qmd
         - test/test_jackknife.qmd
+        - test/test_lcnn.qmd
+        - test/test_lcnn_mlp.qmd
         - test/test_model_averaging.qmd
 
 format:

@@ -1,0 +1,175 @@
+---
+title: "Jackknife Sampling"
+author: "Simone Romiti"
+date: last-modified
+format: 
+    html:
+        html-math-method: katex
+        code-fold: true
+        embed-resources: true
+        toc: true
+        fontsize: 14pt
+
+---
+
+# Introduction to Jackknife Sampling
+
+Jackknife sampling is a statistical method that allows to estimate the mean and variance of random variables,
+**based only of the dataset and without knowing the analytic form of the distribution**.
+
+**NOTE**: In contrast to bootstrap sampling, Jackknifes are not biased, i.e. the jackknife mean coincides with the sample mean.
+
+As for the bootstraps, we are interested in jackknifes for the data produced by Monte Carlo integration for lattice calculations.
+
+## Questions and Aswers
+
+1. **Why do we need jackknifes?** Can't we simply use the $N$ values from the Monte Carlo trajectory?
+    - In lattice calculations (but not only), some statemets are true only on mean values.
+      For instance, an euclidean correlator behaves as $\sim e^{-E t}$ only on average. Configuration per configuration it can do all sorts of things.
+      Thus, we build $N_{jkf}$ "pseudo averages", like if they were coming from different simulations done in the same conditions.
+
+
+## Examples
+
+```{python}
+# Importing the necessary libraries
+
+import numpy as np
+from scipy.stats import skewnorm
+import matplotlib.pyplot as plt
+
+import sys
+sys.path.append('../../')
+
+from lattice_data_tools.jackknifes import JackknifeSamples
+
+```
+
+---
+
+Example on **gaussianly distributed data points**:
+
+```{python}
+
+np.random.seed(123)
+
+N = 100000 # number of points
+mu, sigma = 0.0, 3.0
+x = np.random.normal(loc=mu, scale=sigma, size=N) # original dataset
+
+N_jkf = 500 # number of jackknife samples
+x_jkf = JackknifeSamples.from_uncorrelated_confs(x=x, N_jkf=N_jkf)
+
+print("           Mean | sigma")
+print("Exact:    ", mu, "|", sigma)
+print("Jackknife:", x_jkf.mean(), "|", np.sqrt(N)*x_jkf.error())
+```
+
+---
+
+Example on **exponentially distributed datapoints**:
+
+```{python}
+
+lambda_param = 0.5  # rate parameter for an exponential distribution: λ > 0
+
+N = 100000
+y = np.random.exponential(scale=1/lambda_param, size=N)
+
+N_jkf = 500 # number of jackknife samples
+y_jkf = JackknifeSamples.from_uncorrelated_confs(x=y, N_jkf=N_jkf)
+
+# NOTE: we need to compute y**2 first, and then jackknife
+y2_jkf = JackknifeSamples.from_uncorrelated_confs(x=y**2, N_jkf=N_jkf)
+
+# < (y-<y>)^2 > = <y^2> - (<y>)^2
+dy2 = y2_jkf - (y_jkf.mean())**2
+
+print("Variance")
+print("Exact: ", 1/lambda_param**2)
+print("Jackknife:", dy2.mean())
+```
+
+<!-- Example on the **bootstraps and the Central Limit Theorem**: -->
+
+<!-- ```{python} -->
+<!-- np.random.seed(21346) -->
+
+<!-- N = 10000 -->
+<!-- a = 0.0 -->
+<!-- b = 2.4 -->
+<!-- print("Generating", N, "random variables:") -->
+<!-- print("Distribution: Uniform distribution between", a, "and", b) -->
+
+<!-- x = np.random.uniform(low=a, high=b, size=N) -->
+
+<!-- plt.hist(x, bins=int(np.sqrt(N))) -->
+<!-- plt.title("Distribution of the original dataset") -->
+<!-- plt.show() -->
+<!-- plt.close() -->
+
+<!-- N_jkf = 5000 -->
+<!-- x_jkf = JackknifeSamples.from_uncorrelated_confs(x=x, N_jkf=N_jkf) -->
+
+<!-- plt.hist(x_jkf, bins=int(np.sqrt(N_jkf))) -->
+
+<!-- plt.title("Distribution of the bootstrap samples block averages") -->
+<!-- plt.show() -->
+<!-- plt.close() -->
+
+<!-- print("================================") -->
+<!-- print("Average and error on the average") -->
+<!-- print("================================") -->
+<!-- print("           x_avg | dx_avg") -->
+<!-- print("Exact:    ", (a+b)/2, "|", np.sqrt((b-a)**2/12)/np.sqrt(N)) -->
+<!-- print("Jackknife:", x_jkf.mean(), "|", x_jkf.mean()) -->
+<!-- ``` -->
+
+---
+
+Example on **data drawn from a skewed distribution**:
+(we also show what happens if we compute jackknifes before computing functions of the random variables)
+
+```{python}
+import matplotlib.pyplot as plt
+
+import sys
+
+np.random.seed(18236)
+
+N = 10000
+mean = 0.0
+sigma = 2.0
+skewness = 5
+
+# N random variables with skewed distribution
+x = skewnorm.rvs(a=skewness, loc=mean, scale=sigma, size=N)
+sinx2 = np.sin(x**2)
+
+n_bins = int(np.sqrt(N))
+
+pdf_values = skewnorm.pdf(x, a=skewness, loc=mean, scale=sigma)
+
+# variance of sin(x^2)
+sinx2_var = np.var(sinx2)
+
+N_jkf = 1000
+x_jkf = JackknifeSamples.from_uncorrelated_confs(x=x, N_jkf=N_jkf)
+sinx2_jkf = JackknifeSamples.from_uncorrelated_confs(x=np.sin(x**2), N_jkf=N_jkf)
+
+
+plt.hist(sinx2_jkf[1:], bins=int(np.sqrt(N)))
+plt.show()
+plt.close()
+
+# this is not how to do it, one shoud compute sin(x^2) first, and then jackknifes
+# the lines below show that this leads to the wrong prediction
+sinx2_jkf_WRONG = np.sin(x_jkf**2)
+
+print("                              Error on the mean of sin(x^2)")
+print("Original dataset:           ", np.sqrt(sinx2_var/N))
+print("Jackknife:                  ", sinx2_jkf.error())
+print("Jackknife (WRONG APPROACH): ", sinx2_jkf_WRONG.error())
+```
+
+

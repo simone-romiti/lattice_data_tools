@@ -15,4 +15,4 @@ $$y_i = f_i(\vec{x})$$
 - `xiexiyey.py`: $f: \mathbb{R}^n \to \mathbb{R}$ with errors on both the $x_i$ and $y$
 - `xiexiyieyi.py`: $f: \mathbb{R}^n \to \mathbb{R}^m$ with errors on both the $x_i$ and $y_i$. This is an alias for the routine for fitting a trajectory.
 
-**Tests can be found in the `test/` subfolder of the main directory.
+Tests can be found in the `test/` subfolder of the main directory.

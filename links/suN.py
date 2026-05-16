@@ -178,18 +178,26 @@ def get_U_from_theta(theta: torch.Tensor):
     return U
 #---
 
-def apply_coldstart(U: torch.Tensor):
+def get_coldstart(shape: torch.Size, dtype: torch.dtype, device: torch.device, requires_grad: bool) -> torch.Tensor:
     """
-    Initialize gauge links to identity matrices of size Nc \\times Nc
+    Multi-dimensional array of $\mathrm{SU}(N)$ matrices,
+    all equal to $\\mathbb{1}_{N_c \\times N_c}$
     """
-    Nc = U.shape[-1]
-    U.copy_(torch.eye(Nc).expand(*U.shape[0:-2], Nc, Nc))
+    Nc = shape[-1] # number of colors
+    U = torch.eye(Nc, dtype=dtype, device=device, requires_grad=requires_grad).expand(*shape)
+    return U
+
+def apply_coldstart(U: torch.Tensor) -> None:
+    """
+    Initialize gauge links $U_\\mu(x)$ to identity matrices of size Nc \\times Nc
+    """
+    U.copy_(get_coldstart(shape=U.shape, dtype=U.dtype, device=U.device, requires_grad=U.requires_grad))
     return None
 #---
 
-def apply_hotstart(U: torch.Tensor, seed: int):
+def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch.device, requires_grad: bool) -> torch.Tensor:
     """
-    Initialize gauge links to random SU(Nc) elements,
+    Gauge links initialized to random $SU(N_c)$ elements,
     following the recipe of page 11 of https://arxiv.org/pdf/math-ph/0609050
 
     Each link matrix is constructed by:
@@ -202,8 +210,8 @@ def apply_hotstart(U: torch.Tensor, seed: int):
     """
     torch.manual_seed(seed) # seeting the RNG seed for reproducibility
     # generating a random complex matrix
-    imag_part = torch.randn(U.shape, dtype=U.real.dtype, device=U.device) # real part
-    real_part = torch.randn(U.shape, dtype=U.imag.dtype, device=U.device) # imaginary part
+    imag_part = torch.randn(shape, dtype=dtype, device=device, requires_grad=requires_grad) # real part
+    real_part = torch.randn(shape, dtype=dtype, device=device, requires_grad=requires_grad) # imaginary part
     Z = (real_part + 1j*imag_part)/np.sqrt(2.0)
     Q, R = torch.linalg.qr(Z) # QR decomposition: https://en.wikipedia.org/wiki/QR_decomposition
     diag = torch.diagonal(R, dim1=-2, dim2=-1) # (..., Nc) --> extracts R_ii
@@ -211,7 +219,15 @@ def apply_hotstart(U: torch.Tensor, seed: int):
     Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
     Qprime = Q @ Lam
     detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
-    U.copy_(Q / detQprime) # Q is just unitary, we need to impose det(U)==1
+    U = (Q / detQprime) # Q is just unitary, we need to impose det(U)==1
+    return U
+#---
+
+def apply_hotstart(U: torch.Tensor, seed: int):
+    """
+    Initialize gauge links $U_\\mu(x)$ to random $SU(Nc)$ elements
+    """
+    U.copy_(get_hotstart(shape=U.shape, seed=seed, dtype=U.dtype, device=U.device, requires_grad=U.requires_grad))
     return None
 #---
 

@@ -1,5 +1,6 @@
 """
-This file contains the implementation of a prototype of a gauge-invariant wavefunction \\psi(U) (pure-gauge SU(N) theory)
+This file contains the implementation of a prototype of a gauge-invariant wavefunction \\psi(U) (pure-gauge SU(N) theory),
+as a combination of a L-CNN and a MLP networks
 """
 
 
@@ -25,19 +26,21 @@ class LCNN_MLP(torch.nn.Module):
             seed: int,
             act_fun_MLP: typing.Callable = torch.nn.Tanh()
     ):
-        super().__init__()
+        super(LCNN_MLP, self).__init__()
 
         self.LCNN_layer = LCNN_layer
         self.beta  = LCNN_layer.gen_random_beta(N_out=LCNN_N_out, seed=seed)
         self.omega_CB = LCNN_layer.gen_random_omega_CB(N_out=LCNN_N_out, N_in=LCNN_N_in, seed=seed)
+        dtype = self.omega_CB.dtype
+        
         example_output = LCNN_layer.all_layers_with_CB_AND_Tr(omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
         N_input_MLP = example_output.shape[1]
 
         self.MLP_layer = torch.nn.Sequential(
-            torch.nn.Linear(N_input_MLP, N_neurons[0]),
+            torch.nn.Linear(N_input_MLP, N_neurons[0], dtype=dtype),
             act_fun_MLP,
-            *[torch.nn.Sequential(torch.nn.Linear(N_neurons[i], N_neurons[i+1]), act_fun_MLP) for i in range(N_hidden - 2)],
-            torch.nn.Linear(N_neurons[-1], 2)
+            *[torch.nn.Sequential(torch.nn.Linear(N_neurons[i], N_neurons[i+1], dtype=dtype), act_fun_MLP) for i in range(N_hidden - 1)],
+            torch.nn.Linear(N_neurons[-1], 2, dtype=dtype)
         )
 
     def forward(self, U):

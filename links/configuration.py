@@ -158,6 +158,17 @@ class GaugeConfiguration(ColorMatrix):
         """
         return GaugeConfiguration(suN.get_U_from_theta(theta=theta))
     #---
+    @staticmethod
+    def from_hotstart(batchsize: int, L_mu: typing.List[int], Nc: int, seed: int,  dtype: torch.dtype, device: torch.device, requires_grad: bool):
+        """
+        hot configuration of U_\\mu(x) (all identities in SU(Nc)) from the dimensions
+
+        output shape = (batch_size, L1,...,Ld, d, Nc, Nc)
+        """
+        d = len(L_mu)
+        shape = (batchsize, *L_mu, d, Nc, Nc)
+        return GaugeConfiguration(suN.get_hotstart(shape=shape, seed=seed, dtype=dtype, device=device, requires_grad=requires_grad))
+
     def hotstart(self, seed: int) -> None:
         suN.apply_hotstart(U=self, seed=seed)
         return None
@@ -166,6 +177,18 @@ class GaugeConfiguration(ColorMatrix):
         suN.apply_coldstart(U=self, seed=seed)
         return None
     #---
+
+    @staticmethod
+    def from_coldstart(batchsize: int, L_mu: typing.List[int], Nc: int, dtype: torch.dtype, device: torch.device, requires_grad: bool):
+        """
+        cold configuration of U_\\mu(x) (all identities in SU(Nc)) from the dimensions
+
+        output shape = (batch_size, L1,...,Ld, d, Nc, Nc)
+        """
+        d = len(L_mu)
+        shape = (batch_size, *L_mu, d, Nc, Nc)
+        return GaugeConfiguration(suN.get_coldstart(shape=shape, dtype=dtype, device=device, requires_grad=requires_grad))
+    
     def Left_gauge_transformation(self, V: torch.Tensor) -> None:
         """
         Apply a LEFT gauge transformation to this object:

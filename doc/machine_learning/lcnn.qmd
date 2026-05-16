@@ -41,7 +41,7 @@ class LCNN(torch.nn.Module)
 #### `LCNN.__init__` {#lcnn-__init__}
 
 ```python
-def __init__(self, U: GaugeConfiguration, K: int) -> None
+def __init__(self, U: GaugeConfiguration, K: int, act_fun: typing.Callable=default_activation_function) -> None
 ```
 
 U: tensor representing a gauge configuration. shape: (batchsize, L1,...Ld, d, Nc, Nc)
@@ -58,7 +58,7 @@ N_in, N_out: cf. eq. 6 of https://arxiv.org/pdf/2012.12901
 def nK(self)
 ```
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L39){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L45){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -73,7 +73,7 @@ List of locally transforming variables.
 Returns: tensor of shape (batch_size, L1,...,Ld, N_var, Nc,Nc),
   where N_var is the total number of variables considered
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L42){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L48){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -93,7 +93,7 @@ Input:
 Return:
   W_prime: parallel-transported W. shape=(batch_size, L1,...,Ld, d, nK, N_var, Nc,Nc)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L57){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L63){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -107,7 +107,7 @@ Initialize the \omega for Eq. 5 of https://arxiv.org/pdf/2012.12901,
 such that the order of magnitude does not spoil gauge-covariance because of numerical rounding.
 This is achieved by setting them all to be O(1) per component
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L74){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L80){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -125,7 +125,7 @@ Eq. 5 of https://arxiv.org/pdf/2012.12901, using Wprime as in eq. III.11.
 Returns:
   W_conv: shape=(batchsize,L1,...,Ld,N_out,Nc,Nc)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L88){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L94){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -139,7 +139,7 @@ Initialize the \alpha for Eq. 6 of https://arxiv.org/pdf/2012.12901,
 such that the order of magnitude does not spoil gauge-covariance because of numerical rounding.
 This is achieved by setting them all to be O(1) per component
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L101){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L107){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -160,7 +160,7 @@ Input:
 Returns:
   W_bilin: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L112){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L118){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -173,7 +173,7 @@ def gen_random_omega_CB(self, N_out: int, N_in: int, seed: int)
 Initialize \omega_{CB} for eq. 18 of https://arxiv.org/pdf/2401.06481
 shape: (N_out, N_in1, N_in2, d, nK) [NOTE: \mu before k]
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L129){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L135){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -194,7 +194,7 @@ Input:
 Returns:
   W_CB: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L141){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L147){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -208,7 +208,7 @@ Eq. 7 of https://arxiv.org/pdf/2012.12901
 
 NOTE: act_fun() should be scalar-valued --> we use componentwise multiplication
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L158){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L164){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -222,7 +222,7 @@ Initialize the \beta for Eq. 8,9 of https://arxiv.org/pdf/2012.12901.
 The \betas are multiplied componentwise, so we can initialize all of them to be O(1)
 to not spoil gauge-covariance because of numerical rounding.
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L168){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L174){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -239,7 +239,7 @@ U: gauge configuration: (batch, L1, ..., Ld, d, Nc, Nc)
 W: N_ch locally transforming variables (obtained after L_conv()). shape: (batch, L1, ..., Ld, N_ch, Nc, Nc)
 beta: shape: (d,N_ch)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L179){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L185){.source-link style='font-size:0.8em;'}
 
 ---
 
@@ -251,34 +251,54 @@ def L_exp(self, W: LocallyGaugeCovariant, beta: torch.Tensor)
 
 Eq. 8 of https://arxiv.org/pdf/2012.12901
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L194){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L200){.source-link style='font-size:0.8em;'}
 
 ---
 
 #### `LCNN.all_layers` {#lcnn-all_layers}
 
 ```python
-def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable=default_activation_function)
+def all_layers(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor)
 ```
 
 omega: shape=(N_out,N_in,d,nK)
 alpha: shape=(N_out,N_in1,N_in2)
 beta: shape=(d,N_ch)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L200){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L206){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LCNN.all_layers_AND_Tr` {#lcnn-all_layers_and_tr}
+
+```python
+def all_layers_AND_Tr(self, omega: torch.Tensor, alpha: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L224){.source-link style='font-size:0.8em;'}
 
 ---
 
 #### `LCNN.all_layers_with_CB` {#lcnn-all_layers_with_cb}
 
 ```python
-def all_layers_with_CB(self, omega_CB: torch.Tensor, beta: torch.Tensor, act_fun: typing.Callable=default_activation_function)
+def all_layers_with_CB(self, omega_CB: torch.Tensor, beta: torch.Tensor)
 ```
 
 omega: shape=(N_out,N_in,d,nK)
 omega_CB: shape: (N_out, N_in1, N_in2, d, nK) [NOTE: \mu before k]
 beta: shape=(d,N_ch)
 
-[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L217){.source-link style='font-size:0.8em;'}
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L227){.source-link style='font-size:0.8em;'}
+
+---
+
+#### `LCNN.all_layers_with_CB_AND_Tr` {#lcnn-all_layers_with_cb_and_tr}
+
+```python
+def all_layers_with_CB_AND_Tr(self, omega_CB: torch.Tensor, beta: torch.Tensor)
+```
+
+[View source ↗](https://github.com/simone-romiti/lattice_data_tools/blob/main/machine_learning/lcnn.py#L242){.source-link style='font-size:0.8em;'}
 
 ---

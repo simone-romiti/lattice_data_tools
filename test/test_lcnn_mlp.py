@@ -25,29 +25,43 @@ print("===============================")
 device = torch.device("cpu")
 B = 1
 d = 2
-L =10
-Lmu = d*[L]
-K = 6
+L = 5
+L_mu = d*[L]
+K = L//2
 Nc = 3
 t1 = time.time()
 Ng = Nc**2 - 1
 seed = 20260511
 
-torch.manual_seed(seed=seed)
-theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device).type(torch.float64) # random angles in [-\\pi,\\pi]
-U = GaugeConfiguration.from_theta(theta)
+#torch.manual_seed(seed=seed)
+
+U = GaugeConfiguration.from_hotstart(
+    batchsize=B, L_mu=L_mu, Nc=Nc,
+    seed=seed, dtype=torch.complex128, device=device, requires_grad=True)
+
+
 LCNN_layer = LCNN(U=U, K=K)
 
 W = LCNN_layer.get_W()
 
 N_in = W.shape[-3]
-N_out = 25
+N_out = 15
 
-N_hidden = 3
-N_neurons = [20,40,20]
+N_hidden = 2
+N_neurons = [10,10,10]
 
-LCNN_MLP_obj = LCNN_MLP(
-    LCNN_layer=LCNN_layer,
-    LCNN_N_in=N_in, LCNN_N_out=N_out,
-    N_hidden=N_hidden, N_neurons=N_neurons,
-    seed=seed)
+N_epochs = 500
+model = LCNN_MLP(
+    LCNN_layer= LCNN_layer,
+    LCNN_N_in=N_in, LCNN_N_out = N_out,
+    N_hidden = N_hidden, N_neurons = N_neurons,
+    seed = seed,
+    act_fun_MLP = torch.nn.Tanh()
+    )
+
+
+model.train() # training mode
+for i in range(N_epochs):
+    print(f"Epoch: {i}/{N_epochs}")
+    psi = model(U)
+
