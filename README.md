@@ -11,12 +11,12 @@ Feel free to contact me for bug reports, desired features, etc.
 `lattice_data_tools` provides building blocks for the full analysis pipeline of lattice Quantum Chromodynamics (QCD) simulations. Starting from raw Monte Carlo configurations, the library covers:
 
 - Statistical analysis of Monte Carlo simulations histories (autocorrelation, resampling, etc.)
-- Resampling: bootstraps and jackknifes samples.
+- Resampling: bootstrap samples and jackknifes
 - Extracting information from lattice QCD correlators:
   - Effective masses, Amplitudes
   - Generalized Eigenvalue Problem (GEVP) for multi-state correlator matrices
-- Non-linear least squares fits (support for errors on both x and y)
-- Nested Sampling algorithm: production [TODO], analysis
+- Non-linear least squares fits (with errors on both x and y)
+- Nested Sampling algorithm (production [ TODO, available on [this library](https://github.com/HISKP-LQCD/su2/tree/nested_sampling) ], analysis)
 - Model Averaging (Akaike Information Criterion, error budget of systematic effects)
 - Frequently made plots in lattice QCD works.
 - Lattice Convolutional Neural Networks (L-CNNs)
