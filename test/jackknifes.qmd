@@ -57,12 +57,13 @@ N = 100000 # number of points
 mu, sigma = 0.0, 3.0
 x = np.random.normal(loc=mu, scale=sigma, size=N) # original dataset
 
-N_jkf = 500 # number of jackknife samples
+N_jkf = 5000 # number of jackknife samples
 x_jkf = JackknifeSamples.from_uncorrelated_confs(x=x, N_jkf=N_jkf)
 
 print("           Mean | sigma")
-print("Exact:    ", mu, "|", sigma)
-print("Jackknife:", x_jkf.mean(), "|", np.sqrt(N)*x_jkf.error())
+print("Exact                  :", mu, "|", sigma)
+print("Original configurations:", np.mean(x), "|", np.std(x))
+print("Jackknife              :", x_jkf.mean(), "|", np.sqrt(N)*x_jkf.error())
 ```
 
 ---

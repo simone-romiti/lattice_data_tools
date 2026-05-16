@@ -17,7 +17,7 @@ class JackknifeSamples(np.ndarray):
         """
         if func in {np.mean, np.std, np.average}:
             raise TypeError(
-                f"{func.__name__} is disabled for the BootstrapSamples class . "
+                f"{func.__name__} is disabled for the {self.__class__.__name__} class . "
                 f"Use .mean() or .error() instead."
             )
         return super().__array_function__(func, types, args, kwargs)
@@ -36,7 +36,7 @@ class JackknifeSamples(np.ndarray):
         b = int(Ng/N_jkf)
         arr = np.array([np.average(np.delete(x, range(i*b, (i+1)*b)), axis=0) for i in range(N_jkf)])
         res = JackknifeSamples(arr)
-       return res
+        return res
 
     @staticmethod
     def from_correlated_confs(x: np.ndarray, N_jkf: int, output_file=None):
@@ -60,7 +60,6 @@ class JackknifeSamples(np.ndarray):
             tauint = 1 ## uncorrelated data
         #---
         x_uncorr = x[0:Ng:tauint] ## uncorrelated values
-        return JackknifeSamples.from_correlated_confs(x=x_uncorr, N_jkf=N_jkf)
-
+        return JackknifeSamples.from_uncorrelated_confs(x=x_uncorr, N_jkf=N_jkf)
 #---
 
