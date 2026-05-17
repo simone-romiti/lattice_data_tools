@@ -55,7 +55,7 @@ class ColorMatrix(torch.Tensor):
                             
     #---
     def to_tensor(self):
-        return torch.Tensor(self)
+        return self.as_subclass(torch.Tensor)
     
     @property
     def Nc(self):

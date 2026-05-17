@@ -68,7 +68,12 @@ model = LCNN_MLP(
 
 
 LD = LieDerivatives(U=U)
-LD.L_a(a=0,f=model, U=U)
+
+print("First derivative")
+La_fU = lambda U: LD.L_a(a=0, f=model, U=U)
+
+print("Second derivative")
+#L2a_fU = LD.L_a(a=0, f=La_fU, U=U)
 
 # model.train() # training mode
 # for i in range(N_epochs):

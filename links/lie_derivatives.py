@@ -47,12 +47,8 @@ class LieDerivatives:
         self.Ng = U.Ng # number of generators in the algebra
         self.omega_glob = torch.zeros(size=(1,), dtype=U.dtype, device=U.device, requires_grad=True)
         omega_shape = (*U.shape[0:-2],) #, self.Ng) # (batch, x,\\mu) indices
-        # self.omega = torch.zeros(omega_shape, dtype=U.dtype, device=U.device, requires_grad=True)
-        # self.omega = self.omega_glob.expand(size=omega_shape) # 
         self.omega = torch.zeros(size=omega_shape, dtype=U.dtype, device=U.device, requires_grad=True)
         self.tau = suN.get_generators(Nc=self.Nc, device=U.device, dtype=U.dtype)
-        # omega_tau = torch.einsum("...a,aij->...aij", self.omega, tau)
-        #self.V = suN.get_exp_iA(A = - omega_tau) # exp(-i*omega*tau_a)
         self.V = [suN.get_exp_iA(A = - torch.einsum("...,ij->...ij", self.omega, self.tau[a,:,:])) for a in range(self.Ng)] # exp(-i*omega*tau_a)
     #---
 
@@ -62,47 +58,25 @@ class LieDerivatives:
         exp_iD = torch.diag_embed(torch.exp(1j*phase)) #.type(M.type())  # exp(d_k) for each eigenvalue d_k
         Va = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
         Va_U = GaugeConfiguration(Va @ U)
-        f_VaU = torch.Tensor(f(Va_U))
-        for i in range(200):
+        f_VaU = f(Va_U).view(-1)
+        df_domega_list = []
+        batchsize = U.batch_size
+        for i in range(batchsize):
             df_domega_Re = torch.autograd.grad(
-                    f_VaU.view(-1)[i].real,
-                    self.omega,
-                    retain_graph=True
+                    f_VaU[i,0].real,
+                    self.omega[i,...],
+                    create_graph=True
                 )[0]
             df_domega_Im = torch.autograd.grad(
-                    f_VaU.view(-1)[i].imag,
-                    self.omega,
-                    retain_graph=True
+                    f_VaU[i,0].imag,
+                    self.omega[i,...],
+                    create_graph=True
                 )[0]
-
-            print(i, df_domega_Re.shape, df_domega_Im.shape)
-
-        print(d.shape, self.omega.unsqueeze(-1).shape)
-        
-
-        V_a = suN.get_exp_iA(A = -torch.einsum("...,ij->...ij", omega_expanded, self.tau[a]))
-        print(torch.autograd.grad(V_a.view(-1)[0].real, omega)[0])
-        # Now omega -> V_a -> f_VaU is one connected graph
-        print("ciao", f_VaU[0,0].shape, f_VaU[0,0].real.requires_grad)
-        print(torch.autograd.grad(f_VaU[0,0].real, omega)[0])
-        f_real = torch.view_as_real(f_VaU[0,:])[..., 0]  # extracts real part, grad-safe
-        #grad = torch.autograd.grad(f_real, omega)[0]
-        #grad = torch.autograd.grad(f_VaU[0,:], omega)[0]
-        #print(grad)
-
-        # print(self.V[a].shape)
-        # f_VaU = f(self.V[a] @ U)
-        # print(f_VaU[0,:].requires_grad, self.omega_glob.shape)
-        # # f_VaU has shape (batchsize, 1)
-        # # self.omega has shape (batchsize,L1,...,Ld,d)
-        # print(f_VaU[0,:].shape, self.omega_glob.shape)
-        # print(torch.autograd.grad(f_VaU[0,:].real, self.omega_glob)[0])
-        # quit()
-        quit()
-        
-        return f_a
-
-
+            df_domega_list.append(df_domega_Re + 1j*df_domega_Im)
+        #---
+        df_domega = torch.stack(df_domega_list, dim=0)
+        print("shape", df_domega.shape)
+        return df_domega
         
     def R_a(self, f: typing.Callable[[GaugeConfiguration], ColorMatrix], U: GaugeConfiguration):
         pass

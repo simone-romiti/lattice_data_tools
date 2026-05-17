@@ -47,7 +47,7 @@ class LCNN_MLP(torch.nn.Module):
 
     def forward(self, U: GaugeConfiguration):
         after_LCNN = self.LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
-        after_MLP = self.MLP_layer(after_LCNN)
+        after_MLP = self.MLP_layer(after_LCNN.to_tensor())
         return after_MLP
 #-------
     
