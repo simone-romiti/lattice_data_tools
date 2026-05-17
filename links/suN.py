@@ -15,7 +15,6 @@ Special cases:
 
 import torch
 import numpy as np
-from typing import List
 
 def get_Ng(Nc: int) -> int:
     """
@@ -67,7 +66,7 @@ def get_ReTr(W: torch.tensor):
 #---
 
 
-def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype=torch.complex128) -> torch.Tensor:
+def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
     """
     Return the N^2-1 Generalized Gell-Mann matrices as (N,N) complex
     numpy arrays.
@@ -102,7 +101,7 @@ def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype=t
     return GMM
 #---
 
-def get_generators(Nc: int, device: torch.device, dtype=torch.complex128):
+def get_generators(Nc: int, device: torch.device, dtype: torch.dtype):
     """
     Wrapper for the generators of U(1) and SU(Nc) matrices, properly normalized
     The case of U(1) is returned when Nc==1
@@ -130,7 +129,7 @@ def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
     # A_flat = torch.flatten(A, start_dim=0, end_dim=-3)
     # exp_iA = torch.linalg.matrix_exp(1j*A_flat)
     # return torch.reshape(exp_iA, A_shape)
-    d, M = torch.linalg.eigh(A)        # A = M diag(d) M^\\dagger, d real   #documentation:matrix_exp_diag_algorithm
+    d, M = torch.linalg.eigh(A)        # A = M diag(d) M^\\dagger, d real
     exp_iD = torch.diag_embed(torch.exp(1j*d)).type(M.type())  # exp(d_k) for each eigenvalue d_k
     U = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
     return U
@@ -139,7 +138,7 @@ def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
 
 def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     """
-    Build the su(Nc) algebra element  A = \\theta_a \\tau_a  (implicit sum over a)
+    Build the su(Nc) **algebra** element  A = \\theta_a \\tau_a  (implicit sum over a)
 
     Parameters
     ----------
@@ -161,16 +160,16 @@ def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
 
 def get_U_from_theta(theta: torch.Tensor):
     """
-    Element of the group SU(N), computed as U(\\theta_a)=exp(i*theta_a*tau_a)
+    Element of the **group** SU(N), computed as U(\\theta_a)=exp(i*theta_a*tau_a)
 
     Input:
       - theta: array of angles. shape=(...,Ng)
 
     Returns:
-      - U: array of links. shape=(...,Nc,Nc)
+      - `U`: array of links. shape=(...,Nc,Nc)
 
     !!! NOTES !!!:
-      1. The inverse function does not exist, as the map U(\\theta_a) is not injective.
+      1. The inverse function does not exist, as the map $U(\\theta_a)$ is not injective.
       2. For an arbitrary Nc, the different angles have in general different periodicities, so you can't globally restrict to a fixed interval for all of them
     """
     A = get_suN_element_from_theta(theta=theta) # \\theta_a \\tau_a

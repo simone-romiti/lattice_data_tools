@@ -14,14 +14,14 @@ class ColorMatrix(torch.Tensor):
     Tensor representing a set of color matrices:
     (..., Nc, Nc)
     """
-    @staticmethod
-    def __new__(cls, x, *args, **kwargs):
-        instance = torch.Tensor._make_subclass(cls, x)
-        instance._Nc = instance.shape[-1]
-        return instance
+    # @staticmethod
+    # def __new__(cls, x, *args, **kwargs):
+    #     instance = torch.Tensor._make_subclass(cls, x)
+    #     return instance
 
     def __init__(self, x, *args, **kwargs):
-        pass
+        self._data = x
+        self._Nc = x.shape[-1]  # read from x, not instance
 
     def validate(self):
         """Check that it is actually a set of color matrice of size Nc \\times Nc"""
@@ -104,19 +104,18 @@ class GaugeConfiguration(ColorMatrix):
     Tensor representing a gauge configuration of links (in the fundamental representation) with shape:
     (B, L1, ..., Ld, d, Nc, Nc)
     """
-    @staticmethod
-    def __new__(cls, x, *args, **kwargs):
-        instance = super().__new__(cls, x, *args, **kwargs)
-        instance._batch_size = instance.shape[0]
-        instance._lattice_shape = instance.shape[1:-3]
-        instance._d = instance.shape[1 + len(instance._lattice_shape)]
-        instance._Nc = instance.shape[-1]
-        instance.validate()
-        return instance
+    # @staticmethod
+    # def __new__(cls, x, *args, **kwargs):
+    #     instance = torch.Tensor._make_subclass(cls, x)
+    #     return instance
 
     def __init__(self, x, *args, **kwargs):
-        pass
-
+        super().__init__(x, *args, **kwargs)
+        self._batch_size    = x.shape[0]
+        self._lattice_shape = x.shape[1:-3]
+        self._d             = x.shape[-3]
+        self.validate()
+    
     def validate(self):
         """Check that shape == (B, L1, ..., Ld, d, Nc, Nc)"""
         expected = (self.batch_size, *self.lattice_shape, self.n_dims, self.Nc, self.Nc)
@@ -167,7 +166,10 @@ class GaugeConfiguration(ColorMatrix):
         """
         d = len(L_mu)
         shape = (batchsize, *L_mu, d, Nc, Nc)
-        return GaugeConfiguration(suN.get_hotstart(shape=shape, seed=seed, dtype=dtype, device=device, requires_grad=requires_grad))
+        U_tensor = suN.get_hotstart(shape=shape, seed=seed, dtype=dtype, device=device, requires_grad=requires_grad)
+        U =  GaugeConfiguration(U_tensor)
+        return U
+
 
     def hotstart(self, seed: int) -> None:
         suN.apply_hotstart(U=self, seed=seed)
@@ -243,17 +245,21 @@ class LocallyGaugeCovariant(ColorMatrix):
 
     shape: (B, L1, ..., Ld, N_obs, Nc, Nc)
     """
-    @staticmethod
-    def __new__(cls, x, *args, **kwargs):
-        instance = super().__new__(cls, x, *args, **kwargs)
-        instance._batch_size = instance.shape[0]
-        instance._lattice_shape = instance.shape[1:-3]
-        instance._N_obs = instance.shape[-3]
-        instance.validate()
-        return instance
+    # @staticmethod
+    # def __new__(cls, x, *args, **kwargs):
+    #     instance = super().__new__(cls, x, *args, **kwargs)
+    #     instance._batch_size = instance.shape[0]
+    #     instance._lattice_shape = instance.shape[1:-3]
+    #     instance._N_obs = instance.shape[-3]
+    #     instance.validate()
+    #     return instance
 
     def __init__(self, x, *args, **kwargs):
-        pass
+        super().__init__(x, *args, **kwargs)
+        self._batch_size = self.shape[0]
+        self._lattice_shape = self.shape[1:-3]
+        self._N_obs = self.shape[-3]
+        self.validate()
 
     def validate(self):
         """Check that shape == (B, L1, ..., Ld, d, Nc, Nc)"""

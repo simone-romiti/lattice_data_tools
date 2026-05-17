@@ -7,12 +7,15 @@ https://arxiv.org/pdf/2012.12901
 
 import numpy as np
 import torch
+torch.autograd.set_detect_anomaly(True, check_nan=False)
+
 import time
 import sys
 sys.path.append("../../")
 
 # import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration
+from lattice_data_tools.links.lie_derivatives import LieDerivatives
 # from lattice_data_tools.links.loops import WilsonLoopsGenerator
 # from lattice_data_tools.links.parallel_transport import get_ParallelTransporters, get_W_shifted
 from lattice_data_tools.machine_learning.lcnn import LCNN
@@ -23,7 +26,7 @@ print("L-CNN + MLP implementation test")
 print("===============================")
 
 device = torch.device("cpu")
-B = 1
+B = 17
 d = 2
 L = 5
 L_mu = d*[L]
@@ -37,12 +40,13 @@ seed = 20260511
 
 U = GaugeConfiguration.from_hotstart(
     batchsize=B, L_mu=L_mu, Nc=Nc,
-    seed=seed, dtype=torch.complex128, device=device, requires_grad=True)
+    seed=seed, dtype=torch.complex128, device=device,
+    requires_grad=True)
 
 
 LCNN_layer = LCNN(U=U, K=K)
 
-W = LCNN_layer.get_W()
+W = LCNN_layer.get_W(U=U)
 
 N_in = W.shape[-3]
 N_out = 15
@@ -51,7 +55,10 @@ N_hidden = 2
 N_neurons = [10,10,10]
 
 N_epochs = 500
+
+
 model = LCNN_MLP(
+    U = U,
     LCNN_layer= LCNN_layer,
     LCNN_N_in=N_in, LCNN_N_out = N_out,
     N_hidden = N_hidden, N_neurons = N_neurons,
@@ -60,8 +67,11 @@ model = LCNN_MLP(
     )
 
 
-model.train() # training mode
-for i in range(N_epochs):
-    print(f"Epoch: {i}/{N_epochs}")
-    psi = model(U)
+LD = LieDerivatives(U=U)
+LD.L_a(a=0,f=model, U=U)
+
+# model.train() # training mode
+# for i in range(N_epochs):
+#     print(f"Epoch: {i}/{N_epochs}")
+#     psi = model(U)
 
