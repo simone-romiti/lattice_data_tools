@@ -25,8 +25,8 @@ print("===============================")
 print("L-CNN + MLP implementation test")
 print("===============================")
 
-device = torch.device("cpu")
-B = 17
+device = torch.device("cuda")
+B = 7
 d = 2
 L = 5
 L_mu = d*[L]
@@ -43,19 +43,17 @@ U = GaugeConfiguration.from_hotstart(
     seed=seed, dtype=torch.complex128, device=device,
     requires_grad=True)
 
-
 LCNN_layer = LCNN(U=U, K=K)
 
 W = LCNN_layer.get_W(U=U)
 
 N_in = W.shape[-3]
-N_out = 15
+N_out = 5
 
 N_hidden = 2
-N_neurons = [10,10,10]
+N_neurons = [10,10]
 
 N_epochs = 500
-
 
 model = LCNN_MLP(
     U = U,
@@ -67,13 +65,15 @@ model = LCNN_MLP(
     )
 
 
+
 LD = LieDerivatives(U=U)
 
 print("First derivative")
 La_fU = lambda U: LD.L_a(a=0, f=model, U=U)
+La_fU_value = La_fU(U=U)
 
 print("Second derivative")
-#L2a_fU = LD.L_a(a=0, f=La_fU, U=U)
+L2a_fU = LD.L_a(a=0, f=La_fU, U=U)
 
 # model.train() # training mode
 # for i in range(N_epochs):

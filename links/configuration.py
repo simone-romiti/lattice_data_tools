@@ -18,7 +18,7 @@ class ColorMatrix(torch.Tensor):
     # def __new__(cls, x, *args, **kwargs):
     #     instance = torch.Tensor._make_subclass(cls, x)
     #     return instance
-
+    
     def __init__(self, x, *args, **kwargs):
         self._data = x
         self._Nc = x.shape[-1]  # read from x, not instance
@@ -108,7 +108,7 @@ class GaugeConfiguration(ColorMatrix):
     # def __new__(cls, x, *args, **kwargs):
     #     instance = torch.Tensor._make_subclass(cls, x)
     #     return instance
-
+    
     def __init__(self, x, *args, **kwargs):
         super().__init__(x, *args, **kwargs)
         self._batch_size    = x.shape[0]
@@ -166,8 +166,9 @@ class GaugeConfiguration(ColorMatrix):
         """
         d = len(L_mu)
         shape = (batchsize, *L_mu, d, Nc, Nc)
-        U_tensor = suN.get_hotstart(shape=shape, seed=seed, dtype=dtype, device=device, requires_grad=requires_grad)
+        U_tensor = suN.get_hotstart(shape=shape, seed=seed, dtype=dtype, device=device, requires_grad=False)
         U =  GaugeConfiguration(U_tensor)
+        U.requires_grad_(requires_grad=requires_grad) # start tracking grads from here
         return U
 
 
@@ -316,4 +317,5 @@ class LocallyGaugeCovariant(ColorMatrix):
         assert(torch.allclose(W1, W2, atol=atol)) # check that the order of gauge transformations does matter
     #---
 #---
+
 

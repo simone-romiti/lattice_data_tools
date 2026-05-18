@@ -14,17 +14,30 @@ $${ [R_a , U] = + U \\tau_a }$$
 """
 
 import typing
+
 import torch
-from torch.func import jvp
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration, ColorMatrix
 
-
+def get_exp_i_omega_tau_a(omega, tau_a):
+    """
+    Returns `V_a = exp(i*omega*tau_a)` through diagonalization.
+    This is done by diagonalizing `tau_a` only, as `omega` is a scalar.
+    
+    NOTE: This version is safer for autodifferentiation at `omega==0`.
+    """
+    d, M = torch.linalg.eigh(tau_a) # diagonalization of the generator tau_a
+    phase = omega * d # angle phases
+    exp_iphase = torch.exp(1j*phase) # diagonal matrix from diagonal entries
+    exp_iD = torch.diag_embed(exp_iphase) 
+    Va = M @ exp_iD @ M.adjoint()   # V_a = M exp(iD) M^\\dagger
+    return Va
+#---
 
 class LieDerivatives:
     """
-    Class for the calculation of the Lie derivatives (canonical momenta)
+    Class for the calculation of the Lie derivatives (canonical momenta of gauge links)
     """
     def __init__(self, U: GaugeConfiguration):
         """
@@ -45,38 +58,44 @@ class LieDerivatives:
         """
         self.Nc = U.Nc # number of colors of the group
         self.Ng = U.Ng # number of generators in the algebra
-        self.omega_glob = torch.zeros(size=(1,), dtype=U.dtype, device=U.device, requires_grad=True)
-        omega_shape = (*U.shape[0:-2],) #, self.Ng) # (batch, x,\\mu) indices
-        self.omega = torch.zeros(size=omega_shape, dtype=U.dtype, device=U.device, requires_grad=True)
+        # self.omega_glob = torch.zeros(size=(1,), dtype=U.real.dtype, device=U.device, requires_grad=True)
+        self.omega_shape = (*U.shape[0:-2],) #, self.Ng) # (batch, x,\\mu) indices
+        self.omega = torch.zeros(size=self.omega_shape, dtype=U.real.dtype, device=U.device, requires_grad=True)
         self.tau = suN.get_generators(Nc=self.Nc, device=U.device, dtype=U.dtype)
-        self.V = [suN.get_exp_iA(A = - torch.einsum("...,ij->...ij", self.omega, self.tau[a,:,:])) for a in range(self.Ng)] # exp(-i*omega*tau_a)
+        # list of exponentials exp(i*omega*tau_a)
+        self.V = [
+            get_exp_i_omega_tau_a(
+                omega=self.omega.unsqueeze(-1),
+                tau_a=self.tau[a,:,:]
+            ) for a in range(self.Ng)
+        ] # exp(-i*omega*tau_a)
     #---
 
     def L_a(self, a: int, f: typing.Callable, U: GaugeConfiguration):
-        d, M = torch.linalg.eigh(self.tau[a,:,:].expand(*self.omega.shape, self.Nc, self.Nc))
-        phase = self.omega.unsqueeze(-1) * d
-        exp_iD = torch.diag_embed(torch.exp(1j*phase)) #.type(M.type())  # exp(d_k) for each eigenvalue d_k
-        Va = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
-        Va_U = GaugeConfiguration(Va @ U)
-        f_VaU = f(Va_U).view(-1)
-        df_domega_list = []
+        tau_a = self.tau[a]  # (Nc, Nc)
         batchsize = U.batch_size
+        delta = torch.zeros(size=U.shape[1:], dtype=U.real.dtype, device=U.device, requires_grad=True)
+        f_U = f(GaugeConfiguration(U+delta.unsqueeze(0)))
+        df_dU_batchlist = []
         for i in range(batchsize):
-            df_domega_Re = torch.autograd.grad(
-                    f_VaU[i,0].real,
-                    self.omega[i,...],
-                    create_graph=True
-                )[0]
-            df_domega_Im = torch.autograd.grad(
-                    f_VaU[i,0].imag,
-                    self.omega[i,...],
-                    create_graph=True
-                )[0]
-            df_domega_list.append(df_domega_Re + 1j*df_domega_Im)
+            Re_df_dU_i = torch.autograd.grad(
+                outputs=f_U[i,...].real,
+                inputs=delta,
+                create_graph=True,
+                grad_outputs = torch.ones_like(f_U[i,...].real),
+            )[0]
+            Im_df_dU_i = torch.autograd.grad(
+                outputs=f_U[i,...].imag,
+                inputs=delta,
+                create_graph=True,
+                grad_outputs = torch.ones_like(f_U[i,...].imag),
+            )[0]
+            df_dU_batchlist.append(Re_df_dU_i + 1j*Im_df_dU_i)
         #---
-        df_domega = torch.stack(df_domega_list, dim=0)
-        print("shape", df_domega.shape)
-        return df_domega
+        df_dU = torch.stack(df_dU_batchlist, dim=0)
+        tau_aU = torch.tensor(torch.einsum("ij,...jk->ik", tau_a, U))
+        La_fU = - tau_aU * df_dU
+        return La_fU
         
     def R_a(self, f: typing.Callable[[GaugeConfiguration], ColorMatrix], U: GaugeConfiguration):
         pass

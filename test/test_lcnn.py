@@ -33,8 +33,7 @@ Ng = Nc**2 - 1
 seed = 20260504
 
 torch.manual_seed(seed=seed)
-theta = -torch.pi + (2*torch.pi)*torch.rand(B, *Lmu[0:d], d, Ng).to(device).to(torch.float64) # random angles in [-\\pi,\\pi]
-U = GaugeConfiguration.from_theta(theta)
+U = GaugeConfiguration.from_hotstart(batchsize=B, L_mu=Lmu, Nc=Nc, seed=seed,  dtype=torch.complex128, device=device, requires_grad=False)
 lcnn1 = LCNN(U=U, K=K)
 
 V = U.gen_random_gauge_transformation(seed=seed)
@@ -142,7 +141,7 @@ print(f"t6-t5: {t6-t5} sec.")
 N_in = W.shape[-3]
 N_out = 100
 # omega = torch.rand(N_out, N_in, d, 2*K+1) # convolution coefficients
-omega = torch.rand(N_out, N_in, d, 2*K+1, dtype=U.dtype, device=U.device)
+omega = lcnn1.gen_random_omega(Nch_out=N_out, Nch_in=N_in, seed=seed)
 #omega = omega.type(U.type())
 t7 = time.time()
 print(f"t7-t6: {t7-t6} sec.")

@@ -79,13 +79,13 @@ def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype: 
     for j in range(0, Nc):
         for k in range(j+1, Nc):
             # Symmetric GGM: eq. 3 of https://arxiv.org/pdf/0806.1174
-            lam_s = torch.zeros((Nc, Nc), dtype=dtype) 
+            lam_s = torch.zeros((Nc, Nc), dtype=dtype, device=device) 
             lam_s[j, k] = 1.0
             lam_s[k, j] = 1.0
             matrices.append(lam_s)
 
             # Antisymmetric GGM: eq 4 of https://arxiv.org/pdf/0806.1174
-            lam_a = torch.zeros((Nc, Nc), dtype=dtype) 
+            lam_a = torch.zeros((Nc, Nc), dtype=dtype, device=device) 
             lam_a[j, k] = -1j
             lam_a[k, j] = +1j
             matrices.append(lam_a)
@@ -93,7 +93,7 @@ def get_generalized_GellMann_matrices_suN(Nc: int, device: torch.device, dtype: 
     #---
     for l in range(1, Nc):
         # diagonal matrices: eq. 5 of https://arxiv.org/pdf/0806.1174
-        lam_l =  np.sqrt(2.0 / (l * (l + 1))) * torch.diag(torch.tensor(l*[1.0] + [-l] + (Nc-l-1)*[0.0])).type(dtype)
+        lam_l =  np.sqrt(2.0 / (l * (l + 1))) * torch.diag(torch.tensor(l*[1.0] + [-l] + (Nc-l-1)*[0.0])).to(dtype=dtype, device=device)
         matrices.append(lam_l)
     #---
     GMM = torch.stack(matrices, dim=0)
@@ -209,8 +209,8 @@ def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch
     """
     torch.manual_seed(seed) # seeting the RNG seed for reproducibility
     # generating a random complex matrix
-    imag_part = torch.randn(shape, dtype=dtype, device=device, requires_grad=requires_grad) # real part
-    real_part = torch.randn(shape, dtype=dtype, device=device, requires_grad=requires_grad) # imaginary part
+    imag_part = torch.randn(shape, dtype=dtype, device=device) # real part
+    real_part = torch.randn(shape, dtype=dtype, device=device) # imaginary part
     Z = (real_part + 1j*imag_part)/np.sqrt(2.0)
     Q, R = torch.linalg.qr(Z) # QR decomposition: https://en.wikipedia.org/wiki/QR_decomposition
     diag = torch.diagonal(R, dim1=-2, dim2=-1) # (..., Nc) --> extracts R_ii
@@ -219,6 +219,7 @@ def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch
     Qprime = Q @ Lam
     detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
     U = (Q / detQprime) # Q is just unitary, we need to impose det(U)==1
+    U.requires_grad_(requires_grad=requires_grad)
     return U
 #---
 

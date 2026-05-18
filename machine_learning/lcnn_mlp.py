@@ -43,7 +43,7 @@ class LCNN_MLP(torch.nn.Module):
             act_fun_MLP,
             *[torch.nn.Sequential(torch.nn.Linear(N_neurons[i], N_neurons[i+1], dtype=dtype), act_fun_MLP) for i in range(N_hidden - 1)],
             torch.nn.Linear(N_neurons[-1], 1, dtype=dtype)
-        )
+        ).to(device=U.device)
 
     def forward(self, U: GaugeConfiguration):
         after_LCNN = self.LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)

@@ -41,6 +41,7 @@ class LCNN(torch.nn.Module):
         self.Nc = U.Nc
         self.n_dims = U.n_dims
         self.dtype_U = U.dtype
+        self.device_U = U.device
         self.K = K # K <= k <= K in the parallel transporters of length "k"
         self.act_fun = act_fun # activation function
     #---
@@ -58,7 +59,7 @@ class LCNN(torch.nn.Module):
         Plaq = WilsonLoopsGenerator.plaquettes(U=U)
         Poly = WilsonLoopsGenerator.Polyakov_loops(U=U)
         Nc = self.Nc
-        Unity = torch.eye(Nc).expand(*Plaq.shape[0:-3], 1, Nc, Nc)
+        Unity = torch.eye(Nc).expand(*Plaq.shape[0:-3], 1, Nc, Nc).to(U.device)
         res = torch.cat((Plaq, Poly, Unity, Plaq.adjoint(), Poly.adjoint()), dim=-3)
         res_LGC = LocallyGaugeCovariant(res)
         return res_LGC
@@ -91,7 +92,7 @@ class LCNN(torch.nn.Module):
         torch.manual_seed(seed=seed)
         nK = self.nK()
         den = Nch_in * d * nK 
-        omega = (torch.rand(*(Nch_out,Nch_in,d,nK)) / den).to(self.dtype_U)
+        omega = (torch.rand(*(Nch_out,Nch_in,d,nK)) / den).to(self.dtype_U).to(self.device_U)
         return omega
     #---
     def L_conv(self, Wprime: torch.Tensor, omega: torch.Tensor):
@@ -115,7 +116,7 @@ class LCNN(torch.nn.Module):
         """
         torch.manual_seed(seed=seed)
         den = N_in1 * N_in2 
-        alpha = (torch.randn(N_out, N_in1, N_in2) / den).to(self.dtype_U)
+        alpha = (torch.randn(N_out, N_in1, N_in2) / den).to(self.dtype_U).to(self.device_U)
         return alpha
     #---
     def L_Bilin(self, W: LocallyGaugeCovariant, Wprime: LocallyGaugeCovariant, alpha: torch.Tensor):
@@ -144,7 +145,7 @@ class LCNN(torch.nn.Module):
         nK = self.nK()
         d = self.n_dims
         den = (N_in**2) * d * nK
-        omega_CB = (torch.randn(N_out, N_in, N_in, d, nK) / den).to(self.dtype_U)
+        omega_CB = (torch.randn(N_out, N_in, N_in, d, nK) / den).to(self.dtype_U).to(self.device_U)
         return omega_CB
     #---
     def L_CB(self, W: LocallyGaugeCovariant, Wprime: LocallyGaugeCovariant, omega_CB: torch.Tensor):
@@ -182,7 +183,7 @@ class LCNN(torch.nn.Module):
         """
         d = self.n_dims
         torch.manual_seed(seed=seed)
-        beta =  torch.rand(*(d, N_out)).to(self.dtype_U)
+        beta =  torch.rand(*(d, N_out)).to(self.dtype_U).to(self.device_U)
         return beta
     #---
     def exp_ibetaWah(self, W: LocallyGaugeCovariant, beta: torch.Tensor):
