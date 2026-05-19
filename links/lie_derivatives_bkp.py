@@ -15,8 +15,6 @@ $${ [R_a , U] = + U \\tau_a }$$
 
 import typing
 
-from numpy import require
-
 import torch
 
 import lattice_data_tools.links.suN as suN
@@ -33,7 +31,7 @@ def get_exp_i_omega_tau_a(omega, tau_a):
     phase = omega * d # angle phases
     exp_iphase = torch.exp(1j*phase) # diagonal matrix from diagonal entries
     exp_iD = torch.diag_embed(exp_iphase) 
-    Va = M @ exp_iD @ M.adjoint()   # V_a = M exp(iD) M^\dagger
+    Va = M @ exp_iD @ M.adjoint()   # V_a = M exp(iD) M^\\dagger
     return Va
 #---
 
@@ -60,8 +58,10 @@ class LieDerivatives:
         """
         self.Nc = U.Nc # number of colors of the group
         self.Ng = U.Ng # number of generators in the algebra
-        self.omega_shape = (*U.shape[1:-2],) # (L1,...,Ld, d): one omega per link, no batch, no color
+        # self.omega_glob = torch.zeros(size=(1,), dtype=U.real.dtype, device=U.device, requires_grad=True)
+        self.omega_shape = (*U.shape[1:-2],) #, self.Ng) # (batch, x,\\mu) indices
         self.omega = torch.zeros(size=self.omega_shape, dtype=U.real.dtype, device=U.device, requires_grad=True)
+        # self.omega_flat = self.omega.view(-1)
         self.tau = suN.get_generators(Nc=self.Nc, device=U.device, dtype=U.dtype)
         # list of exponentials exp(-i*omega*tau_a)
         self.V = [
@@ -74,46 +74,35 @@ class LieDerivatives:
 
     def L_a_old(self, a: int, f: typing.Callable, U: GaugeConfiguration):
         tau_a = self.tau[a]  # (Nc, Nc)
-        delta = torch.zeros(size=U.shape[1:], dtype=U.dtype, device=U.device, requires_grad=True) # Note: delta should be complex
-
-        # df/dU=df(U+\\delta)/d\\delta |_{\\delta=0}
-        f_U = f(GaugeConfiguration(U + delta.unsqueeze(0)))
-        f_U_flat = f_U.view(-1)
-        N_tot = f_U_flat.numel()
-
-        # d(e^{-i*omega*tau_a})/domega at omega==0
-        A = -1j * torch.einsum("ij,...jk->...ik", tau_a, U.as_subclass(torch.Tensor))
-
-        df_domega_list = []
-        for i in range(N_tot):
+        batchsize = U.batch_size
+        delta = torch.zeros(size=U.shape[1:], dtype=U.dtype, device=U.device, requires_grad=True)
+        f_U = f(GaugeConfiguration(U+delta.unsqueeze(0)))
+        df_dU_batchlist = []
+        for i in range(batchsize):
             Re_df_dU_i = torch.autograd.grad(
-                outputs=f_U_flat[i].real,
+                outputs=f_U[i,...].real,
                 inputs=delta,
                 create_graph=True,
-                retain_graph=True,
+                grad_outputs = torch.ones_like(f_U[i,...].real),
             )[0]
             Im_df_dU_i = torch.autograd.grad(
-                outputs=f_U_flat[i].imag,
+                outputs=f_U[i,...].imag,
                 inputs=delta,
                 create_graph=True,
-                retain_graph=True,
+                grad_outputs = torch.ones_like(f_U[i,...].imag),
             )[0]
-
-            # NOTES:
-            # 1. If w=w1+i*w2, z=z1+iz2 --> w1*z1+w2+z2=Re(w*conj(z))
-            # 2. Here we compute -i d/domega with the chain rule over the real and imaginary parts of the color indices of the arguments
-            # For f=f_1+i*f_2, i=1,2, this gives:
-            # df_i/d_omega|_{omega=0} = dRe(-1j*tau_a*U)_{ab} Re( df_i/dRe(U_{ab})) + dIm(-1j*tau_a*U_{ab}) Im( df_i/dIm(U_{ab}))
-            # = Re( (-1j*tau_a*U) * conj(df_i/dU) )
-            df_re = (Re_df_dU_i.conj() * A[i,:]).sum(dim=(-2, -1)).real
-            df_im = (Im_df_dU_i.conj() * A[i,:]).sum(dim=(-2, -1)).real
-            df_domega_list.append(df_re + 1j * df_im)
+            df_dU_batchlist.append(Re_df_dU_i + 1j*Im_df_dU_i)
         #---
-        df_domega = torch.stack(df_domega_list, dim=0)
-        return -1j * df_domega
+        df_dU = torch.stack(df_dU_batchlist, dim=0)
+        tau_aU = torch.Tensor(torch.einsum("ij,...jk->...ik", tau_a, U))
+        La_fU = - torch.sum(tau_aU * df_dU, dim=(-2,-1))
+        print("ciao", tau_aU.shape, df_dU.shape, La_fU.shape)
+        # print("check", delta.shape, df_dU.shape, tau_aU.shape, La_fU.shape, sep="\n", end="\n----\n")
+        return La_fU
 
-    
     def L_a(self, a: int, f: typing.Callable, U: GaugeConfiguration):
+        tau_a = self.tau[a]  # (Nc, Nc)
+        # batchsize = U.batch_size
         f_U = f(GaugeConfiguration(self.V[a] @ U))
         f_U_flat = f_U.view(-1)
         N_tot = f_U_flat.numel()
@@ -142,4 +131,5 @@ class LieDerivatives:
         # df_domega = componentwise_autodiff(y=f_prime_values, x=self.omega)
         # return +1j*df_domega
 
-        
+
+

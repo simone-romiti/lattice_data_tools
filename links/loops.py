@@ -19,7 +19,7 @@ class WilsonLoopsGenerator:
         """
         assert(U.is_complex()) # check that the gauge configuration is complex-valued
         d = U.shape[-3] # number of dimensions of the lattice
-        plaqs = []
+        plaqs_list = []
         # loop over the positive-oriented plaquettes
         for mu in range(d):
             for nu in range(mu + 1, d):
@@ -29,9 +29,9 @@ class WilsonLoopsGenerator:
                 U_mu_fwd = torch.roll(U_mu, -1, dims=1+nu) # U_\\mu(x + \\nu): shifting **backwards**
                 U_nu_fwd = torch.roll(U_nu, -1, dims=1+mu) # U_\\nu(x + \\mu): shifting **backwards**
                 P_munu = U_mu @ U_nu_fwd @ U_mu_fwd.adjoint() @ U_nu.adjoint() # U_\\mu(x)*U_\\nu(x+\mu)*U_\\mu(x+\\nu)^\dagger*U_\\mu(x)^\dagger
-                plaqs.append(P_munu) # appending the plaquette to the list
+                plaqs_list.append(P_munu) # appending the plaquette to the list
         #-------
-        plaqs = LocallyGaugeCovariant(torch.stack(plaqs, dim=-3))
+        plaqs = LocallyGaugeCovariant(torch.stack(plaqs_list, dim=-3))
         return plaqs
     #---
     @staticmethod
