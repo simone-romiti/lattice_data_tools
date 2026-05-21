@@ -5,7 +5,6 @@ https://arxiv.org/pdf/2012.12901
 
 """
 
-import numpy as np
 import torch
 torch.autograd.set_detect_anomaly(True, check_nan=False)
 
@@ -26,17 +25,17 @@ print("L-CNN + MLP implementation test")
 print("===============================")
 
 device = torch.device("cpu")
-B = 7
-d = 2
-L = 5
+B = 1
+d = 3
+L = 3
 L_mu = d*[L]
-K = L//2
+K = 0 # L//2
 Nc = 3
 t1 = time.time()
 Ng = Nc**2 - 1
 seed = 20260511
 
-#torch.manual_seed(seed=seed)
+torch.manual_seed(seed=seed)
 
 U = GaugeConfiguration.from_hotstart(
     batchsize=B, L_mu=L_mu, Nc=Nc,
@@ -51,7 +50,7 @@ N_in = W.shape[-3]
 N_out = 5
 
 N_hidden = 2
-N_neurons = [10,10]
+N_neurons = [5,5]
 
 N_epochs = 500
 
@@ -92,21 +91,57 @@ print("First derivative")
 
 
 
-#La_fU = lambda U: LD.L_a(a=0, f=model, U=U)
-## La_fU_value = La_fU(U=U)
-# f = model
-def f(U_conf: GaugeConfiguration):
-    P = WilsonLoopsGenerator.plaquettes(U=U_conf)
-    TrP = suN.get_Tr(P)
-    return torch.Tensor(torch.sum(TrP, dim=(-3,-2,-1))).unsqueeze(-1)
 
-print(f(U).shape)
-La_fU_1 = LD.L_a(a=0, f=f, U=U)
-La_fU_2 = LD.L_a_old(a=0, f=f, U=U)
+f_is_real = True
+if f_is_real:
+    f = lambda U: model(U).real
+else:
+    f = lambda U: model(U)
 
-print(La_fU_1.shape, La_fU_2.shape)
+print("f.shape", f(U).shape)
+
+t1 = time.time()
+La_fU_1 = LD.L_a(a=0, f=f, U=U, f_is_real=f_is_real)
+t2 = time.time()
+print(f"t2-t1: {t2-t1} sec.")
+
+t2 = time.time()
+La_fU_2 = LD.L_a_chain_rule(a=0, f=f, U=U, f_is_real=f_is_real)
+t3 = time.time()
+print(f"t3-t2: {t3-t2} sec.")
+
+print("L_a check: ", torch.allclose(La_fU_1 , La_fU_2))
+
+
+t3 = time.time()
+La_squared_per_link = LD.La_squared_per_link(a=0, f=f, U=U, f_is_real=f_is_real)
+t4 = time.time()
+print(f"t4-t3: {t4-t3} sec.")
+
+
+t4 = time.time()
+La_squared_per_link_FD = LD.La_squared_per_link_FD(a=0, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
+t5 = time.time()
+print(f"t5-t4: {t5-t4} sec.")
+
+t5 = time.time()
+La_squared_per_link_FD_fast = LD.La_squared_per_link_FD_fast(a=0, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
+t6 = time.time()
+print(f"t6-t5: {t6-t5} sec.")
+
+print(torch.allclose(La_squared_per_link, La_squared_per_link_FD))
+print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
+print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
+
+
+print(La_squared_per_link, La_squared_per_link_FD, La_squared_per_link_FD_fast)
+print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
+print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
+
+#print(La_fU_1.shape, La_fU_2.shape, La_squared_per_link.shape)
 # print(La_fU_1)
-print(torch.allclose(La_fU_1 , La_fU_2))
+#print(La_squared_per_link.shape)
+
 
 # print("Second derivative")
 # L2a_fU = LD.L_a(a=0, f=La_fU, U=U)

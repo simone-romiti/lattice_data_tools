@@ -92,6 +92,32 @@ def get_ParallelTransporters(U: GaugeConfiguration, K: int):
     return U_PT.as_subclass(torch.Tensor)
 
 
+# def get_W_shifted(U: GaugeConfiguration, W: LocallyGaugeCovariant, K: int):
+#     """
+#     W_\\mu(x+k*\\mu)
+
+#     Input:
+#       U: gauge configuration. shape:  (batch_size,L1,...,Ld,d,Nc,Nc)
+#       U_PT: parallel transporters. shape:  (batch_size,L1,...,Ld,d,2*K+1,Nc,Nc)
+#       W: locally gauge-transforming variables. shape  (batch_size,L1,...,Ld, N_var, Nc,Nc)
+
+#     Returns:
+#       W_shifted: shifted W. shape: (batch_size, L1,...,Ld, N_var, d, nK, Nc, Nc)
+    
+#     """
+#     d = U.shape[-3] # number of dimensions
+#     nK = 2*K+1
+#     new_shape = tuple(W.shape[0:-2]) + (d,nK,) + tuple(W.shape[-2:]) # shape: (batch_size,L1,...,Ld,N_var,d,2*K+1,Nc,Nc) 
+#     W_shifted = torch.empty(new_shape, dtype=W.dtype, device=W.device)
+#     for k in range(-K, K+1):
+#         i_k = k+K
+#         for mu in range(d):
+#             W_shifted[...,mu,i_k,:,:] = torch.roll(W, shifts=-k, dims=1+mu) # W_\\mu(x+k*\\mu)
+#     #-------
+#     return W_shifted
+# #---
+
+
 def get_W_shifted(U: GaugeConfiguration, W: LocallyGaugeCovariant, K: int):
     """
     W_\\mu(x+k*\\mu)
@@ -105,14 +131,14 @@ def get_W_shifted(U: GaugeConfiguration, W: LocallyGaugeCovariant, K: int):
       W_shifted: shifted W. shape: (batch_size, L1,...,Ld, N_var, d, nK, Nc, Nc)
     
     """
-    d = U.shape[-3] # number of dimensions
+    d = U.shape[-3]
     nK = 2*K+1
-    new_shape = tuple(W.shape[0:-2]) + (d,nK,) + tuple(W.shape[-2:]) # shape: (batch_size,L1,...,Ld,N_var,d,2*K+1,Nc,Nc) 
-    W_shifted = torch.empty(new_shape, dtype=W.dtype, device=W.device)
-    for k in range(-K, K+1):
-        i_k = k+K
-        for mu in range(d):
-            W_shifted[...,mu,i_k,:,:] = torch.roll(W, shifts=-k, dims=1+mu) # W_\\mu(x+k*\\mu)
-    #-------
-    return W_shifted
-#---
+    
+    shifts = []
+    for mu in range(d):
+        ks = []
+        for k in range(-K, K+1):
+            ks.append(torch.roll(W, shifts=-k, dims=1+mu))
+        shifts.append(torch.stack(ks, dim=-3))  # stack over nK dim
+    
+    return torch.stack(shifts, dim=-4)  # stack over d dim
