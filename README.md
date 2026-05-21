@@ -10,7 +10,7 @@ Feel free to contact me for bug reports, desired features, etc.
 
 `lattice_data_tools` provides building blocks for the full analysis pipeline of lattice Quantum Chromodynamics (QCD) simulations. Starting from raw Monte Carlo configurations, the library covers:
 
-- Statistical analysis of Monte Carlo simulations histories (autocorrelation, resampling, etc.)
+- Statistical analysis of Monte Carlo simulations histories (autocorrelation, binning, etc.)
 - Resampling: bootstrap samples and jackknifes
 - Extracting information from lattice QCD correlators:
   - Effective masses, Amplitudes
@@ -32,7 +32,7 @@ python generate_doc.py \
 	--github https://github.com/simone-romiti/lattice_data_tools/
 ```
 
-The information is thaken from each folder and subfolder, looking at their `__init___.py` files, as well as in the docstrings of the various `.py` modules.
+The information is taken from each folder and subfolder, looking at their `__init___.py` files, as well as in the docstrings of the various `.py` modules and functions.
 
 ## Tests
 
