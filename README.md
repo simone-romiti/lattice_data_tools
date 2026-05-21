@@ -18,7 +18,8 @@ Feel free to contact me for bug reports, desired features, etc.
 - Non-linear least squares fits (with errors on both x and y)
 - Nested Sampling algorithm (production [ TODO, available on [this library](https://github.com/HISKP-LQCD/su2/tree/nested_sampling) ], analysis)
 - Model Averaging (Akaike Information Criterion, error budget of systematic effects)
-- Frequently made plots in lattice QCD works.
+- Frequently made plots in lattice QCD works
+- Gauge configurations, Canonical Momenta associated to the links
 - Lattice Convolutional Neural Networks (L-CNNs)
 
 ## Documentation
