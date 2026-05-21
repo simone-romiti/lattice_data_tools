@@ -100,13 +100,16 @@ else:
 
 print("f.shape", f(U).shape)
 
+a_generator = Ng//2
+
+
 t1 = time.time()
-La_fU_1 = LD.L_a(a=0, f=f, U=U, f_is_real=f_is_real)
+La_fU_1 = LD.L_a(a=a_generator, f=f, U=U, f_is_real=f_is_real)
 t2 = time.time()
 print(f"t2-t1: {t2-t1} sec.")
 
 t2 = time.time()
-La_fU_2 = LD.L_a_chain_rule(a=0, f=f, U=U, f_is_real=f_is_real)
+La_fU_2 = LD.L_a_chain_rule(a=a_generator, f=f, U=U, f_is_real=f_is_real)
 t3 = time.time()
 print(f"t3-t2: {t3-t2} sec.")
 
@@ -114,18 +117,18 @@ print("L_a check: ", torch.allclose(La_fU_1 , La_fU_2))
 
 
 t3 = time.time()
-La_squared_per_link = LD.La_squared_per_link(a=0, f=f, U=U, f_is_real=f_is_real)
+La_squared_per_link = LD.La_squared_per_link(a=a_generator, f=f, U=U, f_is_real=f_is_real)
 t4 = time.time()
 print(f"t4-t3: {t4-t3} sec.")
 
 
 t4 = time.time()
-La_squared_per_link_FD = LD.La_squared_per_link_FD(a=0, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
+La_squared_per_link_FD = LD.La_squared_per_link_FD(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
 t5 = time.time()
 print(f"t5-t4: {t5-t4} sec.")
 
 t5 = time.time()
-La_squared_per_link_FD_fast = LD.La_squared_per_link_FD_fast(a=0, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
+La_squared_per_link_FD_fast = LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype)
 t6 = time.time()
 print(f"t6-t5: {t6-t5} sec.")
 
