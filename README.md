@@ -32,7 +32,7 @@ python generate_doc.py \
 	--github https://github.com/simone-romiti/lattice_data_tools/
 ```
 
-The information is taken from each folder and subfolder, looking at their `__init___.py` files, as well as in the docstrings of the various `.py` modules and functions.
+The information is taken from each folder and subfolder, looking at their `__init__.py` files, as well as in the docstrings of the various `.py` modules and functions.
 
 ## Tests
 
