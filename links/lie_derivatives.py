@@ -21,46 +21,6 @@ import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration, ColorMatrix
 
 
-def get_laplacian_contributions(f: typing.Callable, x: torch.Tensor):#
-    """
-    Returns the contributions to the Laplacian:
-    `[\\partial^2_{x_1} f, ..., \\partial^n_{x_n}]`
-    where `x` is a flat tensor of `n` elements.
-    """
-    grad_f = torch.func.grad(f) # object to compute the gradient
-    basis = torch.eye(x.numel(), device=x.device)
-
-    def get_diagonal_element(v):
-        """
-        Returns diagonal element of the Hessian as
-
-        $${ H_{ii} = e_i^T \\cdot H \\cdot e_i }$$
-
-        where $e_i$ is the `i-th` vector of the canonical basis.
-
-        """
-        _, jvp_out = torch.func.jvp(grad_f, (x,), (v,)) # Hessian's i-th column
-        H_ii = torch.dot(jvp_out, v)
-        return H_ii
-
-    H_diagonal = torch.vmap(get_diagonal_element)(basis)
-    return H_diagonal
-
-def get_exp_i_omega_tau_a(omega, tau_a):
-    """
-    Returns `V_a = exp(i*omega*tau_a)` through diagonalization.
-    This is done by diagonalizing `tau_a` only, as `omega` is a scalar.
-    
-    NOTE: This version is safer for autodifferentiation at `omega==0`.
-    """
-    d, M = torch.linalg.eigh(tau_a) # diagonalization of the generator tau_a
-    phase = omega * d # angle phases
-    exp_iphase = torch.exp(1j*phase) # diagonal matrix from diagonal entries
-    exp_iD = torch.diag_embed(exp_iphase) 
-    Va = M @ exp_iD @ M.adjoint()   # V_a = M exp(iD) M^\dagger
-    return Va
-#---
-
 class LieDerivatives:
     """
     Class for the calculation of the Lie derivatives (canonical momenta of gauge links)
@@ -88,12 +48,10 @@ class LieDerivatives:
         self.omega = torch.zeros(size=self.omega_shape, dtype=U.real.dtype, device=U.device, requires_grad=True)
         self.tau = suN.get_generators(Nc=self.Nc, device=U.device, dtype=U.dtype)
         # list of exponentials exp(-i*omega*tau_a)
-        self.V = [
-            get_exp_i_omega_tau_a(
-                omega = - self.omega.unsqueeze(-1),
-                tau_a =   self.tau[a,:,:]
-            ) for a in range(self.Ng)
-        ] # exp(-i*omega*tau_a)
+        self.V = suN.get_exp_i_omega_tau_a(
+            omega = - self.omega,
+            tau_a =   self.tau
+        ) # exp(-i*omega*tau_a)
     #---
 
     def L_a_chain_rule(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
@@ -163,7 +121,7 @@ class LieDerivatives:
         """
         Left canonical momenta from the definition of the Lie derivative
         """
-        f_U = f(GaugeConfiguration(self.V[a] @ U))
+        f_U = f(GaugeConfiguration(self.V[...,a,:,:] @ U))
         f_U_flat = f_U.view(-1)
         batch_size = f_U_flat.numel() # f(U) is a scalar --> one component for each batch
         df_domega_list = []
@@ -194,6 +152,7 @@ class LieDerivatives:
         #---
         df_domega = torch.stack(df_domega_list, dim=0)
         return -1j*df_domega
+
     
     def La_squared_per_link(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
         """
@@ -312,6 +271,7 @@ class LieDerivatives:
 
     
     def La_squared_per_link_FD_fast(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):
+        """ Faster implementation of La_squared_per_link_FD() but that uses more memory """
         Nc = U.Nc
         n_links = U.n_links
         batchsize = U.batch_size
@@ -376,6 +336,102 @@ class LieDerivatives:
             laplacian = Re_laplacian + 1j*Im_laplacian
            
         return laplacian.unsqueeze(-1)  # (batchsize, 1)
+
+    # def La_squared_per_link_funcgrad(
+    #     self,
+    #     a: int,
+    #     f: typing.Callable,
+    #     U: GaugeConfiguration,
+    #     f_is_real: bool,
+    # ):
+    #     """
+    #     Computes
+
+    #         sum_i L_a(i)^2 f(U)
+
+    #     using torch.func.grad + jvp.
+
+    #     Requires f(U) -> (batchsize,1)
+    #     and currently supports real-valued outputs.
+    #     """
+
+    #     if not f_is_real:
+    #         raise NotImplementedError(
+    #             "Complex-valued output not implemented yet."
+    #         )
+
+    #     Nc = U.Nc
+    #     n_links = U.n_links
+    #     batchsize = U.batch_size
+
+    #     tau_a = self.tau[a]
+
+    #     d, M = torch.linalg.eigh(tau_a)
+
+    #     U_links = U.as_subclass(torch.Tensor).reshape(
+    #         batchsize,
+    #         n_links,
+    #         Nc,
+    #         Nc,
+    #     )
+
+    #     omega0 = torch.zeros(
+    #         n_links,
+    #         dtype=U.real.dtype,
+    #         device=U.device,
+    #     )
+
+    #     @torch.compile
+    #     def laplacian_single(Ub):
+
+    #         def scalar_function(omega):
+
+    #             phase = omega[:, None] * d[None, :]
+
+    #             exp_iD = torch.diag_embed(
+    #                 torch.exp(-1j * phase)
+    #             )
+
+    #             Va = (
+    #                 M[None]
+    #                 @ exp_iD
+    #                 @ M.adjoint()[None]
+    #             )
+
+    #             VaU = Va @ Ub
+
+    #             cfg = GaugeConfiguration(
+    #                 VaU.reshape((1,) + U.shape[1:])
+    #             )
+
+    #             #
+    #             # grad() requires scalar output
+    #             #
+    #             return f(cfg).real.squeeze()
+
+    #         grad_f = torch.func.grad(scalar_function)
+
+    #         basis = torch.eye(
+    #             n_links,
+    #             dtype=omega0.dtype,
+    #             device=omega0.device,
+    #         )
+
+    #         def diag_entry(v):
+
+    #             _, hv = torch.func.jvp(
+    #                 grad_f,
+    #                 (omega0,),
+    #                 (v,),
+    #             )
+
+    #             return torch.dot(hv, v)
+
+    #         diag = torch.vmap(diag_entry)(basis)
+
+    #         return diag.sum()
+
+    #     return torch.vmap(laplacian_single)(U_links).unsqueeze(-1)
 
     def R_a(self, f: typing.Callable[[GaugeConfiguration], ColorMatrix], U: GaugeConfiguration):
         pass

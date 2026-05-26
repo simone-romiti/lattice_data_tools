@@ -135,6 +135,22 @@ def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
     return U
 #---
 
+def get_exp_i_omega_tau_a(omega, tau_a):
+    """
+    Returns `V_a = exp(i*omega*tau_a)` through diagonalization.
+    This is done by diagonalizing `tau_a` only, as `omega` is a scalar.
+    
+    NOTE: This version is safer for autodifferentiation at `omega==0`.
+    """
+    d, M = torch.linalg.eigh(tau_a) # diagonalization of the generator tau_a
+    phase = torch.einsum("...,ai->...ai", omega, d) # angle phases
+    exp_iphase = torch.exp(1j*phase) # diagonal matrix from diagonal entries
+    exp_iD = torch.diag_embed(exp_iphase)
+    Va = M @ exp_iD @ M.adjoint()  # V_a = M exp(iD) M^\dagger
+    return Va
+#---
+
+
 
 def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
     """
