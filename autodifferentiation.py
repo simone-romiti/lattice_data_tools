@@ -9,6 +9,26 @@ In the rest of the library I use very similar techniques, so this file contains 
 import typing
 import torch
 
+def my_autograd(y: torch.Tensor, x, create_graph: bool, retain_graph: bool = False):
+    """
+    Function to computer autograd without the hassle of splitting into real and imaginary parts manually.
+
+    NOTEs:
+    - autograd works only with scalar inputs `y`
+    - if `x` is complex, this function returns the Wirtinger derivatives of `y` with respect to the components of `x`:
+      `dy/dx = (1/2)*[ dy/d(Re(x)) - i*dy/d(Im(x)) ]`
+    """
+    y_is_real = not torch.is_complex(y)
+    if y_is_real:
+        dy_dx = torch.autograd.grad(y, x, create_graph=create_graph, retain_graph=retain_graph)[0]
+    else:
+        # NOTE: we have to create the graph necessarily because it is needed for the imaginary part
+        Re_dy_dx = torch.autograd.grad(y.real, x, create_graph=True, retain_graph=retain_graph)[0]
+        Im_dy_dx = torch.autograd.grad(y.imag, x, create_graph=create_graph, retain_graph=retain_graph)[0]
+        dy_dx = (Re_dy_dx + 1j*Im_dy_dx)
+    #---
+    return dy_dx
+
 def directional_derivative_hyperdiagonal(f: typing.Callable, x: torch.Tensor):
     """
     Returns the directional derivative along (1,...,1) of a scalar function f(x):

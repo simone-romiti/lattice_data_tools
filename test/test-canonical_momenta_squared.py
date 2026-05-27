@@ -14,7 +14,6 @@ sys.path.append("../../")
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration
-from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
 
 from lattice_data_tools.links.canonical_momenta_squared import WithAutodifferentiation as La2_with_ad
 from lattice_data_tools.links.canonical_momenta_squared import WithFiniteDifferences as La2_with_fd
@@ -48,6 +47,11 @@ t1 = time.time()
 Ng = Nc**2 - 1
 seed = 20260511
 
+print(f"device={device}")
+print(f"batchsize={B}")
+print(f"(L1,...,Ld)={L_mu}")
+print(f"Nc={Nc}, Ng={Ng}")
+
 torch.manual_seed(seed=seed)
 
 U = GaugeConfiguration.from_hotstart(
@@ -77,8 +81,39 @@ model = LCNN_MLP(
     )
 
 
-model.train() # training mode
-for i in range(N_epochs):
-    print(f"Epoch: {i}/{N_epochs}")
-    psi = model(U)
+
+f_is_real = True
+if f_is_real:
+    f = lambda U: model(U).real
+else:
+    f = lambda U: model(U)
+
+print("f.shape", f(U).shape)
+
+
+
+LD = LieDerivatives(U=U)
+
+a_generator = Ng//2
+
+CM2_ad = La2_with_ad(U=U)
+CM2_fd = La2_with_fd(U=U)
+La2_ad = perf(lambda: CM2_ad.get_La2_per_link(f=f, U=U), "La2_ad")
+La2_fd = perf(lambda: CM2_fd.get_La2_per_link(f=f, U=U), "La2_fd")
+La2_fd_fast = perf(lambda: CM2_fd.get_La2_per_link_fast(f=f, U=U), "La2_fd_fast")
+
+print(torch.allclose(La2_ad, La2_fd))
+print(torch.allclose(La2_ad, La2_fd_fast))
+
+
+t3 = time.time()
+La_squared_per_link = perf(lambda: LD.La_squared_per_link(a=a_generator, f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for a={a_generator}")
+La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(a=a_generator, f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for a={a_generator}")
+La_squared_per_link_FD_fast = perf(lambda: LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype), f"FD (fast): sum La_squared for a={a_generator}")
+
+
+print(torch.allclose(La_squared_per_link, La_squared_per_link_FD))
+print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
+print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
+
 

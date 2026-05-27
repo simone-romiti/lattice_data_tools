@@ -116,7 +116,7 @@ class CanonicalMomenta:
                     for i in range(N_tot)
                 ],
                 dim = 0
-                ).reshape(B,2,Ng, *U.shape[1:-2])
+            ).reshape(B,2,Ng, *U.shape[1:-2])
         else:
             Re_df_domega = torch.stack(
                 [
@@ -177,12 +177,12 @@ class CanonicalMomenta:
             3. If `w=w1+i*w2`, `z=z1+iz2` --> `w1*z1+w2+z2=Re(w*conj(z))`    
             4. Here we compute -i d/domega with the chain rule over the real and imaginary parts of the color indices of the arguments
 
-            For `f=f_1+i*f_2`, `i=1,2`, this gives:
+            For `f=f_1+i*f_2`, `i=1,2`, this gives (e.g. for the `L_a`):
 
             $$
-               (df_i/d_\\omega)|_{\\omega=0} =
-               dRe(+1j  U  \\tau_a)_{ab} Re( df_i/dRe(U_{ab})) + dIm(+1j  U  \\tau_a)_{ab} Im( df_i/dIm(U_{ab})) =
-               Re[ (+1j  U  \\tau_a) * conj(df_i/dU) ]
+               (df/d_\\omega)|_{\\omega=0} =
+               dRe(-1j*\\tau_a*U)_{ab} Re( df/dRe(U_{ab})) + dIm(-1j*\\tau_a*U_{ab}) Im( df/dIm(U_{ab})) =
+               Re[ (-1j*\\tau_a*U) * conj(df_i/dU) ]
             $$
         """
         # tau_a = self.tau[a,:,:]  # (Nc, Nc)
@@ -195,10 +195,10 @@ class CanonicalMomenta:
         tau = suN.get_generators(Nc=Nc, device=U.device, dtype=U.dtype) # su(N) algebra generators
         # d(e^{-i*omega*tau_a} U)/domega at omega==0
         # shape: (batchsize, a, ..., Nc, Nc)
-        A_L = -1j * torch.einsum("aij,b...jk->ba...ik", tau, U.as_subclass(torch.Tensor))
+        A_L = -1j * torch.einsum("aij,b...jk->b...aik", tau, U.as_subclass(torch.Tensor))
         # d(U e^{+i*omega*tau_a})/domega at omega==0
         # shape: (batchsize, a, ..., Nc, Nc)
-        A_R = -1j * torch.einsum("b...ij,ajk->ba...ik", U.as_subclass(torch.Tensor), tau)
+        A_R = -1j * torch.einsum("b...ij,ajk->b...aik", U.as_subclass(torch.Tensor), tau)
         A = torch.stack((A_L, A_R), dim=1) # (batchsize, 2, a, ..., Nc, Nc) | "2" is for either Left or Right momentum
 
         batchsize = U.batch_size
@@ -215,7 +215,7 @@ class CanonicalMomenta:
                 dim=0
             )
             # for each batch, sum over color indices
-            df = torch.einsum("b...ij,baD...ij->baD...", df_dU.conj(), A).real # df/domega
+            df = torch.einsum("b...ij,bD...aij->bDa...", df_dU.conj(), A).real # df/domega
         else:
             Re_df_dU = torch.stack(
                 [
@@ -240,8 +240,10 @@ class CanonicalMomenta:
                     for i in range(batchsize)
                 ]
             )
-            df_re = torch.einsum("i...pq,i...pq->i...", Re_df_dU.conj() , A).real # d Re(f)/domega
-            df_im = torch.einsum("i...pq,i...pq->i...", Im_df_dU.conj() , A).real # d Im(f)/domega
-            df = df_re + 1j * df_im # d( Re(f) + i*Im(f) )/domega
+            df_re = torch.einsum("b...ij,bD...aij->bDa...", Re_df_dU.conj(), A).real # d Re(f)/domega
+            df_im = torch.einsum("b...ij,bD...aij->bDa...", Im_df_dU.conj() , A).real # d Im(f)/domega
+            df_domega = df_re + 1j * df_im # d( Re(f) + i*Im(f) )/domega
         #---
-        return -1j * df
+        imag_unit_factor = torch.tensor([-1j, +1j]) # factor in front: `-i` or `+i`
+        momenta = torch.einsum("D,bD...->bD...", imag_unit_factor, df_domega) # shape (B,2,Ng,...), where index 1 is for Left(0) or Right(1) momenta
+        return momenta

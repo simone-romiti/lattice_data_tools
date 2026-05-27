@@ -119,6 +119,9 @@ class GaugeConfiguration(ColorMatrix):
     def validate(self):
         """Check that shape == (B, L1, ..., Ld, d, Nc, Nc)"""
         expected = (self.batch_size, *self.lattice_shape, self.n_dims, self.Nc, self.Nc)
+        nL = len(self.lattice_shape)
+        if nL != self.n_dims:
+            raise ValueError(f"Number of (L1,...,Ld)={nL}. This is different from d={self.n_dims}")
         if tuple(self.shape) != expected:
             raise ValueError(f"Invalid shape {self.shape}, expected {expected}")
     #-------
