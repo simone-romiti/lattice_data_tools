@@ -3,9 +3,6 @@ Implementation of the L-CNN as described in:
 https://arxiv.org/abs/2012.12901
 
 TODO:
-- check gauge covariance on all layers (random gauge transformation)
-- implement Bilinear+Convolution single layer
-- add unity and daggers to the set of W
 - compare with line 198 of https://gitlab.com/openpixi/lge-cnn/-/blob/master/lge_cnn/nn/layers.py?ref_type=heads
 
 """
