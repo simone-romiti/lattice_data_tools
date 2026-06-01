@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 
 
 from lattice_data_tools import uwerr
-from lattice_data_tools import statistics
+from lattice_data_tools import statistics_tools
 
 class BootstrapSamples(np.ndarray):
     def __new__(cls, input_array):
@@ -309,7 +309,7 @@ class ParametricBootstraps:
         assert(rho.shape[0]==rho.shape[1])
         N = x_mean.shape[0] # number of variables
         # rooting \\rho
-        rho_rooted = statistics.rooting(rho, decimals=decimals)
+        rho_rooted = statistics_tools.rooting(rho, decimals=decimals)
         if method=="Cholesky":
             """
             Multivariate with Cholesky decomposition: rho = L @ L^T = L @ 1 @ L^T

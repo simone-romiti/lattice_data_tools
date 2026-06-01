@@ -35,3 +35,8 @@ doc
 
 
 /.quarto/
+
+
+# pytorch models
+*.pt2
+

@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from lattice_data_tools.bootstrap import BootstrapSamples
 from lattice_data_tools.dictionaries import NestedDict
 from lattice_data_tools.model_averaging.IC import valid_IC, with_CDF, get_weights
-import lattice_data_tools.statistics as statistics
+import lattice_data_tools.statistics_tools as statistics_tools
 
 
 def get_unique(L: List) -> List:
@@ -90,7 +90,7 @@ class ModelAverage:
         for i in range(n_models):
             mean_i = np.mean(y1_list[i])
             mean += w1_keys_normalized[i] * mean_i
-            var_i = statistics.variance_from_CDF(y=y1_list[i], P=P1_list[i], seed=seed)
+            var_i = statistics_tools.variance_from_CDF(y=y1_list[i], P=P1_list[i], seed=seed)
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)
         #---

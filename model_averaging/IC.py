@@ -22,7 +22,7 @@ from scipy.stats import norm
 from typing import List, Optional, Literal
 
 from lattice_data_tools.bootstrap import BootstrapSamples
-import lattice_data_tools.statistics as statistics
+import lattice_data_tools.statistics_tools as statistics_tools
 
 valid_IC_list = ["AIC", "AICc", "BIC", "AIC_Ncut", "AIC_BMW"]
 valid_IC = Literal[*valid_IC_list]

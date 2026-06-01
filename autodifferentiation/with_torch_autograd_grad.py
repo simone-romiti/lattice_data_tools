@@ -1,17 +1,11 @@
-"""
-Routines for autodifferentiation.
+""" Routines for autodifferentiation using `torch.autograd.grad` """
 
-Some of these functions are used mainly to bechmark the scaling of certain algorithmic choices.
-In the rest of the library I use very similar techniques, so this file contains a reference for the methodology.
-
-"""
-
-import typing
 import torch
+import typing
 
 def my_autograd(y: torch.Tensor, x, create_graph: bool, retain_graph: bool = False):
     """
-    Function to computer autograd without the hassle of splitting into real and imaginary parts manually.
+    Function to compute autograd without the hassle of splitting into real and imaginary parts manually.
 
     NOTEs:
     - autograd works only with scalar inputs `y`
@@ -31,10 +25,10 @@ def my_autograd(y: torch.Tensor, x, create_graph: bool, retain_graph: bool = Fal
 
 def directional_derivative_hyperdiagonal(f: typing.Callable, x: torch.Tensor):
     """
-    Returns the directional derivative along (1,...,1) of a scalar function f(x):
+     Returns the directional derivative along (1,...,1) of a scalar function f(x):
 
     $${ \\sum_i \\partial_{x_i} f }$$
-    
+
     """
     assert(len(x.shape) == 1)
     N = x.numel()
@@ -50,7 +44,7 @@ def directional_derivative_hyperdiagonal(f: typing.Callable, x: torch.Tensor):
     indices = torch.arange(N)
 
     sum_f = torch.vmap(f_i)(indices).sum()
-    
+
     # \\sum_i \\partial_{x_i} f : directional derivative along (1,...,1)
     dir_der = torch.autograd.grad(sum_f, delta, create_graph=True)
     return dir_der
@@ -59,13 +53,13 @@ def directional_derivative_hyperdiagonal(f: typing.Callable, x: torch.Tensor):
 def get_laplacian(f: typing.Callable, x: torch.Tensor):
     """
     Laplacian of a scalar function f(x):
-    
+
     $${ \\sum_i \\partial_{x_i}^2 f }$$
 
     This is achieved by differentiating, twice and with respect to the same
 
     x: torch.tensor with shape (N,)
-    
+
     """
     assert(len(x.shape) == 1)
     N = x.numel()
@@ -81,10 +75,9 @@ def get_laplacian(f: typing.Callable, x: torch.Tensor):
     indices = torch.arange(N)
 
     sum_f = torch.vmap(f_i)(indices).sum()
-    
+
     # \\sum_i \\partial_{x_i} f(x) : directional derivative along (1,...,1)
     dir_der = torch.autograd.grad(sum_f, delta, create_graph=True)
     # \\sum_i \\partial_{x_i}^2 f(x)
     laplacian = torch.autograd.grad(dir_der, delta, create_graph=True)
     return laplacian
-
