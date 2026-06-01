@@ -17,7 +17,7 @@ from lattice_data_tools.links.configuration import GaugeConfiguration
 
 from lattice_data_tools.links.canonical_momenta_squared import WithAutodifferentiation as La2_with_ad
 from lattice_data_tools.links.canonical_momenta_squared import WithFiniteDifferences as La2_with_fd
-from lattice_data_tools.links.canonical_momenta_squared import La2_Generator
+#from lattice_data_tools.links.canonical_momenta_squared import La2_Generator
 
 from lattice_data_tools.links.lie_derivatives import LieDerivatives
 from lattice_data_tools.links.loops import WilsonLoopsGenerator
@@ -91,8 +91,8 @@ else:
 
 print("f.shape", f(U).shape)
 
-LG = La2_Generator(f=f, U=U, do_compile=True)
-La2_compiled = perf(lambda: LG.df_function(U.as_subclass(torch.Tensor)), "La2 compiled)")
+# LG = La2_Generator(f=f, U=U, do_compile=True)
+# La2_compiled = perf(lambda: LG.df_function(U.as_subclass(torch.Tensor)), "La2 compiled)")
 
 LD = LieDerivatives(U=U)
 

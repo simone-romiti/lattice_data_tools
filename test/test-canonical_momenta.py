@@ -111,14 +111,14 @@ LD = LieDerivatives(U=U)
 
 f_is_real = False
 if f_is_real:
-    f = lambda U: model(U).real
+    f = lambda U: suN.get_ReTr(U).mean().as_subclass(torch.Tensor).expand(1,1) #model(U).real
 else:
-    f = lambda U: model(U)
+    f = lambda U: suN.get_ReTr(U).mean().as_subclass(torch.Tensor).expand(U.shape[0],1) + 0.0*1j #model(U)
 
 print("f.shape", f(U).shape)
 
 
-LaG = La_Generator(f=f, U=U, do_compile=False)
+LaG = La_Generator(f=f, U=U, do_compile=True)
 La_arr_vmap = perf(lambda: LaG.df_function(U=torch.Tensor(U)), "La compiled")
 print(La_arr_vmap.shape)
 
@@ -132,7 +132,7 @@ print(momenta_exp.shape)
 print(momenta_cr.shape)
 
 print("L_a & R_a check: ", torch.allclose(momenta_exp, momenta_cr))
-print("L_a: ", torch.allclose(momenta_exp[:,0,...], La_arr_vmap))
+print("L_a (vmap): ", torch.allclose(momenta_exp[:,0,...], La_arr_vmap))
 
 
 

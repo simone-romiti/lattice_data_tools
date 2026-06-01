@@ -29,7 +29,7 @@ from lattice_data_tools.autodifferentiation.with_torch_func_grad import get_comp
 import torch
 import typing
 
-class La2_Generator:
+# class La2_Generator:
 #     """
 
 #     NOT WORKING: NEEDS ALL REAL NUMBERS
