@@ -234,7 +234,7 @@ def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch
     Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
     Qprime = Q @ Lam
     detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
-    U = (Q / detQprime) # Q is just unitary, we need to impose det(U)==1
+    U = (Q / detQprime).contiguous() # Q is just unitary, we need to impose det(U)==1
     U.requires_grad_(requires_grad=requires_grad)
     return U
 #---

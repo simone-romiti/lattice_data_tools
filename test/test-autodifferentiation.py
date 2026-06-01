@@ -6,18 +6,19 @@ import time
 import sys
 sys.path.append("../../")
 
-from lattice_data_tools.with_pytorch.autodifferentiation import GradientGenerator, LaplacianGenerator
+from lattice_data_tools.autodifferentiation.with_torch_func_grad import GradientGenerator, LaplacianGenerator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+#device = torch.device("cpu")
 print("Device:", device)
 
 
 def f(x):
     #return (x ** 2).sum()
-    A = torch.tanh(torch.cos((x**2).sum()))
+    argument = (x * torch.roll(x, shifts=2, dims=0))
+    A = torch.tanh(torch.cos(argument)).sum()
     B = torch.exp(-torch.abs(torch.sin((x**2).sum())))
-    return A +B
+    return A+B
 
 
 def perf(f, x, N, message):
@@ -30,7 +31,7 @@ def perf(f, x, N, message):
     t1 = time.time()
     print(message, (t1-t0)/N)
 
-n_var = 5*5*5*3*8
+n_var = 5*5*3*8
 print(f"n_var={n_var}")
 torch.manual_seed(20260601)
 x = torch.rand(5, n_var, device=device, dtype=torch.float64)

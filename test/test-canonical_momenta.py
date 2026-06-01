@@ -6,6 +6,7 @@ https://arxiv.org/pdf/2012.12901
 """
 
 import torch
+
 torch.autograd.set_detect_anomaly(True, check_nan=False)
 
 import time
@@ -14,7 +15,7 @@ sys.path.append("../../")
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration
-from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta, La_Generator
 
 from lattice_data_tools.links.canonical_momenta_squared import WithAutodifferentiation as La2_with_ad
 from lattice_data_tools.links.canonical_momenta_squared import WithFiniteDifferences as La2_with_fd
@@ -116,6 +117,12 @@ else:
 
 print("f.shape", f(U).shape)
 
+
+LaG = La_Generator(f=f, U=U, do_compile=False)
+La_arr_vmap = perf(lambda: LaG.df_function(U=torch.Tensor(U)), "La compiled")
+print(La_arr_vmap.shape)
+
+
 #a_generator = Ng//2
 CM = CanonicalMomenta(U=U)
 momenta_exp = perf(lambda: CM.with_exponential(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from exp()")
@@ -125,4 +132,8 @@ print(momenta_exp.shape)
 print(momenta_cr.shape)
 
 print("L_a & R_a check: ", torch.allclose(momenta_exp, momenta_cr))
+print("L_a: ", torch.allclose(momenta_exp[:,0,...], La_arr_vmap))
+
+
+
 
