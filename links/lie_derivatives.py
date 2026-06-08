@@ -116,7 +116,7 @@ class LieDerivatives:
         #---
         df_domega = torch.stack(df_domega_list, dim=0)
         return -1j * df_domega
-    
+
     def L_a(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
         """
         Left canonical momenta from the definition of the Lie derivative
@@ -337,101 +337,6 @@ class LieDerivatives:
            
         return laplacian.unsqueeze(-1)  # (batchsize, 1)
 
-    # def La_squared_per_link_funcgrad(
-    #     self,
-    #     a: int,
-    #     f: typing.Callable,
-    #     U: GaugeConfiguration,
-    #     f_is_real: bool,
-    # ):
-    #     """
-    #     Computes
-
-    #         sum_i L_a(i)^2 f(U)
-
-    #     using torch.func.grad + jvp.
-
-    #     Requires f(U) -> (batchsize,1)
-    #     and currently supports real-valued outputs.
-    #     """
-
-    #     if not f_is_real:
-    #         raise NotImplementedError(
-    #             "Complex-valued output not implemented yet."
-    #         )
-
-    #     Nc = U.Nc
-    #     n_links = U.n_links
-    #     batchsize = U.batch_size
-
-    #     tau_a = self.tau[a]
-
-    #     d, M = torch.linalg.eigh(tau_a)
-
-    #     U_links = U.as_subclass(torch.Tensor).reshape(
-    #         batchsize,
-    #         n_links,
-    #         Nc,
-    #         Nc,
-    #     )
-
-    #     omega0 = torch.zeros(
-    #         n_links,
-    #         dtype=U.real.dtype,
-    #         device=U.device,
-    #     )
-
-    #     @torch.compile
-    #     def laplacian_single(Ub):
-
-    #         def scalar_function(omega):
-
-    #             phase = omega[:, None] * d[None, :]
-
-    #             exp_iD = torch.diag_embed(
-    #                 torch.exp(-1j * phase)
-    #             )
-
-    #             Va = (
-    #                 M[None]
-    #                 @ exp_iD
-    #                 @ M.adjoint()[None]
-    #             )
-
-    #             VaU = Va @ Ub
-
-    #             cfg = GaugeConfiguration(
-    #                 VaU.reshape((1,) + U.shape[1:])
-    #             )
-
-    #             #
-    #             # grad() requires scalar output
-    #             #
-    #             return f(cfg).real.squeeze()
-
-    #         grad_f = torch.func.grad(scalar_function)
-
-    #         basis = torch.eye(
-    #             n_links,
-    #             dtype=omega0.dtype,
-    #             device=omega0.device,
-    #         )
-
-    #         def diag_entry(v):
-
-    #             _, hv = torch.func.jvp(
-    #                 grad_f,
-    #                 (omega0,),
-    #                 (v,),
-    #             )
-
-    #             return torch.dot(hv, v)
-
-    #         diag = torch.vmap(diag_entry)(basis)
-
-    #         return diag.sum()
-
-    #     return torch.vmap(laplacian_single)(U_links).unsqueeze(-1)
 
     def R_a(self, f: typing.Callable[[GaugeConfiguration], ColorMatrix], U: GaugeConfiguration):
         pass

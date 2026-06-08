@@ -239,6 +239,12 @@ class GaugeConfiguration(ColorMatrix):
         self.gauge_transformation(V=self.get_random_gauge_transformation(seed=seed))
         return None
     #---
+    def average_plaquette(self):
+        """ average plaquette for each configuration: shape=(B,) """
+        trP = suN.get_Tr(self).as_subclass(torch.Tensor)
+        idx_sum = tuple(torch.arange(1, len(trP.shape)))
+        avg_trP = trP.mean(dim=idx_sum)
+        return avg_trP
 #---
 
 class LocallyGaugeCovariant(ColorMatrix):

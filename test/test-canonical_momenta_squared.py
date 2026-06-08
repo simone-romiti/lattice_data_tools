@@ -37,13 +37,13 @@ print("===============================")
 print("L-CNN + MLP implementation test")
 print("===============================")
 
-device = torch.device("cpu")
+device = torch.device("cuda")
 B = 1
-d = 2
-L = 3
+d = 3
+L = 2
 L_mu = d*[L]
 K = 0 # L//2
-Nc = 3
+Nc = 2
 t1 = time.time()
 Ng = Nc**2 - 1
 seed = 20260511
@@ -60,15 +60,17 @@ U = GaugeConfiguration.from_hotstart(
     seed=seed, dtype=torch.complex128, device=device,
     requires_grad=True)
 
+n_links = U.n_links
+
 LCNN_layer = LCNN(U=U, K=K)
 
 W = LCNN_layer.get_W(U=U)
 
 N_in = W.shape[-3]
-N_out = 5
+N_out = 2
 
 N_hidden = 2
-N_neurons = [5,5]
+N_neurons = [4,4]
 
 N_epochs = 500
 
@@ -102,11 +104,17 @@ CM2_ad = La2_with_ad(U=U)
 CM2_fd = La2_with_fd(U=U)
 La2_ad = perf(lambda: CM2_ad.get_La2_per_link(f=f, U=U), "La2_ad")
 La2_fd = perf(lambda: CM2_fd.get_La2_per_link(f=f, U=U), "La2_fd")
-La2_fd_fast = perf(lambda: CM2_fd.get_La2_per_link_fast(f=f, U=U), "La2_fd_fast")
+#LaLa = perf(lambda: CM2_ad.with_La_twice(f=f, U=U), "LaLa")
+#La2_fd_fast = perf(lambda: CM2_fd.get_La2_per_link_fast(f=f, U=U), "La2_fd_fast")
 
 print(torch.allclose(La2_ad, La2_fd))
-print(torch.allclose(La2_ad, La2_fd_fast))
+#print(Ng, LaLa.shape, LaLa.sum(dim=-1)/n_links, La2_ad)
+quit()
 
+#print(torch.allclose(LaLa, La2_ad[:,0,...]))
+# print(La2_ad.flatten()[0:10])
+#print(LaLa.flatten()[0:10])
+#print(torch.allclose(La2_ad, La2_fd_fast))
 
 t3 = time.time()
 La_squared_per_link = perf(lambda: LD.La_squared_per_link(a=a_generator, f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for a={a_generator}")

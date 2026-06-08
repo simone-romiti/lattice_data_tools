@@ -15,7 +15,9 @@ sys.path.append("../../")
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration
-from lattice_data_tools.links.canonical_momenta import CanonicalMomenta, La_Generator
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
+
+from lattice_data_tools.links.momenta.with_func_grad import La_Generator
 
 from lattice_data_tools.links.canonical_momenta_squared import WithAutodifferentiation as La2_with_ad
 from lattice_data_tools.links.canonical_momenta_squared import WithFiniteDifferences as La2_with_fd
@@ -39,7 +41,7 @@ print("Testing the Lie derivatives")
 print("===========================")
 
 device = torch.device("cpu")
-B = 1
+B = 50
 d = 3
 L = 3
 L_mu = d*[L]
@@ -111,11 +113,9 @@ LD = LieDerivatives(U=U)
 
 f_is_real = False
 if f_is_real:
-    f = lambda U: suN.get_ReTr(U).mean().as_subclass(torch.Tensor).expand(1,1) #model(U).real
+    f = lambda U: U.average_plaquette().unsqueeze(-1).real
 else:
-    f = lambda U: suN.get_ReTr(U).mean().as_subclass(torch.Tensor).expand(U.shape[0],1) + 0.0*1j #model(U)
-
-print("f.shape", f(U).shape)
+    f = lambda U: U.average_plaquette().unsqueeze(-1)
 
 
 LaG = La_Generator(f=f, U=U, do_compile=True)
@@ -125,13 +125,21 @@ print(La_arr_vmap.shape)
 
 #a_generator = Ng//2
 CM = CanonicalMomenta(U=U)
-momenta_exp = perf(lambda: CM.with_exponential(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from exp()")
-momenta_cr = perf(lambda: CM.with_chain_rule(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from chain rule")
+momenta_exp = perf(lambda: CM.LaRa_with_exp(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from exp()")
+momenta_cr = perf(lambda: CM.LaRa_chain_rule(f=f, U=U), "L_a & R_a arr from chain rule")
+
+
+La_chain_rule_compiled = lambda U_conf: CM.La_chain_rule(f=f, U=U_conf)
+
+
+La_cr = perf(lambda: CM.La_chain_rule(f=f, U=U), "L_a with CR, batched")
 
 print(momenta_exp.shape)
 print(momenta_cr.shape)
+print(La_cr.shape)
 
 print("L_a & R_a check: ", torch.allclose(momenta_exp, momenta_cr))
+print("L_a CR check: ", torch.allclose(momenta_cr[:,0,...], La_cr))
 print("L_a (vmap): ", torch.allclose(momenta_exp[:,0,...], La_arr_vmap))
 
 

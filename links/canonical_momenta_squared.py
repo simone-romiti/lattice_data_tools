@@ -22,105 +22,18 @@ from lattice_data_tools.autodifferentiation.with_torch_autograd_grad import my_a
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
 from lattice_data_tools.links.configuration import GaugeConfiguration
-
-from lattice_data_tools.autodifferentiation.with_torch_func_grad import get_compiled_function
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
 
 
 import torch
 import typing
 
-# class La2_Generator:
-#     """
+def chain_rule(A, dRef, dImf):
+    df_re = (dRef.conj() * A).real # d Re(f)/domega
+    df_im = (dImf.conj() * A).real # d Im(f)/domega
+    return df_re + 1j * df_im # d( Re(f) + i*Im(f) )/domega
 
-#     NOT WORKING: NEEDS ALL REAL NUMBERS
-    
-#     Object generating the momenta L_a^2, for each a and each link in the configuration, and each configuration
-
-#     The output is a lambda function (potentially compiled with `toch.compile`), which takes U in the usual shape (it is flattened iternally)
-
-#     """
-#     def __init__(self, f: typing.Callable, U: GaugeConfiguration, do_compile: bool):
-#         """
-#         Initialize the lambda function for the La^2,
-#         using the function,
-#         an example gauge configuration (for the number of links). U.shape==(batchsize, n_links)
-#         and when `do_compile==True` it is compiled
-#         """
-#         #assert(len(U.shape) == 2) # (batchsize, n_var)
-#         batchsize = U.batch_size # number of configurations
-#         n_links = U.n_links # number of links
-#         Nc = U.Nc # number of colors
-#         Ng = U.Ng # number of generators of the Lie algebra
-#         lattice_shape = U.lattice_shape
-#         device = U.device
-#         dtype = U.dtype
-
-#         # diagonalization of the tau_a
-#         tau = suN.get_generators(Nc=Nc, device=device, dtype=dtype)
-#         tau_eigh = torch.linalg.eigh(tau)
-
-#         Id = torch.eye(Nc).to(device=U.device)
-#         Id_arr = Id.expand(n_links, Nc, Nc)
-#         single_conf_shape = (1,)+U.shape[1:]
-#         def f_shift(tau_a_eigh,  Ub, eps, i):
-#             # d, M = tau_eigh[a]
-#             d, M = tau_a_eigh # torch.linalg.eigh(tau_a)
-#             exp_iD = torch.diag_embed(torch.exp(-1j * eps * d))
-#             Va = M @ exp_iD @ M.adjoint()
-#             ei = (torch.arange(n_links, device=Ub.device) == i).to(Ub.dtype)
-#             Va_arr = Id_arr + torch.einsum("ab,i->iab", Va-Id, ei)
-#             VaU_i = (Va_arr @ Ub).reshape(*single_conf_shape)
-#             res = f(GaugeConfiguration(VaU_i)) # shape==(1,1)
-#             return res[0,0]
-#         def Re_f_shift(tau_a_eigh, Ub, eps, i):
-#             return f_shift(tau_a_eigh, Ub, eps, i).real
-#         def Im_f_shift(tau_a_eigh, Ub, eps, i):
-#             return f_shift(tau_a_eigh, Ub, eps, i).imag
-
-#         Re_df = torch.func.grad(torch.func.grad(Re_f_shift,  argnums=2), argnums=2) # abstract gradient object
-#         Im_df = torch.func.grad(torch.func.grad(Im_f_shift,  argnums=2), argnums=2) # abstract gradient object
-
-#         eps = torch.tensor(0.0, device=device, dtype=U.real.dtype)
-#         idx_links = torch.arange(n_links, device=device)
-#         # idx_generators = torch.arange(Ng, device=device)
-#         La_f_shape = (batchsize,Ng,*(U.shape[1:-2]))
-
-#         def get_compiled(df_i):
-#             # vmap can parallelize only along dimension with the same size
-#             df_i_vmapped = torch.func.vmap(
-#                 torch.func.vmap(
-#                     torch.func.vmap(
-#                         df_i,
-#                         in_dims=(None,None,None, 0) # parallelizing only over the variable index --> \\partial_{eps_i}^2 f(V_eps @ U)
-#                     ),
-#                     in_dims=(0,None,None,None) # parallelize along generators a=1,...,Ng
-#                 ),
-#                 in_dims=(None,0,None,None),  # parallelizing only over the batch index f(x1^{i}, x2^{i},...)
-#             )
             
-#             def uncompiled_df(U_arr):
-#                 U_flat = U_arr.view(batchsize,-1,Nc,Nc)
-#                 res =  df_i_vmapped(tau_eigh, U_flat, eps, idx_links)
-#                 return res.reshape(La_f_shape)
-
-#             dummy = uncompiled_df(U.as_subclass(torch.Tensor))
-#             if do_compile:
-#                 compiled_df_i = get_compiled_function(uncompiled_df, U.as_subclass(torch.Tensor))
-#             else:
-#                 compiled_df_i = uncompiled_df
-#             #---
-#             return compiled_df_i
-
-#         compiled_Re_df = get_compiled(Re_df)
-#         compiled_Im_df = get_compiled(Im_df)
-#         # including the factor "i": (-i*d/d\\epsilon)^2
-#         self._df_function = lambda U: -(compiled_Re_df(U) + 1j*compiled_Im_df(U))
-
-#     @property
-#     def df_function(self):
-#         return self._df_function
-
-
 class WithAutodifferentiation(CanonicalMomenta):
     def __init__(self, U: GaugeConfiguration):
         super().__init__(U=U)
@@ -189,6 +102,67 @@ class WithAutodifferentiation(CanonicalMomenta):
         #---
         return torch.stack(La2_per_link, dim=1)
 
+    def with_La_twice(self, f: typing.Callable, U: GaugeConfiguration) -> torch.Tensor:
+        """
+        La^2 applying La twice and using the chain rule
+
+        The Wirtinger derivatives df/dU are obtained as df/deps|_eps=0, where f=f(U + eps).
+
+        1. I construct the sum s=f(U1+eps1,U2,...)+f(U1,U2+eps2)+...
+        2. I derive with respect to eps_i and multiply componentwise with (V1,V2,...), where V_i = -i*tau_a @ (U_i+eps_i). I get a scalar "r" (which I multiply by "-i").
+        3. I derive "r" with respect to eps_i, and multiply c-wise with the same vector of V_i above. I multiply the final result by "-i".
+        
+        """
+        CM = CanonicalMomenta(U=U)
+        Nc = U.Nc
+        Ng = U.Ng
+        batchsize = U.batch_size
+        n_links = U.n_links
+
+        # use this to have the result per link
+        eps = torch.zeros(
+            size=U.shape, dtype=U.dtype, device=U.device,
+            requires_grad=True
+        )
+        # use this to have the sum over links
+        # eps = torch.tensor(
+        #     0.0+0.0*1j, dtype=U.dtype, device=U.device,
+        #     requires_grad=True
+        # )
+
+        eps_flat = eps.view(-1)
+        # omega = torch.zeros(
+        #     size=U.shape, dtype=U.dtype, device=U.device,
+        #     requires_grad=True
+        # )
+        #omega_flat = omega.view(-1)
+        N = U.numel()
+        U_flat = U.view(-1).as_subclass(torch.Tensor)
+        def fi(i):
+            e_i = (torch.arange(N, device=U.device) == i).to(U.dtype)
+            U_pert_flat = U_flat + eps_flat * e_i  # scalar * one-hot
+            U_pert = U_pert_flat.reshape(batchsize, *U.shape[1:])
+            return f(GaugeConfiguration(U_pert))
+        #---
+        s = torch.vmap(fi, in_dims=0)(torch.arange(N, device=U.device)).sum() + 0.0*1j
+        #assert s.shape == (U.batch_size, 1)
+        dRes_deps = my_autograd(y=s.real, x=eps_flat, create_graph=True,retain_graph=True)
+        dIms_deps = my_autograd(y=s.imag, x=eps_flat, create_graph=True,retain_graph=True) 
+        Up = (U+eps).as_subclass(torch.Tensor)
+        #Up_flat = Up.view(-1) #U_flat+eps_flat
+        tau_Up = torch.einsum("aij,...jk->a...ik", self.tau, Up).reshape(Ng, -1)
+        A = -1j*tau_Up # for all a=1,...,Ng
+        def get_La2f(a: int):
+            A_a = A[a,:]
+            r = -1j*chain_rule(A, dRes_deps, dIms_deps).sum() #  (A_a.conj()*ds_deps).real.sum()
+            dRer_domega = my_autograd(y=r.real, x=eps_flat, create_graph=True,retain_graph=True)
+            dImr_domega = my_autograd(y=r.imag, x=eps_flat, create_graph=True,retain_graph=True)
+            La2_f = -1j*chain_rule(A_a, dRer_domega, dImr_domega).reshape(batchsize,n_links, Nc,Nc).sum(dim=(-2,-1))
+            return La2_f
+        #---
+        # La2_f_arr = torch.vmap(get_La2f, in_dims=0)(A)
+        La2_f_arr = torch.stack([get_La2f(a) for a in range(Ng)], dim=1)
+        return La2_f_arr
         
         
 class WithFiniteDifferences(CanonicalMomenta):
@@ -214,6 +188,7 @@ class WithFiniteDifferences(CanonicalMomenta):
         omega = torch.tensor(0.0, requires_grad=True, dtype=U.real.dtype, device=U.device)
         Va_plus  = self.get_V(+eps+omega, tau=self.tau) # e^{+i eps tau_a}
         Va_minus = self.get_V(-eps+omega, tau=self.tau) # e^{-i eps tau_a}
+        f_unpert = f(U) 
         La2_per_link = []
         for a in range(Ng):
             sum_La_squared = []

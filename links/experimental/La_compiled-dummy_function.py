@@ -7,7 +7,7 @@ The latter is casted into real by extending the last dimension to contain real a
 """
 
 import sys
-sys.path.append("../../")
+sys.path.append("../../../")
 
 import time
 import torch
@@ -18,6 +18,7 @@ import warnings
 from lattice_data_tools.links.configuration import GaugeConfiguration
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.autodifferentiation.with_torch_func_grad import get_compiled_function
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta, La_Generator
 
 
 def complex2ri(x):
@@ -37,7 +38,7 @@ def complex_matmul(A, B):
     return AB
 
 
-class La_Generator:
+class La_Generator_exp:
     """
     Object generating the momenta L_a, for each a and each link in the configuration, and each configuration
 
@@ -76,7 +77,7 @@ class La_Generator:
             exp_iD = torch.stack(
                 [
                     torch.diag_embed(torch.cos(eps * d)),
-                    torch.diag_embed(torch.sin(eps * d))
+                    -torch.diag_embed(torch.sin(eps * d))
                 ],
                 dim=-1)
             Va = complex_matmul(complex_matmul(M, exp_iD), adjoint(M))
@@ -93,11 +94,11 @@ class La_Generator:
             return f_shift(tau_a_eigh, Ub, eps, i, Id_arr)[1]
 
         # grad wrt eps (argnums=2), Id_arr passed explicitly (argnums=4)
-        # Re_df = torch.func.grad(Re_f_shift, argnums=2)
-        # Im_df = torch.func.grad(Im_f_shift, argnums=2)
+        Re_df = torch.func.grad(Re_f_shift, argnums=2)
+        Im_df = torch.func.grad(Im_f_shift, argnums=2)
 
-        Re_df = torch.func.grad(torch.func.grad(Re_f_shift, argnums=2), argnums=2)
-        Im_df = torch.func.grad(torch.func.grad(Im_f_shift, argnums=2), argnums=2)
+        # Re_df = torch.func.grad(torch.func.grad(Re_f_shift, argnums=2), argnums=2)
+        # Im_df = torch.func.grad(torch.func.grad(Im_f_shift, argnums=2), argnums=2)
 
         
         eps = torch.tensor(0.0, device=device, dtype=U.real.dtype)
@@ -170,16 +171,23 @@ def perf(fun, info: str):
 
 
 def f(U_ri):
-    U_xp1 = torch.roll(U_ri, shifts=1, dims=0)
+    U_xp1 = torch.roll(U_ri, shifts=(1,3), dims=(0,2))
     n = len(U_ri.shape)
     res = (U_xp1 * U_ri).sum(dim=tuple(torch.arange(1, n - 1)))
     return res
 
+def f_from_conf(U):
+    ri_res = f(complex2ri(U.as_subclass(torch.Tensor)))
+    cmplx_res = (ri_res[:,0] + 1j*ri_res[:,1]).unsqueeze(-1)
+    return cmplx_res
+
+
+f_is_real = False
 
 B = 1
-L_mu = [3,3]
+L_mu = [2,2]
 Nc = 3
-device = torch.device("cuda")
+device = torch.device("cpu")
 
 U = GaugeConfiguration.from_hotstart(
     batchsize=B, L_mu=L_mu, Nc=Nc,
@@ -191,11 +199,22 @@ U_tens = U.as_subclass(torch.Tensor)
 U_ri = complex2ri(U_tens)
 
 
-LaG = La_Generator(f=f, U=U, do_compile=False)
+LaG = La_Generator_exp(f=f, U=U, do_compile=False)
 La_arr_vmap = perf(lambda: LaG.df_function(U=U_ri), "La not compiled")
 
-LaG_compiled = La_Generator(f=f, U=U, do_compile=True)
+LaG_compiled = La_Generator_exp(f=f, U=U, do_compile=True)
 La_arr_vmap_compiled = perf(lambda: LaG_compiled.df_function(U=U_ri), "La compiled")
 
+## compare with known implementation
 
+CM = CanonicalMomenta(U=U)
+# momenta_exp = perf(lambda: CM.with_exponential(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from exp()")
+momenta_cr = perf(lambda: CM.with_chain_rule(f=f_from_conf, U=U, f_is_real=f_is_real), "L_a & R_a arr from chain rule")
+
+# print(momenta_exp.shape)
+print(momenta_cr.shape)
+print(La_arr_vmap.shape, La_arr_vmap_compiled.shape)
+
+
+print("L_a (vmap) VS chain rule: ", torch.allclose(momenta_cr[:,0,...], La_arr_vmap))
 print(torch.allclose(La_arr_vmap, La_arr_vmap_compiled))
