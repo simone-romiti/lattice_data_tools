@@ -223,6 +223,7 @@ def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch
     Returns: configuration of links. shape: (..., Nc, Nc).
              The first components of the shape are deduced from the shape of U.
     """
+    Nc = shape[-1] # number of colors must be in the last and 2nd to last dimension
     torch.manual_seed(seed) # seeting the RNG seed for reproducibility
     # generating a random complex matrix
     imag_part = torch.randn(shape, dtype=dtype, device=device) # real part
@@ -233,8 +234,8 @@ def get_hotstart(shape: torch.Size, seed: int, dtype: torch.dtype, device: torch
     signs = diag / diag.abs() # R_ii / |R_ii|
     Lam = torch.diag_embed(signs) # shape: (..., Nc, Nc). Eq. 5.12 of https://arxiv.org/pdf/math-ph/0609050
     Qprime = Q @ Lam
-    detQprime = torch.linalg.det(Qprime).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
-    U = (Q / detQprime).contiguous() # Q is just unitary, we need to impose det(U)==1
+    detQprime = (torch.linalg.det(Qprime)**(1/Nc)).unsqueeze(-1).unsqueeze(-1) # det(Q). reshaping in order to combine with Q later
+    U = (Qprime / detQprime).contiguous() # Q is just unitary, we need to impose det(U)==1
     U.requires_grad_(requires_grad=requires_grad)
     return U
 #---

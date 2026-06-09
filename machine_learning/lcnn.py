@@ -53,8 +53,8 @@ class LCNN(torch.nn.Module):
           where N_var is the total number of variables considered
         
         """
-        Plaq = WilsonLoopsGenerator.plaquettes(U=U)
-        Poly = WilsonLoopsGenerator.Polyakov_loops(U=U)
+        Plaq = LocallyGaugeCovariant(WilsonLoopsGenerator.plaquettes(U=U))
+        Poly = LocallyGaugeCovariant(WilsonLoopsGenerator.Polyakov_loops(U=U))
         Nc = self.Nc
         Unity = torch.eye(Nc).expand(*Plaq.shape[0:-3], 1, Nc, Nc).to(U.device)
         res = torch.cat((Plaq, Poly, Unity, Plaq.adjoint(), Poly.adjoint()), dim=-3)

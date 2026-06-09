@@ -1,6 +1,8 @@
+"""
+Routines for the generation of Wilson loops from gauge links
+"""
 
 import torch
-from lattice_data_tools.links.configuration import GaugeConfiguration, LocallyGaugeCovariant
 
 class WilsonLoopsGenerator:
     """
@@ -11,7 +13,7 @@ class WilsonLoopsGenerator:
       where N_c is the number of colors.
     """
     @staticmethod
-    def plaquettes(U: GaugeConfiguration):
+    def plaquettes(U):
         """
         Plaquettes (as loops, no trace or real part), assuming periodic boundary conditions on a L^d lattice.
 
@@ -31,11 +33,11 @@ class WilsonLoopsGenerator:
                 P_munu = U_mu @ U_nu_fwd @ U_mu_fwd.adjoint() @ U_nu.adjoint() # U_\\mu(x)*U_\\nu(x+\mu)*U_\\mu(x+\\nu)^\dagger*U_\\mu(x)^\dagger
                 plaqs_list.append(P_munu) # appending the plaquette to the list
         #-------
-        plaqs = LocallyGaugeCovariant(torch.stack(plaqs_list, dim=-3))
+        plaqs = torch.stack(plaqs_list, dim=-3)
         return plaqs
     #---
     @staticmethod
-    def Polyakov_loops(U: GaugeConfiguration):
+    def Polyakov_loops(U):
         """
         Polyakov loops for each direction mu.
 
@@ -54,7 +56,7 @@ class WilsonLoopsGenerator:
             poly_list.append(P)
         #---
         Poly = torch.stack(poly_list, dim=-3)
-        return LocallyGaugeCovariant(Poly)
+        return Poly
 
 
 

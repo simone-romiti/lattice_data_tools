@@ -23,6 +23,7 @@ from lattice_data_tools.links.configuration import GaugeConfiguration
 from lattice_data_tools.autodifferentiation.with_torch_autograd_grad import my_autograd
 
 
+
 def chain_rule_contributions(A, dRef_dU, dImf_dU):
     """
     Chain rule contributions for the derivative of a function `f(U(omega)) = Re(f) + 1j*Im(f)`:
@@ -198,7 +199,10 @@ class CanonicalMomenta:
         -i * (-i*\\tau_a U)_{ab} (\\partial f / \\partial U_{ab})
         $$
 
-        Note: `df/dU=df(U+\\delta)/d\\delta |_{\\delta=0}`
+        Notes:
+
+        - `df/dU=df(U+\\delta)/d\\delta |_{\\delta=0}`
+        - This function returns the same result as the self.LaRa_chain_rule(), but without the overhead of computing the R_a too.
         """
         delta = torch.zeros(size=U.shape, dtype=U.dtype, device=U.device, requires_grad=True) # Note: delta should be complex
         f_U = f(GaugeConfiguration(U + delta)) # f(U+delta)
@@ -206,8 +210,8 @@ class CanonicalMomenta:
         # because f(U) acts configuration-wise
         f_U_flat = f_U.sum() + 0.0*1j # flattened view
         A = -1j * torch.einsum("aij,B...jk->Ba...ik", self.tau, U.as_subclass(torch.Tensor)) # d(e^{-i*omega*tau_a})/domega at omega==0
-        dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=False).unsqueeze(1)
-        dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=False).unsqueeze(1)
+        dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=True, retain_graph=True).unsqueeze(1)
+        dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=True, retain_graph=True).unsqueeze(1)
         df_domega = chain_rule_contributions(A=A, dRef_dU=dRef_dU, dImf_dU=dImf_dU).sum(dim=(-2,-1)) # summing over the color components
         La_f = -1j * df_domega
         return La_f

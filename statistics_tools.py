@@ -79,3 +79,26 @@ def rooting(A: np.ndarray, decimals: float = 15):
     A_rooted = M @ D @ M.T # sqrt(rho @ rho.T)
     return A_rooted
 
+
+def control_variates(a: np.ndarray, b: np.ndarray, mean_b: float, var_b: float, cov_ab: float):
+    """
+    Variance reduction on the variable `a` using the Control variates method:
+    https://en.wikipedia.org/wiki/Control_variates
+
+    Input:
+    a: statistical sample of the variable `a` for which we want to reduce the variance
+    b: statistical sample of control variable
+    mean_b: exact value of the mean of `b`
+    var_b: variance of `b`
+    cov_ab: covariance between `a` and `b`
+
+    Return:
+
+    a_new: 1-d array with a less-noisy sample of `a`
+
+    """
+    assert(a.shape == b.shape and len(a.shape)==1)
+    c = - cov_ab / var_b # optimal choice that minizes var(a_new)
+    a_new = a + c*(b - mean_b) # mean(a)=mean(a_new), but var(a_new)<=var(a)
+    return a_new
+

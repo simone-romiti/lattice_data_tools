@@ -7,6 +7,7 @@ import typing
 
 
 import lattice_data_tools.links.suN as suN
+from lattice_data_tools.links.loops import WilsonLoopsGenerator
 
 
 class ColorMatrix(torch.Tensor):
@@ -179,8 +180,8 @@ class GaugeConfiguration(ColorMatrix):
         suN.apply_hotstart(U=self, seed=seed)
         return None
     #---
-    def coldstart(self, seed: int) -> None:
-        suN.apply_coldstart(U=self, seed=seed)
+    def coldstart(self) -> None:
+        suN.apply_coldstart(U=self)
         return None
     #---
 
@@ -192,7 +193,7 @@ class GaugeConfiguration(ColorMatrix):
         output shape = (batch_size, L1,...,Ld, d, Nc, Nc)
         """
         d = len(L_mu)
-        shape = (batch_size, *L_mu, d, Nc, Nc)
+        shape = (batchsize, *L_mu, d, Nc, Nc)
         return GaugeConfiguration(suN.get_coldstart(shape=shape, dtype=dtype, device=device, requires_grad=requires_grad))
     
     def Left_gauge_transformation(self, V: torch.Tensor) -> None:
@@ -239,12 +240,33 @@ class GaugeConfiguration(ColorMatrix):
         self.gauge_transformation(V=self.get_random_gauge_transformation(seed=seed))
         return None
     #---
-    def average_plaquette(self):
+    def plaquettes(self):
+        """ plaquettes: shape = (B, L1, ..., Ld, n_plaq, Nc, Nc)"""
+        P = WilsonLoopsGenerator.plaquettes(U=self)
+        return P
+    #---
+    def average_Tr_plaquette(self):
         """ average plaquette for each configuration: shape=(B,) """
-        trP = suN.get_Tr(self).as_subclass(torch.Tensor)
+        P = self.plaquettes()
+        trP = suN.get_Tr(P).as_subclass(torch.Tensor)
         idx_sum = tuple(torch.arange(1, len(trP.shape)))
         avg_trP = trP.mean(dim=idx_sum)
         return avg_trP
+
+    def average_ReTr_plaquette(self):
+        return self.average_Tr_plaquette().real
+
+    def Wilson_action(self, beta):
+        """
+        Wilson action as -(beta/Nc) \\sum_{\\box} U_{\\box}
+        """
+        P = self.plaquettes()
+        trP = suN.get_Tr(P).as_subclass(torch.Tensor)
+        idx_sum = tuple(torch.arange(1, len(trP.shape)))
+        sum_trP = trP.sum(dim=idx_sum)
+        sum_ReTr = sum_trP.real
+        S = -(beta/self.Nc) * sum_ReTr
+        return S
 #---
 
 class LocallyGaugeCovariant(ColorMatrix):
