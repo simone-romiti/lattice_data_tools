@@ -125,18 +125,18 @@ class CanonicalMomenta:
         """
         Ng = U.Ng # number of generators in the Lie algebra
         B = U.batch_size # number of configurations
-        omega_shape = (B, 2, Ng, *U.shape[1:-2],) # (B, 2, L1,...,Ld, d): one omega per configuration, Left/right, link - no color index
+        omega_shape = (B, 2, *U.shape[1:-2], Ng) # (B, 2, L1,...,Ld, d, Ng): one omega per configuration, Left/right, link - no color index
         omega = torch.zeros(size=omega_shape, dtype=U.real.dtype, device=U.device, requires_grad=True)
 
         d, M = torch.linalg.eigh(self.tau) # diagonalization of the generators tau_a
-        phase = torch.einsum("BDa...,ai->BDa...i", -omega, d) # angle phases
+        phase = torch.einsum("BD...a,ai->BD...ai", -omega, d) # angle phases
         exp_iphase = torch.exp(1j*phase) # diagonal matrix from diagonal entries
         exp_iD = torch.diag_embed(exp_iphase)
-        V = torch.einsum("aij,BDa...jk,akm->BDa...im", M, exp_iD , M.adjoint())  # V_a = M exp(iD) M^\dagger
+        V = torch.einsum("aij,BD...ajk,akm->BD...aim", M, exp_iD , M.adjoint())  # V_a = M exp(iD) M^\dagger
         U_prime = torch.stack(
             [
-                torch.einsum("Ba...ij,B...jk->Ba...ik", V[:,0,...], U),
-                torch.einsum("B...ij,Ba...jk->Ba...ik", U, V[:,1,...])
+                torch.einsum("B...aij,B...jk->Ba...ik", V[:,0,...], U),
+                torch.einsum("B...ij,B...ajk->Ba...ik", U, V[:,1,...])
             ],
             dim=1
         ).view(*( (B*2*Ng,) + U.shape[1:] )) # flattening non-geometric dimensions
@@ -164,15 +164,16 @@ class CanonicalMomenta:
         """
         # d(e^{-i*omega*tau_a} U)/domega at omega==0
         # shape: (batchsize, a, ..., Nc, Nc)
-        A_L = -1j * torch.einsum("aij,B...jk->Ba...ik", self.tau, U.as_subclass(torch.Tensor))
+        A_L = -1j * torch.einsum("aij,B...jk->B...aik", self.tau, U.as_subclass(torch.Tensor))
         # d(U e^{+i*omega*tau_a})/domega at omega==0
         # shape: (batchsize, a, ..., Nc, Nc)
-        A_R = -1j * torch.einsum("B...ij,ajk->Ba...ik", U.as_subclass(torch.Tensor), self.tau)
+        A_R = -1j * torch.einsum("B...ij,ajk->B...aik", U.as_subclass(torch.Tensor), self.tau)
         A = torch.stack((A_L, A_R), dim=1) # (batchsize, 2, a, ..., Nc, Nc) | "2" is for either Left or Right momentum
 
         f_U_flat = f_U.squeeze(dim=1)
-        dRef_dU = my_autograd(y=f_U_flat.real, x=delta, grad_outputs=torch.ones_like(f_U_flat.real), create_graph=False).unsqueeze(1).unsqueeze(1)
-        dImf_dU = my_autograd(y=f_U_flat.imag, x=delta, grad_outputs=torch.ones_like(f_U_flat.imag), create_graph=False).unsqueeze(1).unsqueeze(1)
+        dRef_dU = my_autograd(y=f_U_flat.real, x=delta, grad_outputs=torch.ones_like(f_U_flat.real), create_graph=True, retain_graph=True).unsqueeze(1).unsqueeze(-3)
+        dImf_dU = my_autograd(y=f_U_flat.imag, x=delta, grad_outputs=torch.ones_like(f_U_flat.imag), create_graph=True, retain_graph=True).unsqueeze(1).unsqueeze(-3)
+
         df_domega = chain_rule_contributions(A=A, dRef_dU=dRef_dU, dImf_dU=dImf_dU).sum(dim=(-2,-1)) # summing over the color components
 
         imag_unit_factor = torch.tensor([-1j, +1j], device=U.device) # factor in front: `-i` or `+i`
@@ -209,9 +210,9 @@ class CanonicalMomenta:
         # NOTE: I can differentiate the sum over configurations
         # because f(U) acts configuration-wise
         f_U_flat = f_U.sum() + 0.0*1j # flattened view
-        A = -1j * torch.einsum("aij,B...jk->Ba...ik", self.tau, U.as_subclass(torch.Tensor)) # d(e^{-i*omega*tau_a})/domega at omega==0
-        dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=True, retain_graph=True).unsqueeze(1)
-        dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=True, retain_graph=True).unsqueeze(1)
+        A = -1j * torch.einsum("aij,B...jk->B...aik", self.tau, U.as_subclass(torch.Tensor)) # d(e^{-i*omega*tau_a})/domega at omega==0
+        dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=True, retain_graph=True).unsqueeze(-3)
+        dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=True, retain_graph=True).unsqueeze(-3)
         df_domega = chain_rule_contributions(A=A, dRef_dU=dRef_dU, dImf_dU=dImf_dU).sum(dim=(-2,-1)) # summing over the color components
         La_f = -1j * df_domega
         return La_f

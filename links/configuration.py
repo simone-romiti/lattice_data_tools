@@ -126,6 +126,15 @@ class GaugeConfiguration(ColorMatrix):
         if tuple(self.shape) != expected:
             raise ValueError(f"Invalid shape {self.shape}, expected {expected}")
     #-------
+    def save(self, path: str):
+        """ saving batch of configurations (e.g. to `.pt` file )"""
+        torch.save(self.as_subclass(torch.Tensor), path)
+
+    @staticmethod
+    def load(path: str):
+        """ loading configuration (e.g. from a `.pt` file)"""
+        return GaugeConfiguration(torch.load(f=path))
+
     @property
     def batch_size(self):
         return self._batch_size

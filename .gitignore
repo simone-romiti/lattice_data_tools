@@ -38,5 +38,6 @@ doc
 
 
 # pytorch models
+*.pt
 *.pt2
 

@@ -41,7 +41,7 @@ print("Testing the Lie derivatives")
 print("===========================")
 
 device = torch.device("cpu")
-B = 50
+B = 5
 d = 3
 L = 3
 L_mu = d*[L]
@@ -111,16 +111,17 @@ LD = LieDerivatives(U=U)
 #                         torch.allclose(La_gU, La_gU_old)
 #                     )
 
+
 f_is_real = False
 if f_is_real:
-    f = lambda U: U.average_plaquette().unsqueeze(-1).real
+    f = lambda U_conf: U_conf.average_Tr_plaquette().unsqueeze(-1).real
 else:
-    f = lambda U: U.average_plaquette().unsqueeze(-1)
+    f = lambda U_conf: U_conf.average_Tr_plaquette().unsqueeze(-1)
 
 
 LaG = La_Generator(f=f, U=U, do_compile=True)
 La_arr_vmap = perf(lambda: LaG.df_function(U=torch.Tensor(U)), "La compiled")
-print(La_arr_vmap.shape)
+print("vmap shape", La_arr_vmap.shape)
 
 
 #a_generator = Ng//2

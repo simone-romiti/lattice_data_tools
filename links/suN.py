@@ -158,7 +158,7 @@ def get_suN_element_from_theta(theta: torch.Tensor) -> torch.Tensor:
 
     Parameters
     ----------
-    theta  : coefficients \\theta_s. shape: (Ng,)
+    theta  : coefficients \\theta_s. shape: (..., Ng)
     N      : int. number of colors.
     dtype  : complex dtype for the output matrix.
 

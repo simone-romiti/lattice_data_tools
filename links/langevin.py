@@ -28,17 +28,14 @@ class LangevinDynamics:
         """
         Oi = [] # observables
         Ui = U.clone().detach()
-        n_idx = len(U.shape)
         for i in range(N):
-            Oi_value = omeas(Ui.detach())
-            print(f"i={i}, O={Oi_value}")
+            Oi_value = omeas(i, Ui.detach())
+            # print(f"i={i}, O={Oi_value}")
             Oi.append(Oi_value)
             # evolution step
             Ui.requires_grad_(True)
             Da = 1j * self.La(f=self.log_p, U=Ui).detach()
-            perm = (0,*[i for i in range(2, n_idx-1)], 1)
-            Da_perm = torch.permute(input=Da, dims=perm)
-            drift = - eps * Da_perm
+            drift = - eps * Da
             torch.manual_seed(seed+i) #
             eta_a = torch.randn(*U.shape[0:-2], self.Ng)
             noise = +np.sqrt(2.0*eps)*eta_a
@@ -46,5 +43,13 @@ class LangevinDynamics:
             exp_iW = GaugeConfiguration.from_theta(theta=theta)
             Ui = GaugeConfiguration(exp_iW @ Ui.detach())
         #---
-        return Oi
+        res = {"U": Ui, "Oi": Oi}
+        return res
+
+    def generate_batch(self, U_initial: GaugeConfiguration, eps: float, N: int, seed: int):
+        """ Generating a batch of configurations from the evolution of an initial configuration """
+        assert(U_initial.batch_size == 1) # single initial configuration
+        LE = self.evolve(U=U_initial, eps=eps, N=N, seed=seed, omeas = lambda i, Ui: Ui[0,...])
+        U_batch = torch.stack(LE["Oi"], dim=0)
+        return U_batch
         

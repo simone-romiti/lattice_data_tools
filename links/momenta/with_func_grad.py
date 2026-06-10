@@ -36,7 +36,6 @@ class La_Generator:
         n_links = U.n_links # number of links
         Nc = U.Nc # number of colors
         Ng = U.Ng # number of generators of the Lie algebra
-        lattice_shape = U.lattice_shape
         device = U.device
         dtype = U.dtype
 
@@ -48,7 +47,6 @@ class La_Generator:
         Id_arr = Id.expand(n_links, Nc, Nc)
         single_conf_shape = (1,)+U.shape[1:]
         def f_shift(tau_a_eigh,  Ub, eps, i):
-            # d, M = tau_eigh[a]
             d, M = tau_a_eigh # torch.linalg.eigh(tau_a)
             exp_iD = torch.diag_embed(torch.exp(-1j * eps * d))
             Va = M @ exp_iD @ M.adjoint()
@@ -68,7 +66,7 @@ class La_Generator:
         eps = torch.tensor(0.0, device=device, dtype=U.real.dtype)
         idx_links = torch.arange(n_links, device=device)
         # idx_generators = torch.arange(Ng, device=device)
-        La_f_shape = (batchsize,Ng,*(U.shape[1:-2]))
+        La_f_shape = (batchsize, *(U.shape[1:-2]), Ng)
 
         def get_compiled(df_i):
             # vmap can parallelize only along dimension with the same size
@@ -76,9 +74,9 @@ class La_Generator:
                 torch.func.vmap(
                     torch.func.vmap(
                         df_i,
-                        in_dims=(None,None,None, 0) # parallelizing only over the variable index --> \\partial_{eps_i}^2 f(V_eps @ U)
+                        in_dims=(0,None,None,None) # parallelize along generators a=1,...,Ng
                     ),
-                    in_dims=(0,None,None,None) # parallelize along generators a=1,...,Ng
+                    in_dims=(None,None,None, 0) # parallelizing only over the variable index --> \\partial_{eps_i}^2 f(V_eps @ U)
                 ),
                 in_dims=(None,0,None,None),  # parallelizing only over the batch index f(x1^{i}, x2^{i},...)
             )
@@ -89,7 +87,7 @@ class La_Generator:
                 return res.reshape(La_f_shape)
 
             U_tens = U.as_subclass(torch.Tensor)
-            dummy = uncompiled_df(U_tens) # necessary dummy call to trigger compilation
+            _ = uncompiled_df(U_tens) # necessary dummy call to trigger compilation
             if do_compile:
                 compiled_df_i = get_compiled_function(uncompiled_df, U_tens)
             else:

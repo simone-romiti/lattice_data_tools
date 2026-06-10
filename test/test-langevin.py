@@ -2,6 +2,7 @@
 Testing the Langevin dynamics routines
 """
 
+import os
 import matplotlib.pyplot as plt
 import torch
 torch.autograd.set_detect_anomaly(True, check_nan=False)
@@ -28,7 +29,7 @@ print("=============================")
 
 device = torch.device("cpu")
 B = 1
-d = 4
+d = 3
 L = 4
 L_mu = d*[L]
 K = 0 # L//2
@@ -63,7 +64,7 @@ beta = 5.0
 # Langevin dynamics
 
 eps = 0.01
-N_evol = 1000
+N_evol = 500
 
 psi2 = lambda U: torch.exp(-U.Wilson_action(beta=beta))
 
@@ -72,15 +73,31 @@ log_psi2 = lambda U: -U.Wilson_action(beta=beta) + 0.0*1j
 
 LG = LangevinDynamics(U=U, log_p=log_psi2)
 
-avg_ReTr_plaq_list = LG.evolve(
+U_path = "./U_langevin.pt"
+if os.path.exists(U_path):
+    U = GaugeConfiguration.load(path=U_path)
+
+U_batch = LG.generate_batch(U_initial=U, eps=eps, N=14, seed=seed)
+print("Generated batch of configurations:", U_batch.shape)
+
+
+def omeas(i, Ui):
+    res = GaugeConfiguration(Ui).average_ReTr_plaquette().item()
+    print(i, res)
+    return res
+
+langevin_evolution = LG.evolve(
     U=U, eps=eps, N=N_evol, seed=seed,
-    omeas = lambda Ui: GaugeConfiguration(Ui).average_ReTr_plaquette().item()
+    omeas = omeas
 )
 
-avg_ReTr_plaq = torch.tensor(avg_ReTr_plaq_list)
+U_new = langevin_evolution["U"]
+U_new.save(path=U_path)
 
+avg_ReTr_plaq_list = langevin_evolution["Oi"]
+avg_ReTr_plaq = torch.tensor(avg_ReTr_plaq_list)
 print(torch.mean(avg_ReTr_plaq), torch.std(avg_ReTr_plaq))
 
 plt.plot(torch.arange(N_evol).detach(), avg_ReTr_plaq.detach())
-plt.show()
+plt.savefig("./langevin_evolution.pdf")
 
