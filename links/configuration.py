@@ -138,6 +138,9 @@ class GaugeConfiguration(ColorMatrix):
     @property
     def batch_size(self):
         return self._batch_size
+    @property
+    def batchsize(self):
+        return self.batch_size
 
     @property
     def lattice_shape(self):

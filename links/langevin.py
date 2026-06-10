@@ -48,8 +48,8 @@ class LangevinDynamics:
 
     def generate_batch(self, U_initial: GaugeConfiguration, eps: float, N: int, seed: int):
         """ Generating a batch of configurations from the evolution of an initial configuration """
-        assert(U_initial.batch_size == 1) # single initial configuration
-        LE = self.evolve(U=U_initial, eps=eps, N=N, seed=seed, omeas = lambda i, Ui: Ui[0,...])
-        U_batch = torch.stack(LE["Oi"], dim=0)
+        LE = self.evolve(U=U_initial, eps=eps, N=N, seed=seed, omeas = lambda i, Ui: Ui)
+        U_batch_ij = torch.stack(LE["Oi"], dim=0)
+        U_batch = torch.flatten(U_batch_ij, start_dim=0, end_dim=2)
         return U_batch
         
