@@ -1,7 +1,11 @@
 """
-IN PROGRESS
+Checking the sampling for a single link system in SU(2).
+This is equivalent to a single-plaquette system, as 3 of the 3 gauge links can be gauged to 1 in the path integral.
 
-Machine Learning a strong coupling eigenstate using Langevin dynamics to check the normalization
+This script can test the sampling from:
+- |Tr(U)|^2
+- The uniform distribution over the Haar measure
+
 """
 
 
@@ -54,36 +58,18 @@ U0 = GaugeConfiguration.from_hotstart(
 #     dtype=torch.complex128, device=device,
 #     requires_grad=True)
 
-# # psi model
-# K = L//2
-# LCNN_layer = LCNN(U=U0, K=K)
-# W = LCNN_layer.get_W(U=U0)
-
-# N_in = W.shape[-3]
-# N_out = 5
-
-# N_hidden = 2
-# N_neurons = [5,5]
-
-# psi = LCNN_MLP(
-#     U = U0,
-#     LCNN_layer= LCNN_layer,
-#     LCNN_N_in=N_in, LCNN_N_out = N_out,
-#     N_hidden = N_hidden, N_neurons = N_neurons,
-#     seed = seed,
-#     act_fun_MLP = torch.nn.Tanh()
-#     )
-
 
 # strong coupling eigenfunction
+
+# use this for testing the uniform distribution
+# psi_SC = lambda Ui: torch.ones_like(suN.get_Tr(Ui).as_subclass(torch.Tensor)).squeeze()
+
+# plaquette squared
+# use this to test the sampling from the simplest eigenstate in the strong coupling limit
 psi_SC = lambda Ui: (suN.get_Tr(Ui)).as_subclass(torch.Tensor).squeeze()/Nc
 abs_psi_SC = lambda Ui: psi_SC(Ui).abs()
 abs_psi2_SC = lambda Ui: abs_psi_SC(Ui)**2
 log_abs_psi2_SC = lambda Ui: torch.log(abs_psi2_SC(Ui))+0.0*1j
-
-# print(psi_SC(U0).mean().item(), psi_SC(U0).std().item())
-# print(abs_psi2_SC(U0).mean().item(), abs_psi2_SC(U0).std().item())
-
 
 
 # Langevin dynamics
@@ -102,9 +88,6 @@ print(U_batch.shape)
 
 print("Generated batch of configurations:", U_batch.shape)
 psi2_values= abs_psi2_SC(U_batch)
-#psi2_values = psi2_values[psi2_values > 1e-2]
-# Obs = U_batch.average_Tr_plaquette()/psi2_values
-# print(Obs.shape)
 
 avg_plaq = suN.get_Tr(U0).as_subclass(torch.Tensor).squeeze()/Nc
 omega = Nc*torch.arccos(avg_plaq.real)
@@ -113,7 +96,7 @@ plt.scatter(omega.detach().numpy(), y.detach().numpy(), color="orange")
 
 
 N_bins = int(np.sqrt(omega.numel()))
-#plt.plot(Obs)
+
 avg_plaq_evol = suN.get_Tr(U_batch).as_subclass(torch.Tensor)/Nc
 omega_evol = 2*torch.arccos(avg_plaq_evol).real.squeeze()
 omega_sorting = torch.sort(omega_evol)
@@ -125,11 +108,9 @@ y_evol_norm = y_evol / torch.trapezoid(y=y_evol, x=omega_evol)
 
 
 plt.scatter(omega_evol.detach().numpy(), y_evol_norm.detach().numpy(), color="green")
-#plt.scatter(omega_evol.detach().numpy(), y_evol.detach().numpy(), color="green")
 plt.hist(omega_evol, density=True, alpha=0.2, bins=N_bins)
 plt.show()
 
 
-#print(omega_evol)
 
 N_epochs = 500
