@@ -130,10 +130,11 @@ momenta_exp = perf(lambda: CM.LaRa_with_exp(f=f, U=U, f_is_real=f_is_real), "L_a
 momenta_cr = perf(lambda: CM.LaRa_chain_rule(f=f, U=U), "L_a & R_a arr from chain rule")
 
 
-La_chain_rule_compiled = lambda U_conf: CM.La_chain_rule(f=f, U=U_conf)
-
+# La_chain_rule_compiled = torch.compile(lambda U_conf: CM.La_chain_rule(f=f, U=U_conf.as_subclass(torch.Tensor)))
+# La_chain_rule_compiled(U)
 
 La_cr = perf(lambda: CM.La_chain_rule(f=f, U=U), "L_a with CR, batched")
+# La_cr_comp = perf(lambda: CM.La_chain_rule_compiled(U_conf=U), "L_a with CR, batched, compiled")
 
 print(momenta_exp.shape)
 print(momenta_cr.shape)

@@ -1,6 +1,7 @@
 """ Langevin dynamics for a configuration of gauge links """
 
 
+from tqdm import tqdm
 import numpy as np
 import torch
 import typing
@@ -28,7 +29,7 @@ class LangevinDynamics:
         """
         Oi = [] # observables
         Ui = U.clone().detach()
-        for i in range(N):
+        for i in tqdm(range(N), desc="Langevin evolution"):
             Oi_value = omeas(i, Ui.detach())
             # print(f"i={i}, O={Oi_value}")
             Oi.append(Oi_value)
@@ -50,6 +51,6 @@ class LangevinDynamics:
         """ Generating a batch of configurations from the evolution of an initial configuration """
         LE = self.evolve(U=U_initial, eps=eps, N=N, seed=seed, omeas = lambda i, Ui: Ui)
         U_batch_ij = torch.stack(LE["Oi"], dim=0)
-        U_batch = torch.flatten(U_batch_ij, start_dim=0, end_dim=2)
+        U_batch = torch.flatten(U_batch_ij, start_dim=0, end_dim=1)
         return U_batch
         
