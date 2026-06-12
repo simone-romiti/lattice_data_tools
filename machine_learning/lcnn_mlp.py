@@ -34,6 +34,10 @@ class LCNN_MLP(torch.nn.Module):
         self.beta  = LCNN_layer.gen_random_beta(N_out=LCNN_N_out, seed=seed)
         self.omega_CB = LCNN_layer.gen_random_omega_CB(N_out=LCNN_N_out, N_in=LCNN_N_in, seed=seed)
         dtype = self.omega_CB.dtype
+
+        # registering omega_CB and beta as parameters
+        self.omega_CB = torch.nn.Parameter(self.omega_CB)
+        self.beta     = torch.nn.Parameter(self.beta)
         
         example_output = LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
         N_input_MLP = example_output.shape[1]

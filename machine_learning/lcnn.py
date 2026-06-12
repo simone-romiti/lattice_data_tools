@@ -89,7 +89,7 @@ class LCNN(torch.nn.Module):
         torch.manual_seed(seed=seed)
         nK = self.nK()
         den = Nch_in * d * nK 
-        omega = (torch.rand(*(Nch_out,Nch_in,d,nK)) / den).to(self.dtype_U).to(self.device_U)
+        omega = (torch.rand(*(Nch_out,Nch_in,d,nK), requires_grad=True) / den).to(self.dtype_U).to(self.device_U)
         return omega
     #---
     def L_conv(self, Wprime: torch.Tensor, omega: torch.Tensor):
@@ -142,7 +142,8 @@ class LCNN(torch.nn.Module):
         nK = self.nK()
         d = self.n_dims
         den = (N_in**2) * d * nK
-        omega_CB = (torch.randn(N_out, N_in, N_in, d, nK) / den).to(self.dtype_U).to(self.device_U)
+        omega_CB_shape = (N_out, N_in, N_in, d, nK)
+        omega_CB = (torch.randn(*omega_CB_shape, requires_grad=True) / den).to(self.dtype_U).to(self.device_U)
         return omega_CB
     #---
     def L_CB(self, W: LocallyGaugeCovariant, Wprime: LocallyGaugeCovariant, omega_CB: torch.Tensor):

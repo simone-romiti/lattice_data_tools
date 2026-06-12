@@ -4,12 +4,13 @@ from typing import Callable, List
 from collections import defaultdict
 
 class NestedDict(defaultdict):
-    def __init__(self, *args, **kwargs):
-        # If no default factory is given, use NestedDict itself
+    def __init__(self, data=None, *args, **kwargs):
         if 'default_factory' not in kwargs and (len(args) == 0 or args[0] is None):
-            super().__init__(NestedDict, *args, **kwargs)
+            super().__init__(NestedDict, **kwargs)
         else:
-            super().__init__(*args, **kwargs)
+            super().__init__(**kwargs)
+        if isinstance(data, dict):
+            self.update(data)
     
     def to_dict(self) -> dict:
         """Convert the nested defaultdict structure into a plain dict."""
