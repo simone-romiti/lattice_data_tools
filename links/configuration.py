@@ -55,9 +55,15 @@ class ColorMatrix(torch.Tensor):
         return torch.matmul(A,B) 
                             
     #---
+
+    def __repr__(self):
+        return self.as_subclass(torch.Tensor).__repr__()
+    def __str__(self):
+        return self.as_subclass(torch.Tensor).__str__()
+
     def to_tensor(self):
         return self.as_subclass(torch.Tensor)
-    
+
     @property
     def Nc(self):
         return self._Nc
@@ -187,7 +193,6 @@ class GaugeConfiguration(ColorMatrix):
         U.requires_grad_(requires_grad=requires_grad) # start tracking grads from here
         return U
 
-
     def hotstart(self, seed: int) -> None:
         suN.apply_hotstart(U=self, seed=seed)
         return None
@@ -252,6 +257,18 @@ class GaugeConfiguration(ColorMatrix):
         self.gauge_transformation(V=self.get_random_gauge_transformation(seed=seed))
         return None
     #---
+
+    def plaquette(self, x: torch.tensor, mu, nu):
+        x_pmu, x_pnu = x.clone(), x.clone()
+        x_pmu[mu] += 1
+        x_pnu[nu] += 1
+        U1 = self[:,*x,mu,:,:] # U_\\mu(x)
+        U2 = self[:,*x_pmu,nu,:,:] # U_\\nu(x+mu)
+        U3 = self[:,*x_pnu,mu,:,:].adjoint() # U_\\mu(x+nu)^\\dagger
+        U4 = self[:,*x,nu,:,:].adjoint() # U_\nu(x)^\\dagger
+        P_munu = U1 @ U2 @ U3 @ U4
+        return P_munu
+    
     def plaquettes(self):
         """ plaquettes: shape = (B, L1, ..., Ld, n_plaq, Nc, Nc)"""
         P = WilsonLoopsGenerator.plaquettes(U=self)
