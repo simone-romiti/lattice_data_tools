@@ -195,7 +195,7 @@ def get_U_from_theta(theta: torch.Tensor):
 
 def get_coldstart(shape: torch.Size, dtype: torch.dtype, device: torch.device, requires_grad: bool) -> torch.Tensor:
     """
-    Multi-dimensional array of $\mathrm{SU}(N)$ matrices,
+    Multi-dimensional array of $\\mathrm{SU}(N)$ matrices,
     all equal to $\\mathbb{1}_{N_c \\times N_c}$
     """
     Nc = shape[-1] # number of colors

@@ -49,7 +49,7 @@ Ng = Nc**2 - 1
 seed = 20260610
 
 U0 = GaugeConfiguration.from_hotstart(
-    batchsize=2000, L_mu=L_mu, Nc=Nc,
+    batchsize=200, L_mu=L_mu, Nc=Nc,
     seed=seed, dtype=torch.complex128, device=device,
     requires_grad=True)
 
@@ -69,7 +69,7 @@ U0 = GaugeConfiguration.from_hotstart(
 psi_SC = lambda Ui: (suN.get_Tr(Ui)).as_subclass(torch.Tensor).squeeze()/Nc
 abs_psi_SC = lambda Ui: psi_SC(Ui).abs()
 abs_psi2_SC = lambda Ui: abs_psi_SC(Ui)**2
-log_abs_psi2_SC = lambda Ui: torch.log(abs_psi2_SC(Ui))+0.0*1j
+log_abs_psi2_SC = lambda Ui: 0.0*torch.log(abs_psi2_SC(Ui))+0.0*1j
 
 
 # Langevin dynamics

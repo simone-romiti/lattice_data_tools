@@ -259,6 +259,7 @@ class GaugeConfiguration(ColorMatrix):
     #---
 
     def plaquette(self, x: torch.tensor, mu, nu):
+        assert(mu != nu)
         x_pmu, x_pnu = x.clone(), x.clone()
         x_pmu[mu] += 1
         x_pnu[nu] += 1
