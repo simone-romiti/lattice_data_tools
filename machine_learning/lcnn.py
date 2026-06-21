@@ -184,6 +184,13 @@ class LCNN(torch.nn.Module):
         beta =  torch.rand(*(d, N_out)).to(self.dtype_U).to(self.device_U)
         return beta
     #---
+    def ibetaWah(self, W: LocallyGaugeCovariant, beta: torch.Tensor):
+        """ Argument of the exponential in `self.exp_ibetaWah()` """
+        # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
+        W_ah_traceless = ColorMatrix(W).get_ah_traceless()
+        arg_exp = torch.einsum("mi,...iab->...mab", 1j*beta, W_ah_traceless) # NOTE: arg_exp has to be hermitean --> we include the `1j`
+        return arg_exp
+    #---
     def exp_ibetaWah(self, W: LocallyGaugeCovariant, beta: torch.Tensor):
         """
         Eq. 9 of https://arxiv.org/pdf/2012.12901
@@ -193,9 +200,7 @@ class LCNN(torch.nn.Module):
         W: N_ch locally transforming variables (obtained after L_conv()). shape: (batch, L1, ..., Ld, N_ch, Nc, Nc)
         beta: shape: (d,N_ch)
         """
-        # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
-        W_ah_traceless = ColorMatrix(W).get_ah_traceless()
-        arg_exp = torch.einsum("mi,...iab->...mab", 1j*beta, W_ah_traceless) # NOTE: arg_exp has to be hermitean --> we include the ""1j"
+        arg_exp = self.ibetaWah(W=W, beta=beta)
         E = suN.get_exp_iA(arg_exp.to_tensor()) # eq. 9 of https://arxiv.org/pdf/2012.12901
         return LocallyGaugeCovariant(E)
     #---
@@ -245,6 +250,20 @@ class LCNN(torch.nn.Module):
         trace = suN.get_Tr(self.all_layers_with_CB(U=U, omega_CB=omega_CB,beta=beta))
         return trace
     #---
+    def all_layers_Laf(self, U: GaugeConfiguration, omega_CB: torch.Tensor, beta: torch.Tensor):
+        """
+        Network producing an output of shape (B, Ng, L1, ..., Ld, d)
+
+        Interpretation: for a given configuration `b` and fixed `a`, the outputs are the `tau_a L_a` applied to the function `f`.
+
+        """
+        U_PT = get_ParallelTransporters(U=U, K=self.K)
+        W = self.get_W(U=U) # set of locally transforming variables
+        Wprime = self.get_Wprime(U=U, W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
+        W_CB = self.L_CB(W=W, Wprime=Wprime, omega_CB=omega_CB) # W after eq. 18 of https://arxiv.org/pdf/2401.06481
+        W_act = self.L_act(U=U, W=W_CB, act_fun=self.act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
+        EU = self.L_exp(U=U, W=W_act, beta=beta)
+        W_res = self.get_W(U=EU) 
 #---
                 
 

@@ -128,7 +128,8 @@ print("vmap shape", La_arr_vmap.shape)
 CM = CanonicalMomenta(U=U)
 momenta_exp = perf(lambda: CM.LaRa_with_exp(f=f, U=U, f_is_real=f_is_real), "L_a & R_a arr from exp()")
 momenta_cr = perf(lambda: CM.LaRa_chain_rule(f=f, U=U), "L_a & R_a arr from chain rule")
-
+print(momenta_cr.shape)
+   
 
 # La_chain_rule_compiled = torch.compile(lambda U_conf: CM.La_chain_rule(f=f, U=U_conf.as_subclass(torch.Tensor)))
 # La_chain_rule_compiled(U)

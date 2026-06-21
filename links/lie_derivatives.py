@@ -16,6 +16,9 @@ $${ [R_a , U] = + U \\tau_a }$$
 import typing
 
 import torch
+from torch._functorch.vmap import _flat_vmap
+from torch.distributions import laplace
+from torch.nn.functional import relu
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration, ColorMatrix
@@ -154,56 +157,65 @@ class LieDerivatives:
         return -1j*df_domega
 
     
-    def La_squared_per_link(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
+    def La_squared_per_link(self, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
         """
         Returns ${ \\sum_{x,\\mu} L_a^2(x,\\mu) f(U) }$
         NOTE: the index `a` is NOT summed over.
         
         `f(U)` should return a tensor of shape (batchsize,1)
         """
+        batchsize = U.batch_size # number of configurations
         Nc = U.Nc # number of colors
+        Ng = U.Ng
         n_links = U.n_links # number of links
-        tau_a = self.tau[a,:,:]
-        d, M = torch.linalg.eigh(tau_a)  # diagonalization of the generator tau_a
+        #tau_a = self.tau[a,:,:]
+        d, M = torch.linalg.eigh(self.tau)  # diagonalization of the generator tau_a
         omega = torch.tensor(0.0, requires_grad=True, dtype=U.real.dtype, device=U.device)
-        phase = omega * d
+        phase = omega*d
         exp_iphase = torch.exp(-1j * phase)
         exp_iD = torch.diag_embed(exp_iphase)
-        Va = (M @ exp_iD @ M.adjoint()) #.expand(n_links, Nc, Nc)
-        batchsize = U.batch_size # number of configurations
+        V = (M @ exp_iD @ M.adjoint()) #.expand(n_links, Nc, Nc)
         Id = torch.eye(Nc).to(device=U.device)
         Id_arr = Id.expand(n_links, Nc, Nc)
-        sum_La_squared = []
-        for b in range(batchsize):
-            U_b = U[b,...].reshape(n_links, Nc, Nc)
-            def f_i(i):
-                e_i = torch.nn.functional.one_hot(i, n_links).to(dtype=U.dtype, device=U.device)
-                Va_arr = Id_arr + torch.einsum("ab,i->iab", Va-Id, e_i)
-                VaU_i = (Va_arr @ U_b).reshape(*(U[b,...].shape)).unsqueeze(0)
-                f_VaU = f(GaugeConfiguration(VaU_i))/n_links
-                return f_VaU
-            #---
-            # vectorize over all indices 0..N-1
-            indices = torch.arange(n_links)
-            sum_f = torch.vmap(f_i)(indices).sum()
-    
-            # \\sum_i \\partial_{x_i} f : directional derivative along (1,...,1)
-            if f_is_real:
-                dir_der = torch.autograd.grad(sum_f, omega, create_graph=True)[0]
-                laplacian_b = torch.autograd.grad(dir_der, omega, create_graph=True)[0]
-            else:
-                Re_dir_der = torch.autograd.grad(sum_f.real, omega, create_graph=True)[0]
-                Im_dir_der = torch.autograd.grad(sum_f.imag, omega, create_graph=True)[0]
-                Re_laplacian_b = torch.autograd.grad(Re_dir_der, omega, create_graph=True)[0]
-                Im_laplacian_b = torch.autograd.grad(Im_dir_der, omega, create_graph=True)[0]
-                laplacian_b = Re_laplacian_b + 1j*Im_laplacian_b
-            #---
-            sum_La_squared.append(laplacian_b)
+        single_conf_shape = (1, *U.shape[1:])
+        def f_bai(Ub, Va, i):
+            Ub_flat = Ub.reshape(n_links, Nc, Nc)
+            e_i = torch.nn.functional.one_hot(i, n_links).to(dtype=U.dtype, device=U.device)
+            Va_arr = Id_arr + torch.einsum("ab,i->iab", Va-Id, e_i)
+            VaU_i = (Va_arr @ Ub_flat).reshape(*(single_conf_shape))
+            f_VaU = f(GaugeConfiguration(VaU_i))/n_links
+            return f_VaU
         #---
-        return torch.stack(sum_La_squared, dim=0)
+        f_vmap = torch.func.vmap(
+            torch.func.vmap(
+                torch.func.vmap(
+                    f_bai,
+                    in_dims=(None, None, 0) # over link index
+                ),
+                in_dims=(None, 0, None) # over generators
+            ),
+            in_dims=(0, None, None) # over configurations
+        )
+        f_arr = f_vmap(U.as_subclass(torch.Tensor), V, torch.arange(n_links))
+        sum_f = f_arr.sum()
+        
+    
+        # \\sum_i \\partial_{x_i} f : directional derivative along (1,...,1)
+        if f_is_real:
+            dir_der = torch.autograd.grad(sum_f, omega, create_graph=True)[0]
+            laplacian_b = torch.autograd.grad(dir_der, omega, create_graph=True)[0]
+        else:
+            Re_dir_der = torch.autograd.grad(sum_f.real, omega, create_graph=True)[0]
+            Im_dir_der = torch.autograd.grad(sum_f.imag, omega, create_graph=True)[0]
+            Re_laplacian_b = torch.autograd.grad(Re_dir_der, omega, create_graph=True)[0]
+            Im_laplacian_b = torch.autograd.grad(Im_dir_der, omega, create_graph=True)[0]
+            laplacian_b = Re_laplacian_b + 1j*Im_laplacian_b
+        #---
+        La2_tensor = - laplacian_b # accounting for the two factors `i`
+        return La2_tensor
 
 
-    def La_squared_per_link_FD(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):
+    def La_squared_per_link_FD(self, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):
         """
         Returns ${ \\sum_{x,\\mu} L_a^2(x,\\mu) f(U) }$ via Finite Differences.
         NOTE: the index `a` is NOT summed over.
@@ -214,60 +226,65 @@ class LieDerivatives:
         `f(U)` should return a tensor of shape (batchsize,1)
         """
         Nc = U.Nc
+        Ng = U.Ng
         n_links = U.n_links
-        tau_a = self.tau[a, :, :]
-        batchsize = U.batch_size
         Id = torch.eye(Nc, dtype=U.dtype, device=U.device)
         Id_arr = Id.expand(n_links, Nc, Nc)
 
         # Compute Va(+eps) and Va(-eps): the group elements e^{±i eps tau_a}
         # Use matrix exponential via diagonalization: tau_a = M D M†, e^{i w tau_a} = M e^{i w D} M†
-        d, M = torch.linalg.eigh(tau_a)
+        d, M = torch.linalg.eigh(self.tau)
 
-        def make_Va(omega: float):
+        def make_V(omega: float):
             phase = omega * d
             exp_iD = torch.diag_embed(torch.exp(-1j * phase).to(dtype=U.dtype))
             return M @ exp_iD @ M.adjoint()
 
+        single_conf_shape = (1, *U.shape[1:])
+        def f_bai(Ub, Va, i):
+            Ub_flat = Ub.reshape(n_links, Nc, Nc)
+            # Apply Va to link i, leaving all other links unchanged.
+            e_i = torch.nn.functional.one_hot(i, n_links).to(dtype=U.dtype, device=U.device)
+            Va_arr = Id_arr + torch.einsum("ab,i->iab", Va - Id, e_i)
+            VaU_i = (Va_arr @ Ub_flat).reshape(*single_conf_shape)
+            return f(GaugeConfiguration(VaU_i))/n_links/Ng
+        #---
+  
+        f_vmap = torch.func.vmap(
+            torch.func.vmap(
+                torch.func.vmap(
+                    f_bai,
+                    in_dims=(None, None, 0) # over link index
+                ),
+                in_dims=(None, 0, None) # over generators
+            ),
+            in_dims=(0, None, None) # over configurations
+        )
+        
         omega = torch.tensor(0.0, requires_grad=True, dtype=U.real.dtype, device=U.device)
-        Va_plus  = make_Va(+eps+omega)   # e^{+i eps tau_a}
-        Va_minus = make_Va(-eps+omega)   # e^{-i eps tau_a}
+        Va_p1 = make_V(+eps +omega)   # e^{+i eps tau_a}
+        Va_m1 = make_V(-eps +omega)   # e^{-i eps tau_a}
+        Va_0 = make_V(+omega)   # e^{-i eps tau_a}
+        f_plus  = f_vmap(U.as_subclass(torch.Tensor), Va_p1 , torch.arange(n_links)).sum()   # sum_i f(Va(+eps) . U_i)
+        f_minus = f_vmap(U.as_subclass(torch.Tensor), Va_m1, torch.arange(n_links)).sum()  # sum_i f(Va(-eps) . U_i)
+        # f_0     = f_vmap(U.as_subclass(torch.Tensor), Va_0, torch.arange(n_links)).sum()  # sum_i f(Va(-eps) . U_i)
 
-        sum_La_squared = []
+        # Central difference: [f(+eps) - 2f(U) + f(-eps)] / eps^2
+        #laplacian_b = (f_plus - 2 * f_0 + f_minus) / (eps ** 2)
+        # return laplacian_b
 
-        for b in range(batchsize):
-            U_b = U[b, ...].reshape(n_links, Nc, Nc)
-            shape_b = U[b, ...].shape
+        dir_der = (f_plus - f_minus)/(2.0*eps)
+        # dir_der = (f_plus - f_0)/eps
 
-            def make_perturbed_U(Va):
-                """Apply Va to link i, leaving all other links unchanged."""
-                def f_i(i):
-                    e_i = torch.nn.functional.one_hot(i, n_links).to(dtype=U.dtype, device=U.device)
-                    Va_arr = Id_arr + torch.einsum("ab,i->iab", Va - Id, e_i)
-                    VaU_i = (Va_arr @ U_b).reshape(*shape_b).unsqueeze(0)
-                    return f(GaugeConfiguration(VaU_i))/n_links
-                #---
-                indices = torch.arange(n_links)
-                return torch.vmap(f_i)(indices).sum()  # sum over all links
-
-            f_plus  = make_perturbed_U(Va_plus)   # sum_i f(Va(+eps) . U_i)
-            f_minus = make_perturbed_U(Va_minus)  # sum_i f(Va(-eps) . U_i)
-            # f_0     = f(GaugeConfiguration(U[b, ...].unsqueeze(0))) * n_links  # n_links * f(U)
-
-            # Central difference: [f(+eps) - 2f(U) + f(-eps)] / eps^2
-            # laplacian_b = (f_plus - 2 * f_0 + f_minus) / (eps ** 2)
-            dir_der = (f_plus - f_minus)/(2.0*eps)
-
-            if f_is_real:
-                laplacian_b = torch.autograd.grad(dir_der, omega)[0]
-            else:
-                Re_laplacian_b  = torch.autograd.grad(dir_der.real, omega, create_graph=True)[0]
-                Im_laplacian_b  = torch.autograd.grad(dir_der.imag, omega)[0]
-                laplacian_b  = Re_laplacian_b + 1j*Im_laplacian_b
-
-            sum_La_squared.append(laplacian_b)
-
-        return torch.stack(sum_La_squared, dim=0)
+        if f_is_real:
+            laplacian_b = torch.autograd.grad(dir_der, omega)[0]
+        else:
+            Re_laplacian_b  = torch.autograd.grad(dir_der.real, omega, create_graph=True)[0]
+            Im_laplacian_b  = torch.autograd.grad(dir_der.imag, omega)[0]
+            laplacian_b  = Re_laplacian_b + 1j*Im_laplacian_b
+            
+        La2_tensor = - Ng * laplacian_b  # accounting for the two factors `i`
+        return La2_tensor
 
     
     def La_squared_per_link_FD_fast(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):

@@ -55,10 +55,10 @@ class WithAutodifferentiation(CanonicalMomenta):
             f(..., e^{-i \\omega \\tau_a } U(x,\\mu), ...)|_{\\omega = 0}
         $$
         """
-        Nc = U.Nc # number of colors
-        Ng = U.Ng # number of generators in the Lie algebra
-        n_links = U.n_links # number of links
-        batchsize = U.batch_size # number of configurations
+        Nc = self.Nc # number of colors
+        Ng = self.Ng # number of generators in the Lie algebra
+        n_links = self.n_links # number of links
+        batchsize = self.batchsize # number of configurations
         Id = torch.eye(Nc).to(device=U.device)
         Id_arr = Id.expand(n_links, Nc, Nc)
         omega = torch.tensor(0.0, requires_grad=True, dtype=U.real.dtype, device=U.device)
@@ -100,7 +100,7 @@ class WithAutodifferentiation(CanonicalMomenta):
             #---
             La2_per_link.append(torch.stack(sum_La_squared, dim=0))
         #---
-        return torch.stack(La2_per_link, dim=1)
+        return -torch.stack(La2_per_link, dim=1)
 
     def with_La_twice(self, f: typing.Callable, U: GaugeConfiguration) -> torch.Tensor:
         """
@@ -210,12 +210,12 @@ class WithFiniteDifferences(CanonicalMomenta):
                 f_minus = make_perturbed_U(Va_minus[a,:,:]) # sum_i f(Va(-eps) . U_i)
 
                 dir_der = (f_plus - f_minus)/(2.0*eps) # 1st derivative found with finite difference
-                laplacian_b = my_autograd(dir_der, omega, create_graph=False, retain_graph=True) # 2nd derivative through autodifferentiation
+                laplacian_b = my_autograd(dir_der, omega, grad_outputs=torch.ones_like(dir_der), create_graph=False, retain_graph=True) # 2nd derivative through autodifferentiation
                 sum_La_squared.append(laplacian_b)
             #---
             La2_per_link.append(torch.stack(sum_La_squared, dim=0))
         #---
-        return torch.stack(La2_per_link, dim=1)
+        return -torch.stack(La2_per_link, dim=1) # `-1` factor coming from the product of the 2 `-i` in front of the L_a
 
     
     def TODO_get_sum_La_squared_per_link_fast(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):

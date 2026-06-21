@@ -76,6 +76,7 @@ class CanonicalMomenta:
         """
         self.Nc = U.Nc # number of colors of the group
         self.Ng = U.Ng # number of generators in the algebra
+        self.n_links = U.n_links # number of gauge links on the lattice
         self.batchsize = U.batch_size #  number of configurations
         self.tau = suN.get_generators(Nc=self.Nc, device=U.device, dtype=U.dtype)
         
@@ -209,10 +210,28 @@ class CanonicalMomenta:
         f_U = f(GaugeConfiguration(U + delta)) # f(U+delta)
         # NOTE: I can differentiate the sum over configurations
         # because f(U) acts configuration-wise
-        f_U_flat = f_U.sum() + 0.0*1j # flattened view
+        # f_U_flat = f_U.sum() + 0.0*1j # flattened view
         A = -1j * torch.einsum("aij,B...jk->B...aik", self.tau, U.as_subclass(torch.Tensor)) # d(e^{-i*omega*tau_a})/domega at omega==0
         dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=True, retain_graph=True).unsqueeze(-3)
         dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=True, retain_graph=True).unsqueeze(-3)
         df_domega = chain_rule_contributions(A=A, dRef_dU=dRef_dU, dImf_dU=dImf_dU).sum(dim=(-2,-1)) # summing over the color components
         La_f = -1j * df_domega
         return La_f
+
+    # def LaLa_chain_rule_EXPERIMENTAL(self, f: typing.Callable, U: GaugeConfiguration):
+    #     delta1 = torch.zeros(size=U.shape, dtype=U.dtype, device=U.device, requires_grad=True) # Note: delta should be complex
+    #     delta2 = torch.zeros(size=U.shape, dtype=U.dtype, device=U.device, requires_grad=True) # Note: delta should be complex
+    #     Up = U + delta1 + delta2
+    #     f_U = f(GaugeConfiguration(Up)) # f(U+delta)
+    #     A = -1j * torch.einsum("aij,B...jk->B...aik", self.tau, Up.as_subclass(torch.Tensor)) # d(e^{-i*omega*tau_a})/domega at omega==0
+    #     dRef_dU = my_autograd(y=f_U.real, x=delta, grad_outputs=torch.ones_like(f_U.real), create_graph=True, retain_graph=True).unsqueeze(-3)
+    #     dImf_dU = my_autograd(y=f_U.imag, x=delta, grad_outputs=torch.ones_like(f_U.imag), create_graph=True, retain_graph=True).unsqueeze(-3)
+    #     df_domega_ab = chain_rule_contributions(A=A, dRef_dU=dRef_dU, dImf_dU=dImf_dU).sum(dim=(-2,-1)) # summing over the color components
+    #     Laf_ab = -1j * df_domega
+    #     # print(dRef_dU.shape, Laf_ab.shape, delta.shape)
+    #     cosd_Laf = torch.einsum("...ij,...aij->...aij", torch.cos(delta.abs()), Laf_ab)
+    #     dReLaf_dU = my_autograd(y=cosd_Laf.real, x=delta, grad_outputs=torch.ones_like(cosd_Laf.real), create_graph=True, retain_graph=True).unsqueeze(-3)
+    #     dImLaf_dU = my_autograd(y=cosd_Laf.imag, x=delta, grad_outputs=torch.ones_like(cosd_Laf.imag), create_graph=True, retain_graph=True).unsqueeze(-3)
+    #     d2f_domega = chain_rule_contributions(A=A, dRef_dU=dReLaf_dU, dImf_dU=dImLaf_dU).sum(dim=(-2,-1)) # summing over the color components
+    #     LaLa_f = -1j * d2f_domega
+    #     return LaLa_f

@@ -15,6 +15,8 @@ sys.path.append("../../")
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration
 
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
+
 from lattice_data_tools.links.canonical_momenta_squared import WithAutodifferentiation as La2_with_ad
 from lattice_data_tools.links.canonical_momenta_squared import WithFiniteDifferences as La2_with_fd
 #from lattice_data_tools.links.canonical_momenta_squared import La2_Generator
@@ -37,13 +39,13 @@ print("===============================")
 print("L-CNN + MLP implementation test")
 print("===============================")
 
-device = torch.device("cuda")
+device = torch.device("cpu")
 B = 1
 d = 3
-L = 2
+L = 3
 L_mu = d*[L]
 K = 0 # L//2
-Nc = 2
+Nc = 3
 t1 = time.time()
 Ng = Nc**2 - 1
 seed = 20260511
@@ -107,9 +109,20 @@ La2_fd = perf(lambda: CM2_fd.get_La2_per_link(f=f, U=U), "La2_fd")
 #LaLa = perf(lambda: CM2_ad.with_La_twice(f=f, U=U), "LaLa")
 #La2_fd_fast = perf(lambda: CM2_fd.get_La2_per_link_fast(f=f, U=U), "La2_fd_fast")
 
+f_cplx = lambda U: f(U) + 0.0*1j
+CM= CanonicalMomenta(U=GaugeConfiguration(U))
+#LaLa_cr = perf(lambda: CM.LaLa_chain_rule_EXPERIMENTAL(f=f_cplx, U=U), "La twice")
+
+#print(LaLa_cr.sum(dim=(1,2,3,4)).real)
+#print(LaLa_cr.mean(dim=(1,2,3,4)).real)
+#print("Ratio:", LaLa_cr.mean(dim=(1,2,3,4)).real/La2_fd)
+print("---")
+print(La2_fd)
+print("---")
+print(La2_ad)
 print(torch.allclose(La2_ad, La2_fd))
+#print(torch.allclose(La2_ad, LaLa_cr.real))
 #print(Ng, LaLa.shape, LaLa.sum(dim=-1)/n_links, La2_ad)
-quit()
 
 #print(torch.allclose(LaLa, La2_ad[:,0,...]))
 # print(La2_ad.flatten()[0:10])
@@ -117,11 +130,13 @@ quit()
 #print(torch.allclose(La2_ad, La2_fd_fast))
 
 t3 = time.time()
-La_squared_per_link = perf(lambda: LD.La_squared_per_link(a=a_generator, f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for a={a_generator}")
-La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(a=a_generator, f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for a={a_generator}")
+La_squared_per_link = perf(lambda: LD.La_squared_per_link(f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for all a")
+La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for a={a_generator}")
 La_squared_per_link_FD_fast = perf(lambda: LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype), f"FD (fast): sum La_squared for a={a_generator}")
 
 
+print(La_squared_per_link)
+print(La_squared_per_link_FD)
 print(torch.allclose(La_squared_per_link, La_squared_per_link_FD))
 print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
 print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
