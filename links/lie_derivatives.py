@@ -22,6 +22,7 @@ from torch.nn.functional import relu
 
 import lattice_data_tools.links.suN as suN
 from lattice_data_tools.links.configuration import GaugeConfiguration, ColorMatrix
+from lattice_data_tools.links.canonical_momenta import CanonicalMomenta
 
 
 class LieDerivatives:
@@ -286,6 +287,20 @@ class LieDerivatives:
         La2_tensor = - Ng * laplacian_b  # accounting for the two factors `i`
         return La2_tensor
 
+
+    def La_squared_FD_expansion(self, f: typing.Callable, U: GaugeConfiguration, CM: CanonicalMomenta, eps: float = 1e-8):
+        n_links = U.n_links
+        f0 = f(U)
+        Ng = U.Ng
+        La_f = CM.La_chain_rule(f=f, U=U)
+        theta = torch.zeros(*(*U.shape[0:-2], Ng), device=U.device, dtype=U.dtype)
+        a = 0
+        theta[...,a] = eps
+        V = GaugeConfiguration.from_theta(theta=theta)
+        Up = GaugeConfiguration(V @ U)
+        fp = f(Up)
+        La2_f = (fp - f0 - 1j*eps*La_f)/(eps**2/2.0)
+        return La2_f/n_links
     
     def La_squared_per_link_FD_fast(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):
         """ Faster implementation of La_squared_per_link_FD() but that uses more memory """

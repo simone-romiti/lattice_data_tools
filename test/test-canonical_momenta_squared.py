@@ -6,7 +6,7 @@ https://arxiv.org/pdf/2012.12901
 """
 
 import torch
-torch.autograd.set_detect_anomaly(True, check_nan=False)
+#torch.autograd.set_detect_anomaly(True, check_nan=False)
 
 import time
 import sys
@@ -41,8 +41,8 @@ print("===============================")
 
 device = torch.device("cpu")
 B = 1
-d = 3
-L = 3
+d = 2
+L = 6
 L_mu = d*[L]
 K = 0 # L//2
 Nc = 3
@@ -86,7 +86,6 @@ model = LCNN_MLP(
     )
 
 
-
 f_is_real = True
 if f_is_real:
     f = lambda U: model(U).real
@@ -117,9 +116,9 @@ CM= CanonicalMomenta(U=GaugeConfiguration(U))
 #print(LaLa_cr.mean(dim=(1,2,3,4)).real)
 #print("Ratio:", LaLa_cr.mean(dim=(1,2,3,4)).real/La2_fd)
 print("---")
-print(La2_fd)
+print(La2_fd.sum())
 print("---")
-print(La2_ad)
+print(La2_ad.sum())
 print(torch.allclose(La2_ad, La2_fd))
 #print(torch.allclose(La2_ad, LaLa_cr.real))
 #print(Ng, LaLa.shape, LaLa.sum(dim=-1)/n_links, La2_ad)
@@ -129,16 +128,22 @@ print(torch.allclose(La2_ad, La2_fd))
 #print(LaLa.flatten()[0:10])
 #print(torch.allclose(La2_ad, La2_fd_fast))
 
+
+
 t3 = time.time()
 La_squared_per_link = perf(lambda: LD.La_squared_per_link(f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for all a")
-La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for a={a_generator}")
+La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for all a")
+
+# La_squared_per_link_expansion = perf(lambda: LD.La_squared_FD_expansion(f=f, U=U, CM=CM, eps=1e-8),  f"FD expansion")
+# print(La_squared_per_link_expansion.sum())
+
 La_squared_per_link_FD_fast = perf(lambda: LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype), f"FD (fast): sum La_squared for a={a_generator}")
 
 
 print(La_squared_per_link)
 print(La_squared_per_link_FD)
 print(torch.allclose(La_squared_per_link, La_squared_per_link_FD))
-print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
-print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
+#print(torch.allclose(La_squared_per_link, La_squared_per_link_FD_fast))
+#print(torch.allclose(La_squared_per_link_FD, La_squared_per_link_FD_fast))
 
 

@@ -55,10 +55,10 @@ class WithAutodifferentiation(CanonicalMomenta):
             f(..., e^{-i \\omega \\tau_a } U(x,\\mu), ...)|_{\\omega = 0}
         $$
         """
-        Nc = self.Nc # number of colors
-        Ng = self.Ng # number of generators in the Lie algebra
-        n_links = self.n_links # number of links
-        batchsize = self.batchsize # number of configurations
+        Nc = U.Nc # number of colors
+        Ng = U.Ng # number of generators in the Lie algebra
+        n_links = U.n_links # number of links
+        batchsize = U.batch_size # number of configurations
         Id = torch.eye(Nc).to(device=U.device)
         Id_arr = Id.expand(n_links, Nc, Nc)
         omega = torch.tensor(0.0, requires_grad=True, dtype=U.real.dtype, device=U.device)
@@ -146,8 +146,8 @@ class WithAutodifferentiation(CanonicalMomenta):
         #---
         s = torch.vmap(fi, in_dims=0)(torch.arange(N, device=U.device)).sum() + 0.0*1j
         #assert s.shape == (U.batch_size, 1)
-        dRes_deps = my_autograd(y=s.real, x=eps_flat, create_graph=True,retain_graph=True)
-        dIms_deps = my_autograd(y=s.imag, x=eps_flat, create_graph=True,retain_graph=True) 
+        dRes_deps = my_autograd(y=s.real, x=eps_flat, grad_outputs=torch.ones_like(s.real), create_graph=True,retain_graph=True)
+        dIms_deps = my_autograd(y=s.imag, x=eps_flat, grad_outputs=torch.ones_like(s.imag), create_graph=True,retain_graph=True) 
         Up = (U+eps).as_subclass(torch.Tensor)
         #Up_flat = Up.view(-1) #U_flat+eps_flat
         tau_Up = torch.einsum("aij,...jk->a...ik", self.tau, Up).reshape(Ng, -1)
@@ -155,8 +155,8 @@ class WithAutodifferentiation(CanonicalMomenta):
         def get_La2f(a: int):
             A_a = A[a,:]
             r = -1j*chain_rule(A, dRes_deps, dIms_deps).sum() #  (A_a.conj()*ds_deps).real.sum()
-            dRer_domega = my_autograd(y=r.real, x=eps_flat, create_graph=True,retain_graph=True)
-            dImr_domega = my_autograd(y=r.imag, x=eps_flat, create_graph=True,retain_graph=True)
+            dRer_domega = my_autograd(y=r.real, x=eps_flat, grad_outputs=torch.ones_like(r.real), create_graph=True,retain_graph=True)
+            dImr_domega = my_autograd(y=r.imag, x=eps_flat, grad_outputs=torch.ones_like(r.imag), create_graph=True,retain_graph=True)
             La2_f = -1j*chain_rule(A_a, dRer_domega, dImr_domega).reshape(batchsize,n_links, Nc,Nc).sum(dim=(-2,-1))
             return La2_f
         #---
@@ -215,7 +215,7 @@ class WithFiniteDifferences(CanonicalMomenta):
             #---
             La2_per_link.append(torch.stack(sum_La_squared, dim=0))
         #---
-        return -torch.stack(La2_per_link, dim=1) # `-1` factor coming from the product of the 2 `-i` in front of the L_a
+        return -torch.stack(La2_per_link, dim=1)
 
     
     def TODO_get_sum_La_squared_per_link_fast(self, a: int, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):

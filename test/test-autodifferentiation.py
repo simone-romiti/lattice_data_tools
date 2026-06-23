@@ -7,7 +7,7 @@ import sys
 sys.path.append("../../")
 
 from lattice_data_tools.autodifferentiation.with_torch_func_grad import GradientGenerator, LaplacianGenerator, LaplacianGenerator_new
-from lattice_data_tools.autodifferentiation.with_torch_autograd_grad import get_laplacian, get_laplacian_contributions
+from lattice_data_tools.autodifferentiation.with_torch_autograd_grad import get_laplacian, get_laplacian_contributions, get_laplacian_contributions_h
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #device = torch.device("cpu")
@@ -58,8 +58,6 @@ print("Gradient check:",
 print("Gradient check:", torch.allclose(grad(x) , grad_compiled(x)))
 
 
-
-
 N = 20
 
 
@@ -80,7 +78,9 @@ lapl_contribs_autograd = torch.stack([get_laplacian_contributions(f=f, x=x[b,:])
 
 
 perf(lambda y: torch.stack([get_laplacian_contributions(f=f, x=y[b,:]) for b in range(B)], dim=0), x=x, N=N, message="lapl (autograd)")
+
 perf(lambda y: grad(y), x=x, N=N, message="grad (not compiled)")
 perf(lambda y: grad_compiled(y), x=x, N=N, message="grad (compiled)")
 perf(lambda y: lapl(y), x=x, N=N, message="lapl (not compiled)")
 perf(lambda y: lapl_compiled(y), x=x, N=N, message="lapl (compiled)")
+
