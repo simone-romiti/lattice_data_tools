@@ -1,4 +1,5 @@
 """
+Autocorrelation function and integrated autocorrelation time from Monte Carlo history
 Python translation of the uwerrprimary function from "hadron": https://github.com/HISKP-LQCD/hadron
 """
 
