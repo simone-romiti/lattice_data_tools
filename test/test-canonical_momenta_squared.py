@@ -41,8 +41,8 @@ print("===============================")
 
 device = torch.device("cpu")
 B = 1
-d = 2
-L = 6
+d = 3
+L = 3
 L_mu = d*[L]
 K = 0 # L//2
 Nc = 3
@@ -92,7 +92,7 @@ if f_is_real:
 else:
     f = lambda U: model(U)
 
-print("f.shape", f(U).shape)
+print("f.shape", f(U).detach().shape)
 
 # LG = La2_Generator(f=f, U=U, do_compile=True)
 # La2_compiled = perf(lambda: LG.df_function(U.as_subclass(torch.Tensor)), "La2 compiled)")
@@ -103,8 +103,8 @@ a_generator = Ng//2
 
 CM2_ad = La2_with_ad(U=U)
 CM2_fd = La2_with_fd(U=U)
-La2_ad = perf(lambda: CM2_ad.get_La2_per_link(f=f, U=U), "La2_ad")
-La2_fd = perf(lambda: CM2_fd.get_La2_per_link(f=f, U=U), "La2_fd")
+La2_ad = perf(lambda: CM2_ad.get_La2_per_link(f=f, U=U).detach(), "La2_ad")
+La2_fd = perf(lambda: CM2_fd.get_La2_per_link(f=f, U=U).detach(), "La2_fd")
 #LaLa = perf(lambda: CM2_ad.with_La_twice(f=f, U=U), "LaLa")
 #La2_fd_fast = perf(lambda: CM2_fd.get_La2_per_link_fast(f=f, U=U), "La2_fd_fast")
 
@@ -131,13 +131,13 @@ print(torch.allclose(La2_ad, La2_fd))
 
 
 t3 = time.time()
-La_squared_per_link = perf(lambda: LD.La_squared_per_link(f=f, U=U, f_is_real=f_is_real), f"AD: sum La_squared for all a")
-La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(f=f, U=U, f_is_real=f_is_real),  f"FD: sum La_squared for all a")
+La_squared_per_link = perf(lambda: LD.La_squared_per_link(f=f, U=U).detach(), f"AD: sum La_squared for all a")
+La_squared_per_link_FD = perf(lambda: LD.La_squared_per_link_FD(f=f, U=U).detach(),  f"FD: sum La_squared for all a")
 
 # La_squared_per_link_expansion = perf(lambda: LD.La_squared_FD_expansion(f=f, U=U, CM=CM, eps=1e-8),  f"FD expansion")
 # print(La_squared_per_link_expansion.sum())
 
-La_squared_per_link_FD_fast = perf(lambda: LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype), f"FD (fast): sum La_squared for a={a_generator}")
+La_squared_per_link_FD_fast = perf(lambda: LD.La_squared_per_link_FD_fast(a=a_generator, f=f, U=U, f_is_real=f_is_real).to(dtype=La_squared_per_link.dtype).detach(), f"FD (fast): sum La_squared for a={a_generator}")
 
 
 print(La_squared_per_link)

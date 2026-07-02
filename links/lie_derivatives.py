@@ -158,7 +158,7 @@ class LieDerivatives:
         return -1j*df_domega
 
     
-    def La_squared_per_link(self, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool):
+    def La_squared_per_link(self, f: typing.Callable, U: GaugeConfiguration):
         """
         Returns ${ \\sum_{x,\\mu} L_a^2(x,\\mu) f(U) }$
         NOTE: the index `a` is NOT summed over.
@@ -199,7 +199,7 @@ class LieDerivatives:
         )
         f_arr = f_vmap(U.as_subclass(torch.Tensor), V, torch.arange(n_links))
         sum_f = f_arr.sum()
-        
+        f_is_real = not torch.is_complex(sum_f)
     
         # \\sum_i \\partial_{x_i} f : directional derivative along (1,...,1)
         if f_is_real:
@@ -216,7 +216,7 @@ class LieDerivatives:
         return La2_tensor
 
 
-    def La_squared_per_link_FD(self, f: typing.Callable, U: GaugeConfiguration, f_is_real: bool, eps: float = 1e-8):
+    def La_squared_per_link_FD(self, f: typing.Callable, U: GaugeConfiguration, eps: float = 1e-8):
         """
         Returns ${ \\sum_{x,\\mu} L_a^2(x,\\mu) f(U) }$ via Finite Differences.
         NOTE: the index `a` is NOT summed over.
@@ -277,6 +277,7 @@ class LieDerivatives:
         dir_der = (f_plus - f_minus)/(2.0*eps)
         # dir_der = (f_plus - f_0)/eps
 
+        f_is_real = not torch.is_complex(dir_der)
         if f_is_real:
             laplacian_b = torch.autograd.grad(dir_der, omega)[0]
         else:
