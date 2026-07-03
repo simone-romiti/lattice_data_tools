@@ -168,7 +168,7 @@ class aff_reader:
         - m_P, E_P and Z_P are determined through the 2-point function of the meson.
         - The 1st line of Eq. 28 of https://arxiv.org/pdf/2308.12458 provides a better estimator, accounting for a factor due to finite time extent T.
           The factor can be included a posteriori, one one has built $\\tilde{B}$ with this function and determined the meson parameters from the 2-point function.
-        - Q_fact: is a factor accounting for the charge factor coming from the electromagnetic currents of the meson (e_u^2 + e_d^2)=5/9 for the light quark and e_s^2=1/9 for the 
+        - Q_fact: is a factor accounting for the charge factor coming from the electromagnetic currents of the meson (e_u^2 + e_d^2)=5/9 for the light quark and e_s^2=1/9 for the strange
 
         """
         # --------------------------------------------
