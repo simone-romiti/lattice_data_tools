@@ -178,7 +178,10 @@ class aff_reader:
         # t_seq = Atildeij_dict["t_seq"]
         momenta_keys = Atildeij_dict["momenta_keys"]
 
-        q1 = (2.0*np.pi/L) * np.array([string_to_vector(p) for p in momenta_keys]) # lattice momenta, in lattice units throughout
+        Lo2p = (L/np.pi/2)
+        k1 = np.array([string_to_vector(p) for p in momenta_keys]).astype(int) # lattice momenta, in lattice units throughout
+        k1_norm_squared = (k1**2).sum(axis=1).astype(int) # $|k_1|^2$
+        q1 = k1/Lo2p
         q1_norm_squared = np.linalg.norm(q1, axis=1)**2 # $|q_1|^2$
         r1 = q1 / np.expand_dims(q1_norm_squared, axis=1)
 
@@ -201,7 +204,7 @@ class aff_reader:
         q_phase = np.exp(-1j*q1x) # exp(-i*x*q)
         Atildeij_with_phases = np.einsum("qx,gxSqtij->gxSqtij", q_phase, Atildeij_time_roll)
 
-        if True: # corr_key == "p-cvc-cvc":
+        if corr_key == "p-cvc-cvc":
             """ If we use electromagnetic currents conserved on the lattice (conserved-vector-current) we get correlators that look like this:
             `Tr(gamma_mu S(x+mu,nu) gamma_nu S(nu,x_seq) gamma_5 S(z, x))`
 
@@ -210,9 +213,9 @@ class aff_reader:
             - Since we sum over $\\vec{z}$, but the total momentum of the meson is $\\vec{0}$$, we don't get any phase from the propagator `S(nu, z)`
             - When we sum over $\\vec{x}$, as above, we have to include the phase coming from the shift of the arguments of the 1st propagator S(x+mu,nu)=S(x+mu-nu) [from translational invariance]. Changing the variable in the integral we get a phase:
 
-            $$e^{(i/2) (q_nu - q_mu)}$$
+            $$e^{(i/2) (q_i - q_j)}$$
 
-            !!! STILL UNCLEAR WHY WE HAVE TO DIVIDE BY 2 IN THE PHASE, I WOULD EXPECT exp(i(q_mu-q_nu))!!!
+            !!! STILL UNCLEAR WHY WE HAVE TO DIVIDE BY 2 IN THE PHASE, I WOULD EXPECT exp(i(q_i-q_j))!!!
 
             """
             phase_qij = np.exp(1j * (q1[:, None, :] - q1[:, :, None])/2.0) # e^{(i/2)*(q_j - q_i)}
@@ -221,35 +224,35 @@ class aff_reader:
         Btilde  = - np.einsum("ijk,qk,gxSqtij->gxSqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
         Btilde_src_avg  = Btilde.mean(axis=1) # average over the sources
         nf = 2
-        Btilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Btilde_src_avg)/nf # favor average
-    
+        Btilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Btilde_src_avg)/nf # flavor average
         # ------------------
         # finding the orbits
         # ------------------
-        sort_q1_squared = np.argsort(q1_norm_squared)
-        q1_norm_squared_sorted = q1_norm_squared[sort_q1_squared]
-        n_momenta = q1.shape[0]
-        q1_squared_unique = np.unique(q1_norm_squared_sorted, axis=0) # sorted values of |q_1|^2, no repetitions
-        N_orb = q1_squared_unique.shape[0] # number of |q_1|^2
-        Lo2p = (L/np.pi/2)
-        q1_orbits = []
+        sort_k1_squared = np.argsort(k1_norm_squared)
+        k1_norm_squared_sorted = k1_norm_squared[sort_k1_squared]
+        k1_sorted = k1[sort_k1_squared,:] # sorted vectors according to |k1|^2
+        k1_squared_unique = np.unique(k1_norm_squared_sorted, axis=0) # sorted values of |k_1|^2, no repetitions
+        N_orb = k1_squared_unique.shape[0] # number of |q_1|^2
+        k1_orbits = []
         for i in range(N_orb):
-            lhs = np.linalg.norm(q1*Lo2p,axis=1)**2
-            rhs = Lo2p**2 * q1_squared_unique[i]
-            print(i, lhs, rhs)
-            q1_orbits.append(q1[lhs == rhs,:])
+            lhs = k1_norm_squared_sorted
+            rhs = k1_squared_unique[i]
+            k1_orbits.append(k1_sorted[lhs == rhs,:])
         #---
         Btilde_orbits = []
-        for q1_orbit in q1_orbits:
-            q1_orbit_keys = [vector_to_string((L/2/np.pi)*q1_i, v_type="p_i") for q1_i in q1_orbit]
-            print(q1_orbit, len(q1_orbit), q1_squared_unique[i] * Lo2p**2)
-            print(np.linalg.norm(q1_orbit[0]))
-            orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in q1_orbit_keys]
+        for k1_orbit in k1_orbits:
+            k1_orbit_keys = [vector_to_string(k1_i, v_type="p_i") for k1_i in k1_orbit]
+            orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in k1_orbit_keys]
             Btilde_orbit = Q_fact*Btilde_flav_avg[:,orbit_idx,...].mean(axis=1)
             Btilde_orbits.append(Btilde_orbit)
         #---
         Btilde_orbits = np.array(Btilde_orbits) # (n_orbits, n_seq, T)
-        return Btilde_orbits
+        res = {
+            "Btilde": Btilde_orbits,
+            "k1": k1_orbits,
+            "k1_squared": k1_squared_unique
+        }
+        return res
         
 
 
