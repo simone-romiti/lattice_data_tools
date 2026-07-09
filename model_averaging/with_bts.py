@@ -65,10 +65,23 @@ class ModelAverage:
         finding the contribution of a specific one corresponding to the variation of the key in "keys".
         
         This is done by: 
-            - Finding the ModelAverage CDF at fixed "key", i.e. finding N_keys CDFs.
-            - Model averaging all of them, for 2 values of lambda, in order to isolate the contributions
-            - The "statistical" error comes from all the other effects, while the  systematics is the contribution of the variation of "key"
+            - Marginalizing the CDF: we find the ModelAverage CDF at fixed "key", i.e. find N_keys CDFs.
+            - Using the law of total variance to separate statistical and systematic errors.
+             NOTE: The method does not use the assumption that the models are Gaussian, we use the sampled values themselves (e.g. bootstraps) to build the histogram of the CDF
         
+        Example for a variable `y`:
+        [ NOTE: just an example, we don't need `n` models for each `k`, this function works in general ]:
+
+        - nk \\times n models: nk = number of values of one systematic choice `x` (e.g. fit range starting at x=5,6,7...)
+        - For each `k=0,...,nk-1`, we build `n` weighted histograms of the marginalized CDF `P(y)`.
+          Remark: If we are using the bootstraps, we have `N_bts * n` values of `y` in each histogram.
+        - The `k`-th model has a weight `wk=sum_i(w_{ki}), i=0,...,n-1`. Since the `w_ki` are normalized, also the `wk` are.
+          NOTE: Choosing the sum arbitrary. It is just an agnostic way of dealing with the fact that we cannot quantify the distance between s
+        - With `nk` models and their corresponding histograms of the CDF, we estimate the "statistical" and "systematic" effects.
+          The "systematic" is the systematic effect of varying `x`, while the total embeds the statistical and the other systematic effects.
+        - NOTE: applying this function for all systematic effects gives the full error budget table.
+                When the systematic is the one including ALL models, we are finding the full systematic and full statistical errors.
+                
         Args:
             keys (List[str]): keys corresponding to the contribution to isolate_
             y (Dict[BootstrapSamples]): bootstrap samples (one for each model), for each model in "keys"
@@ -86,10 +99,12 @@ class ModelAverage:
         sigma2_stat = 0.0
         sigma2_syst = 0.0 
         y_avg = np.mean(y1P1["y"])
+        # calculating the statistical and systematic error from the law of total variance
         mean = 0.0
         for i in range(n_models):
             mean_i = np.mean(y1_list[i])
             mean += w1_keys_normalized[i] * mean_i
+            # the variance is computed sampling from the histogram of the CDF --> no assumptions on Gaussianity
             var_i = statistics_tools.variance_from_CDF(y=y1_list[i], P=P1_list[i], seed=seed)
             sigma2_stat += (w1_keys_normalized[i] * var_i)
             sigma2_syst += (w1_keys_normalized[i] * (y_avg - mean_i)**2)

@@ -285,8 +285,10 @@ class ParametricBootstraps:
         from their central values x_mean, errors x_err and their correlation matrix rho.
 
         We can use the same methods as for the covariance matrix "C", because:
-        \\rho = S^{-1} @ C @ S^{-1} , where: S_{ij} = \\sigma_i \\delta_{ij} (S is a diagonal matrix)
-        More details on how to adapt them in the docstrings below).
+        $$\\rho = S^{-1} @ C @ S^{-1}$$
+        where: S_{ij} = \\sigma_i \\delta_{ij} (S is a diagonal matrix)
+        Note that since S=S^T this imples that \\rho is positive semi-definite (any bilinear `x^T \\rho x >= 0`)
+        More details on how to adapt them in the docstrings below.
 
         N_bts: number of output bootstrap samples
         seed: seed of random number generator
@@ -308,7 +310,7 @@ class ParametricBootstraps:
         assert(x_mean.shape[0]==rho.shape[0])
         assert(rho.shape[0]==rho.shape[1])
         N = x_mean.shape[0] # number of variables
-        # rooting \\rho
+        # rooting \\rho (recall that rho is positive semi-definite)
         rho_rooted = statistics_tools.rooting(rho, decimals=decimals)
         if method=="Cholesky":
             """
