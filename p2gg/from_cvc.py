@@ -205,17 +205,13 @@ class aff_reader:
         Atildeij_with_phases = np.einsum("qx,gxSqtij->gxSqtij", q_phase, Atildeij_time_roll)
 
         if corr_key == "p-cvc-cvc":
-            """ If we use electromagnetic currents conserved on the lattice (conserved-vector-current) we get correlators that look like this:
-            `Tr(gamma_mu S(x+mu,nu) gamma_nu S(nu,x_seq) gamma_5 S(z, x))`
+            """
+            With CONSERVED electromagnetic currents (conserved-vector-current, or cvc in the code),
+            the Fourier transform appearing in the 3-point function of eq. 6 of https://arxiv.org/pdf/2308.12458
+            at momentum q_1 is the generalization of the 2-point function as in eq. 13 of https://arxiv.org/pdf/hep-lat/0312032 .
 
-            where z=(t_seq, \\vec{z}) as in eq. 6 of https://arxiv.org/pdf/2308.12458
-
-            - Since we sum over $\\vec{z}$, but the total momentum of the meson is $\\vec{0}$$, we don't get any phase from the propagator `S(nu, z)`
-            - When we sum over $\\vec{x}$, as above, we have to include the phase coming from the shift of the arguments of the 1st propagator S(x+mu,nu)=S(x+mu-nu) [from translational invariance]. Changing the variable in the integral we get a phase:
-
+            This phase is not included in the production code itself, so we need to add it manually:
             $$e^{(i/2) (q_i - q_j)}$$
-
-            !!! STILL UNCLEAR WHY WE HAVE TO DIVIDE BY 2 IN THE PHASE, I WOULD EXPECT exp(i(q_i-q_j))!!!
 
             """
             phase_qij = np.exp(1j * (q1[:, None, :] - q1[:, :, None])/2.0) # e^{(i/2)*(q_j - q_i)}
