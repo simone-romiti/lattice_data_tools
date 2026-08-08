@@ -222,7 +222,10 @@ class LieDerivatives:
         NOTE: the index `a` is NOT summed over.
 
         Uses the second-order central difference approximation:
-            L_a^2 f(U) ≈ [f(e^{+i eps tau_a} U) - 2f(U) + f(e^{-i eps tau_a} U)] / eps^2
+
+        $$
+        L_a^2 f(U) \\approx [f(e^{+i eps tau_a} U) - 2f(U) + f(e^{-i eps tau_a} U)] / eps^2
+        $$
 
         `f(U)` should return a tensor of shape (batchsize,1)
         """

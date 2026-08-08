@@ -1,1 +1,0 @@
-IN PROGRESS: automatic generation of the documentation

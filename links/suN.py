@@ -7,7 +7,7 @@ Basis: Generalized Gell-Mann matrices
 Normalization: Tr(tau_a tau_b) = \\delta_{ab} / 2
 
 Special cases:
-- U(1)  : only one generator: τ = 1/sqrt{2}
+- U(1)  : only one generator: $\\tau = 1/\\sqrt{2}$
 - SU(2) : \\tau_a = \\sigma_a/2  (half-Pauli matrices).
 - SU(3) : \\tau_a = \\lambda_a/2  (half-Gell-Mann matrices).
 

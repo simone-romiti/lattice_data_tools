@@ -279,8 +279,9 @@ class LCNN(torch.nn.Module):
         n_obs = iWah_perm.shape[-1]
         print("iWah: ", iWah.shape, suN.get_Tr(iWah).mean())
         tauL_f = torch.nn.Linear(n_obs, U.n_dims, dtype=U.dtype)(iWah_perm)
-        print("tauL_f: ", tauL_f.shape, suN.get_Tr(iWah).mean())
+        print("tauL_f: ", tauL_f.shape, torch.einsum("...iia->...a", tauL_f).mean().item())
         tauL_f_perm = tauL_f.permute(list(range(0, n_axes-3)) + [-1,-3,-2])
+        print(suN.get_Tr(tauL_f_perm).mean().item())
         quit()
         return tauL_f_perm
 #---

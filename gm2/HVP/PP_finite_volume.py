@@ -91,7 +91,7 @@ class PP_model:
 
             times (np.ndarray): Array of time values at which to evaluate the correlator.
             FP2 (Callable[[np.float64], np.float64]): Function returning the squared pion form factor F_\pi^2(s) for a given energy squared s.
-            delta_11 (Callable[[np.float64], np.float64]): Function returning the isospin-1, angular momentum-1 \\pi\\pi scattering phase shift δ_11(s) for a given energy squared s.
+            delta_11 (Callable[[np.float64], np.float64]): Function returning the isospin-1, angular momentum-1 \\pi\\pi scattering phase shift $\\delta_{11}(s)$ for a given energy squared s.
             eps_roots (float): Tolerance for finding the roots of the quantization condition (energy levels).
             eps_der (float, optional): Tolerance for numerical derivatives used in the calculation. Defaults to 1e-12.
 

@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import time
 
 sys.path.append('../../')
 from lattice_data_tools.fit.xiexiyey import fit_xiexiyey
@@ -39,7 +40,10 @@ guess = np.array([0.8, 5.0, 2.0])
 
 # Call your fit_xiexiyey function to fit the model to the data
 print("Uncorrelated fit")
+t1 = time.time()
 fit1_result = fit_xiexiyey(ansatz, x, ex, y, ey, guess)
+t2 = time.time()
+print("t2 - t1 : ", t2-t1)
 fit1_params = fit1_result["par"]
 
 # correlated fit

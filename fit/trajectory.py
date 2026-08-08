@@ -11,8 +11,6 @@ $$z_i = y_i \\, , \\, i=n+1,...,m$$
 
 The fit minimizes the distance of this trajectory
 from the theoretical expectation.
-
-.. ldt-id:: FIT-trajectory-module
 """
 
 import numpy as np
@@ -43,7 +41,6 @@ def fit_trajectory(
     Returns:
         dict: Dictionary with the information about the fit
 
-    .. ldt-id:: FIT-fit_trajectory
     """
     assert (x.shape[0] == y.shape[0]) ## same number of points
     N_pts = x.shape[0] # number of points

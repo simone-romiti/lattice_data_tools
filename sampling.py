@@ -69,7 +69,7 @@ class AbstractSamples(np.ndarray, metaclass=ABCMeta):
         The precise definition depends on the resampling scheme:
 
         - **Bootstrap**: standard deviation of the bootstrap replicates.
-        - **Jackknife**: jackknife standard error (scaled by √(N−1)).
+        - **Jackknife**: jackknife standard error (scaled by $\\sqrt{N-1}$).
 
         .. ldt-id:: SAMP-AbstractSamples-error
         """

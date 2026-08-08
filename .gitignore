@@ -14,7 +14,8 @@
 
 
 # documentation (auto-generated)
-doc
+doc/
+build*
 
 *.pickle
 *.pkl
