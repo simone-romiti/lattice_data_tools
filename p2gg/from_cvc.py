@@ -151,8 +151,90 @@ class aff_reader:
             "momenta_keys": momenta_keys
         }
         return res
+
+    def read_disconnected_3pt(self,
+                           aff_file: str,
+                           corr_key: str,
+                           source: str,
+                           gamma_i: str, gamma_f: str):
+        """
+        Reads the array of 3-point functions
+        
+        Example:
+        corr_key: local-local (local EM currents)
+        source: t06x60y08z75
+        q_tot: qx00qy00qz00 (total momentum in the TFF. Usually \\vec{0})
+        gamma_f: gf01 (gamma matrix of the bilinear at t=t_final)
+        gamma_i: gf02 (gamma matrix of the bilinear at t=t_initial)
+        
+        """
+        f1, f2 = "u", "u" # this is the only combination needed for the disconnected
+        path_gamma_if = f"/{corr_key}/{f1}-gf-{f2}-gi/{source}/{gamma_f}/{gamma_i}"
+        # print(path_gamma_seq)
+        R = aff.Reader(aff_file)
+        momenta_keys = R.ls(path_gamma_if)
+        corr = []
+        for momentum in momenta_keys:
+            path_momentum = f"{path_gamma_if}/{momentum}/"
+            data = np.array(R.read(f"{path_momentum}"))
+            corr.append(data)
+        #---
+        corr = np.array(corr)
+        return {"correlator": corr, "momenta_keys": momenta_keys}
+
     
-    def Atildeij_to_Btilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
+    def disconnected_3pt_to_Atildeij(self, aff_files: list[str], txyz_sources: np.ndarray, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
+        """
+        Read the 3pt connected correlation functions to build the $\\tilde{A}_ij$ [with `i,j=1,2,3`] as in eq. 9 of https://arxiv.org/pdf/2308.12458.
+
+        The function returns an array of shape (nf=2, n_sources, n_t_seq, n_momenta, T, 3,3)
+        - 
+        """
+        # nf = 2 # number of flavors in the twisted-mass doublet (opposite Wilson parameter), e.g. s_{+}, s_{-}
+        # q_tot="qx00qy00qz00" # our calculation is done always considering the meson at rest (zero momentum)
+        # gamma_seq = "gseq04" # in cvc, `04` is the index of `gamma_5`
+        n_sources = txyz_sources.shape[0] # number of sources
+        assert(len(aff_files) == n_sources) # one aff for each source
+        sij_combinations  = list(
+            itertools.product(
+                [i_s for i_s in range(n_sources)], # sources for the inversion of the Dirac operator
+                [i for i in range(1,4)], # index `i=1,2,3`
+                [j for j in range(1,4)]  # index `j=1,2,3`
+            )
+        )
+        Atildeij = [] # list of Atildeij for each flavor, source,
+        ij_shape = None # shape at fixed flavor, source and (i,j) combination
+        t_seq = None # list of t_seq keys
+        momenta_keys = None # list of available momenta (same for all combinations)
+        for sij in sij_combinations:
+            s, i,j = sij # unrolling the combinations
+            txyz_source = txyz_sources[s,:] # 4-vector with the coordinates of the source
+            aff_file = os.path.abspath(aff_files[s]) # absolute path to the s-th `.aff`
+            print(aff_file)
+            gamma_i = f"gi0{i}" # key of $\\gamma_i$
+            gamma_f = f"gf0{j}" # key of $\\gamma_f$
+
+            data = self.read_disconnected_3pt(
+                aff_file = aff_file,
+                corr_key = corr_key, source = vector_to_string(txyz_source, v_type="x_mu"),
+                gamma_i = gamma_i , gamma_f = gamma_f
+            )
+            corr = data["correlator"]
+            Atildeij.append(corr)
+            ij_shape = corr.shape
+            momenta_keys = data["momenta_keys"]
+        #---
+        Atildeij = np.array(Atildeij).reshape(1, n_sources, 3,3, *ij_shape)
+        Atildeij = np.moveaxis(Atildeij, [2, 3], [-2, -1]) # (3,3) at the bottom
+        res = {
+            "correlator": Atildeij,
+            "momenta_keys": momenta_keys
+        }
+        return res
+
+
+    
+    def connected_Atildeij_to_Btilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
         """
         Uses the 3pt function produced on the lattice to generate:
 
@@ -240,6 +322,94 @@ class aff_reader:
             k1_orbit_keys = [vector_to_string(k1_i, v_type="p_i") for k1_i in k1_orbit]
             orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in k1_orbit_keys]
             Btilde_orbit = Q_fact*Btilde_flav_avg[:,orbit_idx,...].mean(axis=1)
+            Btilde_orbits.append(Btilde_orbit)
+        #---
+        Btilde_orbits = np.array(Btilde_orbits) # (n_orbits, n_seq, T)
+        res = {
+            "Btilde": Btilde_orbits,
+            "k1": k1_orbits,
+            "k1_squared": k1_squared_unique
+        }
+        return res
+        
+
+    def disconnected_Atildeij_to_Btilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
+        """
+        Uses the disconnected 2pt function contribution to the 3pt function produced on the lattice to generate:
+
+        $$\\tilde{B} = -i m_P \\tilde{A}$$
+
+        (to be multiplied, configuration by configuration, with the loop)
+
+        where $m_P$ is the mass of the pseudoscalar meson (pion, eta, eta')
+        and $\\tilde{A}$ is defined through Eqs. 9 and 25 of https://arxiv.org/pdf/2308.12458.
+        In input the user should pass Atilde_ij, obtained with `self.disconnected_3pt_to_Atildeij()`
+
+        NOTEs:
+
+        - This is different from the analogous connected function because for the disconnected we have different numbers of momenta for 
+        - m_P, E_P and Z_P are determined through the 2-point function of the meson.
+        - The 1st line of Eq. 28 of https://arxiv.org/pdf/2308.12458 provides a better estimator, accounting for a factor due to finite time extent T.
+          The factor can be included a posteriori, one one has built $\\tilde{B}$ with this function and determined the meson parameters from the 2-point function.
+        - Q_fact: is a factor accounting for the charge factor coming from the electromagnetic currents of the meson (e_u^2 + e_d^2)=5/9 for the light quark and e_s^2=1/9 for the strange
+
+        """
+        # --------------------------------------------
+        # Construction of the source and orbit average
+        # --------------------------------------------
+        Atildeij = Atildeij_dict["correlator"]
+        # t_seq = Atildeij_dict["t_seq"]
+        momenta_keys = Atildeij_dict["momenta_keys"]
+
+        Lo2p = (L/np.pi/2)
+        k1 = np.array([string_to_vector(p) for p in momenta_keys]).astype(int) # lattice momenta, in lattice units throughout
+        k1_norm_squared = (k1**2).sum(axis=1).astype(int) # $|k_1|^2$
+        q1 = k1/Lo2p
+        q1_norm_squared = np.linalg.norm(q1, axis=1)**2 # $|q_1|^2$
+        r1 = q1 / np.expand_dims(q1_norm_squared, axis=1)
+
+        n_sources = txyz_sources.shape[0]
+        xyz_sources = txyz_sources[:,1:4] # only spatial components
+        t_sources = np.array(txyz_sources[:,0], dtype=int) # only the times
+
+        Atildeij_time_roll = np.zeros_like(Atildeij)
+        t_indices = np.arange(T)
+        for i in range(n_sources):
+            Atildeij_time_roll[:,i,:, t_indices, :,:] = Atildeij[:,i,:, (t_indices + t_sources[i]) % T, :, :]
+
+        q1x = np.einsum("qi,xi->qx", q1, xyz_sources)
+        # Remark: in eq. 6 of https://arxiv.org/pdf/2308.12458 we sum over $\\vec{x}$.
+        # When using a source, the integral has to be manually corrected by the phase induced by the source
+        q_phase = np.exp(-1j*q1x) # exp(-i*x*q)
+        # print(q_phase.shape, Atildeij_time_roll.shape)
+        Atildeij_with_phases = np.einsum("qx,fxqtij->fxqtij", q_phase, Atildeij_time_roll)
+
+        if "local-local" not in corr_key:
+            raise ValueError(f"Invalid current combination: {corr_key}: we do not know how to adjust the phase as in the above connected function")
+        #---
+        Btilde  = - np.einsum("ijk,qk,gxqtij->gxqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
+        Btilde_src_avg  = Btilde.mean(axis=1) # average over the sources
+        # nf = 2
+        # Btilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Btilde_src_avg)/nf # flavor average
+        # ------------------
+        # finding the orbits
+        # ------------------
+        sort_k1_squared = np.argsort(k1_norm_squared)
+        k1_norm_squared_sorted = k1_norm_squared[sort_k1_squared]
+        k1_sorted = k1[sort_k1_squared,:] # sorted vectors according to |k1|^2
+        k1_squared_unique = np.unique(k1_norm_squared_sorted, axis=0) # sorted values of |k_1|^2, no repetitions
+        N_orb = k1_squared_unique.shape[0] # number of |q_1|^2
+        k1_orbits = []
+        for i in range(N_orb):
+            lhs = k1_norm_squared_sorted
+            rhs = k1_squared_unique[i]
+            k1_orbits.append(k1_sorted[lhs == rhs,:])
+        #---
+        Btilde_orbits = []
+        for k1_orbit in k1_orbits:
+            k1_orbit_keys = [vector_to_string(k1_i, v_type="p_i") for k1_i in k1_orbit]
+            orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in k1_orbit_keys]
+            Btilde_orbit = Q_fact*Btilde_src_avg[:,orbit_idx,...].mean(axis=1)
             Btilde_orbits.append(Btilde_orbit)
         #---
         Btilde_orbits = np.array(Btilde_orbits) # (n_orbits, n_seq, T)
