@@ -184,11 +184,18 @@ class LCNN(torch.nn.Module):
         beta =  torch.rand(*(d, N_out)).to(self.dtype_U).to(self.device_U)
         return beta
     #---
+    def project_to_algebra(self, W: LocallyGaugeCovariant):
+        """ Array of elements in the Lie algebra of the group"""
+        W_ah_traceless = ColorMatrix(W).get_ah_traceless() # anti-hermitean, traceless
+        iWah = ColorMatrix(1j*W_ah_traceless.as_subclass(torch.Tensor)) # hermitean, traceless --> combination of generators of the group
+        return iWah
+    #---
     def ibetaWah(self, W: LocallyGaugeCovariant, beta: torch.Tensor):
         """ Argument of the exponential in `self.exp_ibetaWah()` """
         # building the anti-hermitian part of W --> i*W_ah lies in the algebra su(N)
-        W_ah_traceless = ColorMatrix(W).get_ah_traceless()
-        arg_exp = torch.einsum("mi,...iab->...mab", 1j*beta, W_ah_traceless) # NOTE: arg_exp has to be hermitean --> we include the `1j`
+        iWah = self.project_to_algebra(W) # W projected to the Lie algebra of the group
+        # NOTE: arg_exp has to be hermitean --> we need the `1j` included in iWah
+        arg_exp = torch.einsum("mi,...iab->...mab", beta, iWah)
         return arg_exp
     #---
     def exp_ibetaWah(self, W: LocallyGaugeCovariant, beta: torch.Tensor):
@@ -250,11 +257,12 @@ class LCNN(torch.nn.Module):
         trace = suN.get_Tr(self.all_layers_with_CB(U=U, omega_CB=omega_CB,beta=beta))
         return trace
     #---
-    def all_layers_Laf(self, U: GaugeConfiguration, omega_CB: torch.Tensor, beta: torch.Tensor):
+    def all_layers_with_CB_tauL_f(self, U: GaugeConfiguration, omega_CB: torch.Tensor, beta: torch.Tensor):
         """
-        Network producing an output of shape (B, Ng, L1, ..., Ld, d)
+        Network producing an output of shape (B, N_obs, L1, ..., Ld, d)
 
-        Interpretation: for a given configuration `b` and fixed `a`, the outputs are the `tau_a L_a` applied to the function `f`.
+        Interpretation: for a given configuration `b=0,...,B-1` and fixed `a=`,
+        the outputs are the `\\sum_a tau_a L_a` applied to the function `f`.
 
         """
         U_PT = get_ParallelTransporters(U=U, K=self.K)
@@ -263,8 +271,20 @@ class LCNN(torch.nn.Module):
         W_CB = self.L_CB(W=W, Wprime=Wprime, omega_CB=omega_CB) # W after eq. 18 of https://arxiv.org/pdf/2401.06481
         W_act = self.L_act(U=U, W=W_CB, act_fun=self.act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
         EU = self.L_exp(U=U, W=W_act, beta=beta)
-        W_res = self.get_W(U=EU) 
+        W_loc = self.get_W(U=EU)
+        iWah = self.project_to_algebra(W=W_loc)
+        n_axes = iWah.ndim
+        permute_indices = list(range(0, n_axes-3)) + [-2,-1,-3]
+        iWah_perm = iWah.permute(permute_indices)
+        n_obs = iWah_perm.shape[-1]
+        print("iWah: ", iWah.shape, suN.get_Tr(iWah).mean())
+        tauL_f = torch.nn.Linear(n_obs, U.n_dims, dtype=U.dtype)(iWah_perm)
+        print("tauL_f: ", tauL_f.shape, suN.get_Tr(iWah).mean())
+        tauL_f_perm = tauL_f.permute(list(range(0, n_axes-3)) + [-1,-3,-2])
+        quit()
+        return tauL_f_perm
 #---
+
                 
 
 
