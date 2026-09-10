@@ -234,14 +234,11 @@ class aff_reader:
 
 
     
-    def connected_Atildeij_to_Btilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
+    def connected_Atildeij_to_Ctilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
         """
-        Uses the 3pt function produced on the lattice to generate:
+        Uses the 3pt function produced on the lattice to generate a correlator which we can call $\\tilde{C}$, which is obtained as follows:
+        Take Eq. 7 of https://arxiv.org/pdf/2308.12458, generalize to any `P=pion,eta,eta'` and plug it in eq. 25 in place of $\\tilde{A}$. Multiply by `-i m_P` and you get $\\tilde{C}$.
 
-        $$\\tilde{B} = -i m_P \\tilde{A}$$
-
-        where $m_P$ is the mass of the pseudoscalar meson (pion, eta, eta')
-        and $\\tilde{A}$ is defined through Eqs. 9 and 25 of https://arxiv.org/pdf/2308.12458.
         In input the user should pass Atilde_ij, obtained with `self.connected_3pt_to_Atildeij()`
 
         NOTEs:
@@ -249,7 +246,7 @@ class aff_reader:
         - This function generates the estimate at fixed configuration and for each t_sequential
         - m_P, E_P and Z_P are determined through the 2-point function of the meson.
         - The 1st line of Eq. 28 of https://arxiv.org/pdf/2308.12458 provides a better estimator, accounting for a factor due to finite time extent T.
-          The factor can be included a posteriori, one one has built $\\tilde{B}$ with this function and determined the meson parameters from the 2-point function.
+          The factor can be included a posteriori, one one has built $\\tilde{C}$ with this function and determined the meson parameters from the 2-point function.
         - Q_fact: is a factor accounting for the charge factor coming from the electromagnetic currents of the meson (e_u^2 + e_d^2)=5/9 for the light quark and e_s^2=1/9 for the strange
 
         """
@@ -299,10 +296,10 @@ class aff_reader:
             phase_qij = np.exp(1j * (q1[:, None, :] - q1[:, :, None])/2.0) # e^{(i/2)*(q_j - q_i)}
             Atildeij_with_phases = np.einsum("qij,gxSqtij->gxSqtij", phase_qij, Atildeij_with_phases)
         #---
-        Btilde  = - np.einsum("ijk,qk,gxSqtij->gxSqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
-        Btilde_src_avg  = Btilde.mean(axis=1) # average over the sources
+        Ctilde  = - np.einsum("ijk,qk,gxSqtij->gxSqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
+        Ctilde_src_avg  = Ctilde.mean(axis=1) # average over the sources
         nf = 2
-        Btilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Btilde_src_avg)/nf # flavor average
+        Ctilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Ctilde_src_avg)/nf # flavor average
         # ------------------
         # finding the orbits
         # ------------------
@@ -317,27 +314,29 @@ class aff_reader:
             rhs = k1_squared_unique[i]
             k1_orbits.append(k1_sorted[lhs == rhs,:])
         #---
-        Btilde_orbits = []
+        Ctilde_orbits = []
         for k1_orbit in k1_orbits:
             k1_orbit_keys = [vector_to_string(k1_i, v_type="p_i") for k1_i in k1_orbit]
             orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in k1_orbit_keys]
-            Btilde_orbit = Q_fact*Btilde_flav_avg[:,orbit_idx,...].mean(axis=1)
-            Btilde_orbits.append(Btilde_orbit)
+            Ctilde_orbit = Q_fact*Ctilde_flav_avg[:,orbit_idx,...].mean(axis=1)
+            Ctilde_orbits.append(Ctilde_orbit)
         #---
-        Btilde_orbits = np.array(Btilde_orbits) # (n_orbits, n_seq, T)
+        Ctilde_orbits = np.array(Ctilde_orbits) # (n_orbits, n_seq, T)
         res = {
-            "Btilde": Btilde_orbits,
+            "Ctilde": Ctilde_orbits,
             "k1": k1_orbits,
             "k1_squared": k1_squared_unique
         }
         return res
         
 
-    def disconnected_Atildeij_to_Btilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
+    def disconnected_Atildeij_to_Ctilde(self, Atildeij_dict: dict, L: int, T: int, txyz_sources: np.ndarray, Q_fact: float, corr_key: typing.Literal["p-cvc-cvc", "p-lvc-lvc"]):
         """
+        ACHTUNG!!! This function is still in debugging phase
+        
         Uses the disconnected 2pt function contribution to the 3pt function produced on the lattice to generate:
 
-        $$\\tilde{B} = -i m_P \\tilde{A}$$
+        $$\\tilde{C} = -i m_P \\tilde{A}$$
 
         (to be multiplied, configuration by configuration, with the loop)
 
@@ -350,7 +349,7 @@ class aff_reader:
         - This is different from the analogous connected function because for the disconnected we have different numbers of momenta for 
         - m_P, E_P and Z_P are determined through the 2-point function of the meson.
         - The 1st line of Eq. 28 of https://arxiv.org/pdf/2308.12458 provides a better estimator, accounting for a factor due to finite time extent T.
-          The factor can be included a posteriori, one one has built $\\tilde{B}$ with this function and determined the meson parameters from the 2-point function.
+          The factor can be included a posteriori, one one has built $\\tilde{C}$ with this function and determined the meson parameters from the 2-point function.
         - Q_fact: is a factor accounting for the charge factor coming from the electromagnetic currents of the meson (e_u^2 + e_d^2)=5/9 for the light quark and e_s^2=1/9 for the strange
 
         """
@@ -387,10 +386,10 @@ class aff_reader:
         if "local-local" not in corr_key:
             raise ValueError(f"Invalid current combination: {corr_key}: we do not know how to adjust the phase as in the above connected function")
         #---
-        Btilde  = - np.einsum("ijk,qk,gxqtij->gxqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
-        Btilde_src_avg  = Btilde.mean(axis=1) # average over the sources
+        Ctilde  = - np.einsum("ijk,qk,gxqtij->gxqt", self.eps_ijk, r1, Atildeij_with_phases) # Eq. 3.28 of S. Burri thesis
+        Ctilde_src_avg  = Ctilde.mean(axis=1) # average over the sources
         # nf = 2
-        # Btilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Btilde_src_avg)/nf # flavor average
+        # Ctilde_flav_avg = np.einsum("f,f...->...", np.array([1,-1]), Ctilde_src_avg)/nf # flavor average
         # ------------------
         # finding the orbits
         # ------------------
@@ -405,16 +404,16 @@ class aff_reader:
             rhs = k1_squared_unique[i]
             k1_orbits.append(k1_sorted[lhs == rhs,:])
         #---
-        Btilde_orbits = []
+        Ctilde_orbits = []
         for k1_orbit in k1_orbits:
             k1_orbit_keys = [vector_to_string(k1_i, v_type="p_i") for k1_i in k1_orbit]
             orbit_idx = [np.where(np.array(momenta_keys, dtype=str) == p)[0][0] for p in k1_orbit_keys]
-            Btilde_orbit = Q_fact*Btilde_src_avg[:,orbit_idx,...].mean(axis=1)
-            Btilde_orbits.append(Btilde_orbit)
+            Ctilde_orbit = Q_fact*Ctilde_src_avg[:,orbit_idx,...].mean(axis=1)
+            Ctilde_orbits.append(Ctilde_orbit)
         #---
-        Btilde_orbits = np.array(Btilde_orbits) # (n_orbits, n_seq, T)
+        Ctilde_orbits = np.array(Ctilde_orbits) # (n_orbits, n_seq, T)
         res = {
-            "Btilde": Btilde_orbits,
+            "Ctilde": Ctilde_orbits,
             "k1": k1_orbits,
             "k1_squared": k1_squared_unique
         }
