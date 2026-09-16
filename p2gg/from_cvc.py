@@ -57,7 +57,7 @@ class aff_reader:
         self.eps_ijk = get_epsilon(3) # \\epsilon_{ijk} (needed later)
         
     def read_connected_3pt(self,
-                           aff_file: str,
+                           aff_reader: typing.Any,
                            corr_key: str,
                            source: str,
                            q_tot: str,
@@ -79,17 +79,16 @@ class aff_reader:
         """
         path_gamma_seq = f"/{corr_key}/{source}/{q_tot}/{gamma_seq}/"
         # print(path_gamma_seq)
-        R = aff.Reader(aff_file) 
-        t_seq_list = sorted(R.ls(path_gamma_seq)) # ordered sequential times
+        t_seq_list = sorted(aff_reader.ls(path_gamma_seq)) # ordered sequential times
         corr = []
         momenta_keys = []
         for t_seq in t_seq_list:
             path_t_seq = f"{path_gamma_seq}/{t_seq}/{f}/{gamma_f}/{gamma_i}/"
-            momenta = R.ls(path_t_seq)
+            momenta = aff_reader.ls(path_t_seq)
             corr_t_seq = []
             momenta_keys = momenta
             for momentum in momenta:
-                data = np.array(R.read(f"{path_t_seq}/{momentum}"))
+                data = np.array(aff_reader.read(f"{path_t_seq}/{momentum}"))
                 corr_t_seq.append(data)
                 #---
             corr.append(corr_t_seq)
@@ -109,10 +108,9 @@ class aff_reader:
         gamma_seq = "gseq04" # in cvc, `04` is the index of `gamma_5`
         n_sources = txyz_sources.shape[0] # number of sources
         assert(len(aff_files) == n_sources) # one aff for each source
-        fsij_combinations  = list(
+        fij_combinations  = list(
             itertools.product(
                 [f for f in range(nf)], # upper or lower element of the flavor doublet
-                np.arange(n_sources), # sources for the inversion of the Dirac operator
                 [i for i in range(1,4)], # index `i=1,2,3`
                 [j for j in range(1,4)]  # index `j=1,2,3`
             )
@@ -121,28 +119,31 @@ class aff_reader:
         ij_shape = None # shape at fixed flavor, source and (i,j) combination
         t_seq = None # list of t_seq keys
         momenta_keys = None # list of available momenta (same for all combinations)
-        for fsij in fsij_combinations:
-            f, s, i,j = fsij # unrolling the combinations
+        for s in range(n_sources):
             txyz_source = txyz_sources[s,:] # 4-vector with the coordinates of the source
             aff_file = os.path.abspath(aff_files[s]) # absolute path to the s-th `.aff`
+            aff_reader =  aff.Reader(aff_file) 
             print(aff_file)
-            gamma_i = f"gi0{i}" # key of $\\gamma_i$
-            gamma_f = f"gf0{j}" # key of $\\gamma_f$
+            for fij in fij_combinations:
+                f, i,j = fij # unrolling the combinations
+                print("  {f,i,j=}", fij)
+                gamma_i = f"gi0{i}" # key of $\\gamma_i$
+                gamma_f = f"gf0{j}" # key of $\\gamma_f$
 
-            data = self.read_connected_3pt(
-                aff_file = aff_file,
-                corr_key = corr_key, source = vector_to_string(txyz_source, v_type="x_mu"),
-                q_tot=q_tot,
-                gamma_seq = gamma_seq,
-                f = f"fl{f}",
-                gamma_i = gamma_i , gamma_f = gamma_f
-            )
-            corr = data["correlator"]
-            Atildeij.append(corr)
-            ij_shape = corr.shape
-            momenta_keys = data["momenta_keys"]
-            t_seq = data["t_seq"]
-        #---
+                data = self.read_connected_3pt(
+                    aff_reader = aff_reader,
+                    corr_key = corr_key, source = vector_to_string(txyz_source, v_type="x_mu"),
+                    q_tot=q_tot,
+                    gamma_seq = gamma_seq,
+                    f = f"fl{f}",
+                    gamma_i = gamma_i , gamma_f = gamma_f
+                )
+                corr = data["correlator"]
+                Atildeij.append(corr)
+                ij_shape = corr.shape
+                momenta_keys = data["momenta_keys"]
+                t_seq = data["t_seq"]
+        #-------
         Atildeij = np.array(Atildeij).reshape(nf, n_sources, 3,3, *ij_shape)
         Atildeij = np.moveaxis(Atildeij, [2, 3], [-2, -1]) # (3,3) at the bottom
         res = {
@@ -262,7 +263,7 @@ class aff_reader:
         k1_norm_squared = (k1**2).sum(axis=1).astype(int) # $|k_1|^2$
         q1 = k1/Lo2p
         q1_norm_squared = np.linalg.norm(q1, axis=1)**2 # $|q_1|^2$
-        r1 = q1 / np.expand_dims(q1_norm_squared, axis=1)
+        r1 = q1 / (np.expand_dims(q1_norm_squared, axis=1) + 1e-30) # avoiding NaN at q=0
 
         n_sources = txyz_sources.shape[0]
         xyz_sources = txyz_sources[:,1:4] # only spatial components
