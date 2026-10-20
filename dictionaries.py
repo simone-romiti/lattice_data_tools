@@ -11,6 +11,35 @@ class NestedDict(defaultdict):
             super().__init__(**kwargs)
         if isinstance(data, dict):
             self.update(data)
+        self._rigid_keys = False
+
+    def rigid_keys(self):
+        """Switch to strict key access: missing keys raise KeyError.
+
+        The flag is propagated recursively to all already-existing NestedDict
+        descendants so that nested lookups are also strict.
+        """
+        self._rigid_keys = True
+        for v in self.values():
+            if isinstance(v, NestedDict):
+                v.rigid_keys()
+        return self
+
+    def loose_keys(self):
+        """Switch back to auto-vivifying key access (the default).
+
+        The flag is propagated recursively to all already-existing NestedDict
+        descendants.
+        """
+        self._rigid_keys = False
+        for v in self.values():
+            if isinstance(v, NestedDict):
+                v.loose_keys()
+        return self
+
+    def _is_rigid(self):
+        """Return whether this instance is currently in rigid key-access mode."""
+        return getattr(self, '_rigid_keys', False)
     
     def to_dict(self) -> dict:
         """Convert the nested defaultdict structure into a plain dict."""
@@ -25,13 +54,20 @@ class NestedDict(defaultdict):
         Extended access:
           - if key is a list/tuple, traverse nested levels
           - else, behave like defaultdict
+
+        In rigid key-access mode, missing keys raise KeyError instead of
+        auto-vivifying nested dictionaries.
         """
         if isinstance(key, (list, tuple)):
             d = self
             for k in key:
+                if getattr(d, '_rigid_keys', False) and k not in d:
+                    raise KeyError(k)
                 d = super(NestedDict, d).__getitem__(k)
             return d
         else:
+            if self._is_rigid() and key not in self:
+                raise KeyError(key)
             return super().__getitem__(key)
     #---
     def __setitem__(self, key, value):
