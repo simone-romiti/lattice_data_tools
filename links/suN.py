@@ -119,20 +119,17 @@ def get_generators(Nc: int, device: torch.device, dtype: torch.dtype):
 
 def get_exp_iA(A: torch.Tensor) -> torch.Tensor:
     """
-    Compute exp(i*A) for a Hermitian matrix A via eigendecomposition.
+    Compute exp(i*A) for a Hermitian matrix A.
 
     1. Diagonalise A = M*D*M^{-1} = M*D*M^{\\dagger}   (A Hermitian --> D real, M unitary via eigh).
     2. Compute exp(i D) element-wise on the real diagonal eigenvalues.
     3. Reconstruct U = M · diag(exp(i D)) · M^{-1}.
+
     """
-    # A_shape = A.shape
-    # A_flat = torch.flatten(A, start_dim=0, end_dim=-3)
-    # exp_iA = torch.linalg.matrix_exp(1j*A_flat)
-    # return torch.reshape(exp_iA, A_shape)
-    d, M = torch.linalg.eigh(A)        # A = M diag(d) M^\\dagger, d real
-    exp_iD = torch.diag_embed(torch.exp(1j*d)).type(M.type())  # exp(d_k) for each eigenvalue d_k
-    U = M @ exp_iD @ M.adjoint()   # U = M exp(iD) M^\\dagger
-    return U
+    d, M = torch.linalg.eigh(A)     # A = M diag(d) M^\dagger, d real
+    d_mod = torch.remainder(d, 2 * np.pi)   # values in [0, 2\pi)
+    exp_iD = torch.diag_embed(torch.exp(1j*d_mod)).type(M.type())
+    return M @ exp_iD @ M.adjoint()      # U = M exp(iD) M^\dagger
 #---
 
 def get_exp_i_omega_tau_a(omega, tau_a):

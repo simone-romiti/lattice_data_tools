@@ -70,7 +70,7 @@ N_epochs = 500
 model = LCNN_MLP(
     U = U,
     LCNN_layer= LCNN_layer,
-    LCNN_N_in=N_in, LCNN_N_out = N_out,
+    LCNN_N_out = N_out,
     N_hidden = N_hidden, N_neurons = N_neurons,
     seed = seed,
     act_fun_MLP = torch.nn.Tanh()

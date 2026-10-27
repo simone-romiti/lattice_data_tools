@@ -37,7 +37,8 @@ class LCNN(torch.nn.Module):
         super().__init__()
         self.Nc = U.Nc
         self.n_dims = U.n_dims
-        self.dtype_U = U.dtype
+        self.complex_type = U.dtype
+        self.real_type = U.real.dtype
         self.device_U = U.device
         self.K = K # K <= k <= K in the parallel transporters of length "k"
         self.act_fun = act_fun # activation function
@@ -89,7 +90,7 @@ class LCNN(torch.nn.Module):
         torch.manual_seed(seed=seed)
         nK = self.nK()
         den = Nch_in * d * nK 
-        omega = (torch.rand(*(Nch_out,Nch_in,d,nK), requires_grad=True) / den).to(self.dtype_U).to(self.device_U)
+        omega = (torch.rand(*(Nch_out,Nch_in,d,nK), requires_grad=True) / den).to(self.real_type).to(self.device_U)
         return omega
     #---
     def L_conv(self, Wprime: torch.Tensor, omega: torch.Tensor):
@@ -113,7 +114,7 @@ class LCNN(torch.nn.Module):
         """
         torch.manual_seed(seed=seed)
         den = N_in1 * N_in2 
-        alpha = (torch.randn(N_out, N_in1, N_in2) / den).to(self.dtype_U).to(self.device_U)
+        alpha = (torch.randn(N_out, N_in1, N_in2) / den).to(self.real_type).to(self.device_U)
         return alpha
     #---
     def L_Bilin(self, W: LocallyGaugeCovariant, Wprime: LocallyGaugeCovariant, alpha: torch.Tensor):
@@ -143,7 +144,7 @@ class LCNN(torch.nn.Module):
         d = self.n_dims
         den = (N_in**2) * d * nK
         omega_CB_shape = (N_out, N_in, N_in, d, nK)
-        omega_CB = (torch.randn(*omega_CB_shape, requires_grad=True) / den).to(self.dtype_U).to(self.device_U)
+        omega_CB = (torch.randn(*omega_CB_shape, requires_grad=True) / den).to(self.real_type).to(self.device_U)
         return omega_CB
     #---
     def L_CB(self, W: LocallyGaugeCovariant, Wprime: LocallyGaugeCovariant, omega_CB: torch.Tensor):
@@ -160,7 +161,7 @@ class LCNN(torch.nn.Module):
           W_CB: locally tranforming object. shape=(batchsize, L1,...,Ld, N_out, Nc, Nc)
 
         """
-        W_CB = torch.einsum("abc mk,...b pq,...mk c qr->...a pr", omega_CB, W, Wprime)
+        W_CB = torch.einsum("abc mk,...b pq,...mk c qr->...a pr", omega_CB.to(self.complex_type), W, Wprime)
         return LocallyGaugeCovariant(W_CB)
     #---
     def L_act(self, U: GaugeConfiguration, W: LocallyGaugeCovariant, act_fun: typing.Callable = default_activation_function):
@@ -181,7 +182,8 @@ class LCNN(torch.nn.Module):
         """
         d = self.n_dims
         torch.manual_seed(seed=seed)
-        beta =  torch.rand(*(d, N_out)).to(self.dtype_U).to(self.device_U)
+        den = N_out
+        beta = torch.rand(*(d, N_out)).to(self.real_type).to(self.device_U) / den
         return beta
     #---
     def project_to_algebra(self, W: LocallyGaugeCovariant):
@@ -207,8 +209,8 @@ class LCNN(torch.nn.Module):
         W: N_ch locally transforming variables (obtained after L_conv()). shape: (batch, L1, ..., Ld, N_ch, Nc, Nc)
         beta: shape: (d,N_ch)
         """
-        arg_exp = self.ibetaWah(W=W, beta=beta)
-        E = suN.get_exp_iA(arg_exp.to_tensor()) # eq. 9 of https://arxiv.org/pdf/2012.12901
+        arg_exp = self.ibetaWah(W=W, beta=beta).to_tensor()
+        E = suN.get_exp_iA(A=arg_exp) # eq. 9 of https://arxiv.org/pdf/2012.12901
         return LocallyGaugeCovariant(E)
     #---
     def L_exp(self, U: GaugeConfiguration, W: LocallyGaugeCovariant, beta: torch.Tensor):
@@ -249,8 +251,8 @@ class LCNN(torch.nn.Module):
         Wprime = self.get_Wprime(U=U, W=W, U_PT=U_PT) # W' as in eq. III.11 of https://arxiv.org/pdf/2012.12901
         W_CB = self.L_CB(W=W, Wprime=Wprime, omega_CB=omega_CB) # W after eq. 18 of https://arxiv.org/pdf/2401.06481
         W_act = self.L_act(U=U, W=W_CB, act_fun=self.act_fun) # W after eq. 7 of https://arxiv.org/pdf/2012.12901
-        EU = self.L_exp(U=U, W=W_act, beta=beta)
-        W_res = self.get_W(U=EU) 
+        EU = self.L_exp(U=U, W=W_act, beta=beta) # exp(i*beta*W) as in eq. 9 of https://arxiv.org/pdf/2012.12901
+        W_res = self.get_W(U=EU)  # W[U] for U after eq. 8 of https://arxiv.org/pdf/2012.12901
         return W_res
     #---
     def all_layers_with_CB_AND_Tr(self, U: GaugeConfiguration, omega_CB: torch.Tensor, beta: torch.Tensor):

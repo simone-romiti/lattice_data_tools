@@ -23,7 +23,7 @@ class LCNN_MLP(torch.nn.Module):
             self,
             U: GaugeConfiguration,
             LCNN_layer: LCNN,
-            LCNN_N_in: int, LCNN_N_out: int,
+            LCNN_N_out: int,
             N_hidden: int, N_neurons: typing.List[int],
             seed: int,
             act_fun_MLP: typing.Callable = torch.nn.Tanh()
@@ -32,6 +32,10 @@ class LCNN_MLP(torch.nn.Module):
 
         self.LCNN_layer = LCNN_layer
         self.beta  = LCNN_layer.gen_random_beta(N_out=LCNN_N_out, seed=seed)
+
+        W = LCNN_layer.get_W(U=U)
+        LCNN_N_in = W.shape[-3] # automatically deduced from the output of the LCNN
+        
         self.omega_CB = LCNN_layer.gen_random_omega_CB(N_out=LCNN_N_out, N_in=LCNN_N_in, seed=seed)
         dtype = self.omega_CB.dtype
 
@@ -40,7 +44,7 @@ class LCNN_MLP(torch.nn.Module):
         self.beta     = torch.nn.Parameter(self.beta)
         
         example_output = LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
-        N_input_MLP = example_output.shape[1]
+        N_input_MLP = 2 * example_output.shape[1] # real and imaginary parts are fed as separate real features
 
         self.MLP_layer = torch.nn.Sequential(
             torch.nn.Linear(N_input_MLP, N_neurons[0], dtype=dtype),
@@ -50,8 +54,10 @@ class LCNN_MLP(torch.nn.Module):
         ).to(device=U.device)
 
     def forward(self, U: GaugeConfiguration):
-        after_LCNN = self.LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta).flatten(start_dim=1)
-        after_MLP = self.MLP_layer(after_LCNN.to_tensor())
+        after_LCNN = self.LCNN_layer.all_layers_with_CB_AND_Tr(U=U, omega_CB=self.omega_CB, beta=self.beta)
+        # the MLP parameters are real: feed real and imaginary parts as separate real features
+        after_LCNN_flat = torch.cat((after_LCNN.real, after_LCNN.imag), dim=-1).flatten(start_dim=1)
+        after_MLP = self.MLP_layer(after_LCNN_flat.to_tensor())
         return after_MLP
 #-------
     
